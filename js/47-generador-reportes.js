@@ -23,40 +23,85 @@ const REPORTES_DATASETS = {
     label: 'Empleados',
     icon: '👥',
     color: 'var(--accent2)',
-    desc: 'Datos personales, contacto, familiares, CBUs, niveles de acceso.',
+    desc: 'Datos personales, laborales, contacto, familiares, CBUs, niveles. Todos los campos disponibles.',
     campos: {
-      leg:           { label: 'Legajo', tipo: 'string' },
-      dni:           { label: 'DNI', tipo: 'string' },
-      cuil:          { label: 'CUIL', tipo: 'string' },
-      nom:           { label: 'Apellido y Nombre', tipo: 'string' },
-      emp:           { label: 'Empresa', tipo: 'string' },
-      area:          { label: 'Área', tipo: 'string' },
-      cat:           { label: 'Categoría', tipo: 'string' },
-      desc_categoria:{ label: 'Descripción categoría', tipo: 'string' },
-      tarea:         { label: 'Tarea / Puesto', tipo: 'string' },
-      lugar:         { label: 'Lugar de trabajo', tipo: 'string' },
-      ing:           { label: 'Fecha Ingreso', tipo: 'date' },
-      egreso:        { label: 'Fecha Egreso', tipo: 'date' },
-      antig_anios:   { label: 'Antigüedad (años)', tipo: 'number', derivado: true },
-      antig_meses:   { label: 'Antigüedad (meses)', tipo: 'number', derivado: true },
-      sueldo_basico: { label: 'Sueldo Básico ($)', tipo: 'currency' },
-      cod_sindicato: { label: 'Código Sindicato', tipo: 'string' },
-      nombre_sindicato: { label: 'Sindicato', tipo: 'string', derivado: true },
-      cod_os:        { label: 'Código OS', tipo: 'string' },
-      tel:           { label: 'Teléfono', tipo: 'string' },
-      email:         { label: 'Email', tipo: 'string' },
-      domicilio:     { label: 'Domicilio', tipo: 'string', derivado: true },
-      localidad:     { label: 'Localidad', tipo: 'string' },
-      provincia:     { label: 'Provincia', tipo: 'string' },
-      cp:            { label: 'Código Postal', tipo: 'string' },
-      fnac:          { label: 'Fecha Nacimiento', tipo: 'date' },
-      edad:          { label: 'Edad (años)', tipo: 'number', derivado: true },
-      sexo:          { label: 'Sexo', tipo: 'string' },
-      estado_civil:  { label: 'Estado Civil', tipo: 'string' },
-      cbu:           { label: 'CBU principal', tipo: 'string' },
-      cant_familiares: { label: 'Cantidad familiares vigentes', tipo: 'number', derivado: true },
-      cant_hijos:    { label: 'Cantidad hijos vigentes', tipo: 'number', derivado: true },
-      es_baja:       { label: 'Está de baja', tipo: 'bool', derivado: true }
+      // ── IDENTIFICACIÓN ──
+      leg:           { label: 'Legajo', tipo: 'string', grupo: 'Identificación' },
+      dni:           { label: 'DNI', tipo: 'string', grupo: 'Identificación' },
+      cuil:          { label: 'CUIL', tipo: 'string', grupo: 'Identificación' },
+      nom:           { label: 'Apellido y Nombre', tipo: 'string', grupo: 'Identificación' },
+
+      // ── LABORALES ──
+      emp:           { label: 'Empresa', tipo: 'string', grupo: 'Laborales' },
+      lugar:         { label: 'Lugar de trabajo', tipo: 'string', grupo: 'Laborales' },
+      cat:           { label: 'Categoría (código)', tipo: 'string', grupo: 'Laborales' },
+      tramo:         { label: 'Tramo (JR / SSR / SR / SEN)', tipo: 'string', grupo: 'Laborales' },
+      desc_categoria:{ label: 'Descripción categoría', tipo: 'string', grupo: 'Laborales' },
+      tarea:         { label: 'Tarea / Puesto', tipo: 'string', grupo: 'Laborales' },
+      condicion:     { label: 'Condición (Mensualizado / Jornal)', tipo: 'string', grupo: 'Laborales' },
+      cod_convenio:  { label: 'Código de convenio', tipo: 'string', grupo: 'Laborales' },
+      area:          { label: 'Área', tipo: 'string', grupo: 'Laborales' },
+      ing:           { label: 'Fecha Ingreso', tipo: 'date', grupo: 'Laborales' },
+      egreso:        { label: 'Fecha Egreso', tipo: 'date', grupo: 'Laborales' },
+      antig_anios:   { label: 'Antigüedad (años)', tipo: 'number', grupo: 'Laborales', derivado: true },
+      antig_meses:   { label: 'Antigüedad (meses)', tipo: 'number', grupo: 'Laborales', derivado: true },
+      antig_dias:    { label: 'Antigüedad (días)', tipo: 'number', grupo: 'Laborales', derivado: true },
+      es_baja:       { label: 'Está de baja', tipo: 'bool', grupo: 'Laborales', derivado: true },
+
+      // ── REMUNERACIONES (datos del archivo de nómina) ──
+      sueldo:           { label: 'Sueldo (campo nómina)', tipo: 'currency', grupo: 'Remuneraciones' },
+      basico:           { label: 'Básico (campo nómina)', tipo: 'currency', grupo: 'Remuneraciones' },
+      antiguedad_monto: { label: 'Monto de antigüedad', tipo: 'currency', grupo: 'Remuneraciones' },
+      complemento:      { label: 'Complemento', tipo: 'currency', grupo: 'Remuneraciones' },
+      norem:            { label: 'No remunerativo', tipo: 'currency', grupo: 'Remuneraciones' },
+      bruto:            { label: 'Bruto total', tipo: 'currency', grupo: 'Remuneraciones' },
+      neto:             { label: 'Neto', tipo: 'currency', grupo: 'Remuneraciones' },
+      lim:              { label: 'Límite (anticipos)', tipo: 'currency', grupo: 'Remuneraciones' },
+      sueldo_basico:    { label: 'Sueldo Básico ABM', tipo: 'currency', grupo: 'Remuneraciones' },
+      // ── REMUNERACIONES DERIVADAS (escala salarial) ──
+      rem_escala_unif: { label: 'Remuneración escala unificada', tipo: 'currency', grupo: 'Remuneraciones', derivado: true },
+      diferencia_escala:{ label: 'Diferencia vs escala ($)', tipo: 'currency', grupo: 'Remuneraciones', derivado: true },
+      diferencia_escala_pct:{ label: 'Diferencia vs escala (%)', tipo: 'number', grupo: 'Remuneraciones', derivado: true },
+      pct_antiguedad:  { label: '% Antigüedad aplicado', tipo: 'number', grupo: 'Remuneraciones', derivado: true },
+
+      // ── SINDICATO Y OBRA SOCIAL ──
+      cod_sindicato:    { label: 'Código Sindicato', tipo: 'string', grupo: 'Sindicato y OS' },
+      nombre_sindicato: { label: 'Nombre Sindicato', tipo: 'string', grupo: 'Sindicato y OS', derivado: true },
+      cod_os:           { label: 'Código Obra Social', tipo: 'string', grupo: 'Sindicato y OS' },
+      desc_os:          { label: 'Obra Social (descripción)', tipo: 'string', grupo: 'Sindicato y OS' },
+
+      // ── DATOS PERSONALES ──
+      fecha_nac:    { label: 'Fecha de Nacimiento', tipo: 'date', grupo: 'Personales' },
+      edad:         { label: 'Edad (años)', tipo: 'number', grupo: 'Personales', derivado: true },
+      sexo:         { label: 'Sexo', tipo: 'string', grupo: 'Personales' },
+      estado_civil: { label: 'Estado Civil', tipo: 'string', grupo: 'Personales' },
+      nacionalidad: { label: 'Nacionalidad', tipo: 'string', grupo: 'Personales' },
+
+      // ── CONTACTO ──
+      mail:    { label: 'Email', tipo: 'string', grupo: 'Contacto' },
+      tel:     { label: 'Teléfono', tipo: 'string', grupo: 'Contacto' },
+
+      // ── DOMICILIO ──
+      dom_calle:    { label: 'Domicilio - Calle', tipo: 'string', grupo: 'Domicilio' },
+      dom_nro:      { label: 'Domicilio - Número', tipo: 'string', grupo: 'Domicilio' },
+      dom_piso:     { label: 'Piso', tipo: 'string', grupo: 'Domicilio' },
+      dom_depto:    { label: 'Depto', tipo: 'string', grupo: 'Domicilio' },
+      dom_torre:    { label: 'Torre', tipo: 'string', grupo: 'Domicilio' },
+      dom_bloque:   { label: 'Bloque', tipo: 'string', grupo: 'Domicilio' },
+      dom_loc:      { label: 'Localidad', tipo: 'string', grupo: 'Domicilio' },
+      dom_cp:       { label: 'Código Postal', tipo: 'string', grupo: 'Domicilio' },
+      dom_prov:     { label: 'Provincia', tipo: 'string', grupo: 'Domicilio' },
+      domicilio_completo: { label: 'Domicilio (compuesto)', tipo: 'string', grupo: 'Domicilio', derivado: true },
+
+      // ── BANCO ──
+      cbu:           { label: 'CBU principal', tipo: 'string', grupo: 'Banco' },
+      cant_cbus:     { label: 'Cantidad CBUs vigentes', tipo: 'number', grupo: 'Banco', derivado: true },
+
+      // ── FAMILIARES ──
+      cant_familiares:    { label: 'Cantidad familiares vigentes', tipo: 'number', grupo: 'Familiares', derivado: true },
+      cant_hijos:         { label: 'Cantidad hijos vigentes', tipo: 'number', grupo: 'Familiares', derivado: true },
+      cant_hijos_menores: { label: 'Hijos menores de edad', tipo: 'number', grupo: 'Familiares', derivado: true },
+      tiene_conyuge:      { label: 'Tiene cónyuge', tipo: 'bool', grupo: 'Familiares', derivado: true }
     },
     async getRows(){
       const nomina = (typeof getNomina === 'function') ? getNomina() : [];
@@ -64,34 +109,90 @@ const REPORTES_DATASETS = {
       return nomina.map(e => {
         const ingDate = _repParseFecha(e.ing);
         const egrDate = _repParseFecha(e.egreso);
-        const fnacDate = _repParseFecha(e.fnac);
-        const antigMs = ingDate ? (hoy - ingDate) : 0;
-        const antigAnios = antigMs > 0 ? Math.floor(antigMs / (365.25 * 86400000)) : 0;
+        const fnacDate = _repParseFecha(e.fecha_nac || e.fnac);
+        // Antigüedad
+        const antigDias = ingDate ? Math.floor((hoy - ingDate) / 86400000) : 0;
+        const antigAnios = antigDias > 0 ? Math.floor(antigDias / 365.25) : 0;
         const antigMeses = ingDate ? Math.max(0, (hoy.getFullYear() - ingDate.getFullYear()) * 12 + (hoy.getMonth() - ingDate.getMonth())) : 0;
         const edad = fnacDate ? Math.floor((hoy - fnacDate) / (365.25 * 86400000)) : null;
+
         // Familiares
-        let cantFam = 0, cantHijos = 0;
+        let cantFam = 0, cantHijos = 0, cantHijosMen = 0, tieneConyuge = false;
         if(typeof getFamiliaresVigentes === 'function'){
           try {
-            const fams = getFamiliaresVigentes(e.leg);
+            const fams = getFamiliaresVigentes(e.leg) || [];
             cantFam = fams.length;
-            cantHijos = fams.filter(f => /hijo/i.test(f.parentesco || '')).length;
+            const hijos = fams.filter(f => /hijo/i.test(f.parentesco || ''));
+            cantHijos = hijos.length;
+            cantHijosMen = hijos.filter(h => {
+              const fnac = _repParseFecha(h.fechaNac || h.fecha_nac);
+              if(!fnac) return false;
+              const ed = Math.floor((hoy - fnac) / (365.25 * 86400000));
+              return ed < 18;
+            }).length;
+            tieneConyuge = fams.some(f => /c[oó]nyuge|esposa?|c[oó]nyug/i.test(f.parentesco || ''));
           } catch(_){}
         }
-        // Sindicato
+
+        // CBUs
+        let cantCBUs = 0;
+        if(typeof getCBUsActivos === 'function'){
+          try { cantCBUs = (getCBUsActivos(e.leg) || []).length; } catch(_){}
+        }
+
+        // Sindicato nombre
         let nomSind = '';
         if(typeof getNombreSindicato === 'function'){
           try { nomSind = getNombreSindicato(e) || ''; } catch(_){}
         }
+
+        // Escala unificada — busca por categoría + tramo si existe la función
+        let remEscala = 0;
+        if(typeof getMontoEscala === 'function'){
+          try { remEscala = getMontoEscala(e.cat, e.tramo) || 0; } catch(_){}
+        }
+        const sueldoNominal = $m_safe(e.sueldo) || $m_safe(e.basico) || $m_safe(e.bruto);
+        const difEscala = sueldoNominal - remEscala;
+        const difEscalaPct = remEscala > 0 ? +(difEscala / remEscala * 100).toFixed(2) : 0;
+
+        // % antigüedad aplicado al empleado
+        let pctAntig = 0;
+        if(typeof getPctAntiguedadPorAnio === 'function'){
+          try { pctAntig = getPctAntiguedadPorAnio(e) || 0; } catch(_){}
+        }
+
+        // Override del ABM (si tiene sueldo_basico cargado por RRHH)
+        let sueldoBasicoABM = 0;
+        try {
+          const ov = JSON.parse(localStorage.getItem('lsg_abm_overrides') || '{}');
+          sueldoBasicoABM = $m_safe(ov[e.leg]?.sueldo_basico) || 0;
+        } catch(_){}
+
         return {
           ...e,
+          // Antigüedad calculada
           antig_anios: antigAnios,
           antig_meses: antigMeses,
+          antig_dias: antigDias,
           edad,
-          domicilio: [e.dir, e.nro, e.piso, e.depto].filter(Boolean).join(' '),
+          es_baja: !!(e.egreso || e._deBaja),
+
+          // Sueldo
+          sueldo_basico: sueldoBasicoABM,
+          rem_escala_unif: remEscala,
+          diferencia_escala: difEscala,
+          diferencia_escala_pct: difEscalaPct,
+          pct_antiguedad: pctAntig,
+
+          // Familiares y CBUs
           cant_familiares: cantFam,
           cant_hijos: cantHijos,
-          es_baja: !!(e.egreso || e._deBaja),
+          cant_hijos_menores: cantHijosMen,
+          tiene_conyuge: tieneConyuge,
+          cant_cbus: cantCBUs,
+
+          // Otros
+          domicilio_completo: [e.dom_calle, e.dom_nro, e.dom_piso, e.dom_depto].filter(Boolean).join(' '),
           nombre_sindicato: nomSind
         };
       });
@@ -473,7 +574,15 @@ function _repRenderPaso2(){
   const ds = REPORTES_DATASETS[_repEstado.datasetKey];
   if(!ds) return;
 
-  const checkboxes = Object.entries(ds.campos).map(([key, c]) => {
+  // Agrupar campos por su propiedad `grupo` (si la tienen)
+  const grupos = {};
+  Object.entries(ds.campos).forEach(([key, c]) => {
+    const g = c.grupo || 'Otros campos';
+    if(!grupos[g]) grupos[g] = [];
+    grupos[g].push({ key, ...c });
+  });
+
+  const renderCampo = (key, c) => {
     const checked = _repEstado.campos.includes(key);
     return `
       <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border:1px solid var(--border);border-radius:4px;background:${checked?'rgba(61,127,255,.05)':'var(--bg2)'};font-size:11px;color:var(--t1)" onclick="_repToggleCampo('${key}')">
@@ -483,6 +592,25 @@ function _repRenderPaso2(){
           <div style="font-size:9px;color:var(--t3);font-family:var(--font-mono)">${key} · ${c.tipo}${c.derivado?' (calc.)':''}</div>
         </div>
       </label>
+    `;
+  };
+
+  const gruposHtml = Object.entries(grupos).map(([nombre, campos]) => {
+    const seleccionadosGrupo = campos.filter(c => _repEstado.campos.includes(c.key)).length;
+    return `
+      <details ${seleccionadosGrupo > 0 ? 'open' : ''} style="margin-bottom:10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
+        <summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:11px;font-family:var(--font-mono);color:var(--accent2);text-transform:uppercase;letter-spacing:.05em">
+          <span>${nombre} <span style="color:var(--t3);font-weight:400">(${campos.length} campo${campos.length!==1?'s':''})</span></span>
+          <span style="display:flex;gap:6px;align-items:center">
+            ${seleccionadosGrupo > 0 ? `<span style="font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.3)">${seleccionadosGrupo} ✓</span>` : ''}
+            <button onclick="event.preventDefault();event.stopPropagation();_repSeleccionarGrupo('${nombre.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);border-radius:3px;color:var(--t3);font-size:9px;cursor:pointer;padding:2px 6px" title="Seleccionar todos del grupo">+ todos</button>
+            <button onclick="event.preventDefault();event.stopPropagation();_repDeseleccionarGrupo('${nombre.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);border-radius:3px;color:var(--t3);font-size:9px;cursor:pointer;padding:2px 6px" title="Deseleccionar todos del grupo">− todos</button>
+          </span>
+        </summary>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;margin-top:10px">
+          ${campos.map(c => renderCampo(c.key, c)).join('')}
+        </div>
+      </details>
     `;
   }).join('');
 
@@ -495,16 +623,17 @@ function _repRenderPaso2(){
       <button class="btn btn-ghost" onclick="_repIrPaso(1)" style="font-size:12px;padding:6px 12px">← Cambiar categoría</button>
     </div>
 
-    <div style="margin-bottom:14px;display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn btn-ghost" onclick="_repSeleccionarTodos()" style="font-size:11px;padding:5px 10px">Seleccionar todos</button>
+    <div style="margin-bottom:14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-ghost" onclick="_repSeleccionarTodos()" style="font-size:11px;padding:5px 10px;color:var(--green);border-color:rgba(34,197,94,.3)">✓ Seleccionar todos</button>
       <button class="btn btn-ghost" onclick="_repDeseleccionarTodos()" style="font-size:11px;padding:5px 10px;color:var(--t3)">Deseleccionar todos</button>
-      <span style="margin-left:auto;font-size:11px;color:var(--t2);align-self:center">
+      <input type="text" id="rep-buscar-campo" placeholder="🔍 Buscar campo..." oninput="_repFiltrarCampos(this.value)" style="background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--t1);font-size:11px;outline:none;flex:1;min-width:160px">
+      <span style="font-size:11px;color:var(--t2);align-self:center">
         <strong id="rep-count-campos">${_repEstado.campos.length}</strong> de ${Object.keys(ds.campos).length} campos
       </span>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;max-height:480px;overflow-y:auto;padding-right:6px">
-      ${checkboxes}
+    <div id="rep-campos-grupos" style="max-height:520px;overflow-y:auto;padding-right:6px">
+      ${gruposHtml}
     </div>
 
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
@@ -512,6 +641,41 @@ function _repRenderPaso2(){
       <button class="btn btn-primary" onclick="_repIrPaso(3)" style="font-size:13px;padding:8px 18px" ${_repEstado.campos.length === 0 ? 'disabled' : ''}>Siguiente: filtros →</button>
     </div>
   `;
+}
+
+function _repSeleccionarGrupo(nombreGrupo){
+  const ds = REPORTES_DATASETS[_repEstado.datasetKey];
+  Object.entries(ds.campos).forEach(([key, c]) => {
+    const g = c.grupo || 'Otros campos';
+    if(g === nombreGrupo && !_repEstado.campos.includes(key)){
+      _repEstado.campos.push(key);
+    }
+  });
+  _repRender();
+}
+
+function _repDeseleccionarGrupo(nombreGrupo){
+  const ds = REPORTES_DATASETS[_repEstado.datasetKey];
+  _repEstado.campos = _repEstado.campos.filter(key => {
+    const c = ds.campos[key];
+    const g = c?.grupo || 'Otros campos';
+    return g !== nombreGrupo;
+  });
+  _repRender();
+}
+
+function _repFiltrarCampos(q){
+  const cont = document.getElementById('rep-campos-grupos');
+  if(!cont) return;
+  const query = q.toLowerCase().trim();
+  cont.querySelectorAll('label[onclick*="_repToggleCampo"]').forEach(lbl => {
+    const txt = lbl.textContent.toLowerCase();
+    lbl.style.display = !query || txt.includes(query) ? 'flex' : 'none';
+  });
+  // Mostrar todos los grupos abiertos para que se vean los matches
+  if(query){
+    cont.querySelectorAll('details').forEach(d => d.open = true);
+  }
 }
 
 function _repToggleCampo(key){
