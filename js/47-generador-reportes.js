@@ -203,41 +203,111 @@ const REPORTES_DATASETS = {
     label: 'Nómina por categoría',
     icon: '📊',
     color: 'rgb(34,197,94)',
-    desc: 'Sueldos básicos, escala salarial, categoría/CCT por empleado.',
+    desc: 'Sueldos básicos, escala salarial unificada, antigüedad, próximos aumentos.',
     campos: {
-      leg:           { label: 'Legajo', tipo: 'string' },
-      nom:           { label: 'Apellido y Nombre', tipo: 'string' },
-      emp:           { label: 'Empresa', tipo: 'string' },
-      area:          { label: 'Área', tipo: 'string' },
-      cat:           { label: 'Categoría', tipo: 'string' },
-      desc_categoria:{ label: 'Descripción categoría', tipo: 'string' },
-      sueldo_basico: { label: 'Sueldo Básico ($)', tipo: 'currency' },
-      escala_basico: { label: 'Sueldo según escala ($)', tipo: 'currency', derivado: true },
-      diferencia:    { label: 'Diferencia ($)', tipo: 'currency', derivado: true },
-      antig_anios:   { label: 'Antigüedad (años)', tipo: 'number', derivado: true },
-      pct_antig:     { label: '% Antigüedad', tipo: 'number', derivado: true },
-      ing:           { label: 'Fecha Ingreso', tipo: 'date' },
-      cod_sindicato: { label: 'Sindicato', tipo: 'string' }
+      // ── IDENTIFICACIÓN ──
+      leg:           { label: 'Legajo', tipo: 'string', grupo: 'Identificación' },
+      nom:           { label: 'Apellido y Nombre', tipo: 'string', grupo: 'Identificación' },
+      dni:           { label: 'DNI', tipo: 'string', grupo: 'Identificación' },
+
+      // ── LABORALES ──
+      emp:           { label: 'Empresa', tipo: 'string', grupo: 'Laborales' },
+      area:          { label: 'Área', tipo: 'string', grupo: 'Laborales' },
+      cat:           { label: 'Categoría', tipo: 'string', grupo: 'Laborales' },
+      tramo:         { label: 'Tramo', tipo: 'string', grupo: 'Laborales' },
+      desc_categoria:{ label: 'Descripción categoría', tipo: 'string', grupo: 'Laborales' },
+      condicion:     { label: 'Condición', tipo: 'string', grupo: 'Laborales' },
+      ing:           { label: 'Fecha Ingreso', tipo: 'date', grupo: 'Laborales' },
+      antig_anios:   { label: 'Antigüedad (años)', tipo: 'number', grupo: 'Laborales', derivado: true },
+      antig_meses:   { label: 'Antigüedad (meses)', tipo: 'number', grupo: 'Laborales', derivado: true },
+
+      // ── REMUNERACIÓN ACTUAL vs ESCALA ──
+      sueldo_basico_actual: { label: 'Sueldo básico actual ($)', tipo: 'currency', grupo: 'Remuneración', derivado: true },
+      escala_basico:        { label: 'Sueldo según escala ($)', tipo: 'currency', grupo: 'Remuneración', derivado: true },
+      diferencia:           { label: 'Diferencia ($)', tipo: 'currency', grupo: 'Remuneración', derivado: true },
+      diferencia_pct:       { label: 'Diferencia (%)', tipo: 'number', grupo: 'Remuneración', derivado: true },
+      pct_antig:            { label: '% Antigüedad', tipo: 'number', grupo: 'Remuneración', derivado: true },
+      monto_antiguedad:     { label: 'Monto antigüedad ($)', tipo: 'currency', grupo: 'Remuneración' },
+
+      // ── PRÓXIMO AUMENTO (escala futura) ──
+      proxima_escala_fecha: { label: 'Fecha próximo aumento', tipo: 'date', grupo: 'Próximo aumento', derivado: true },
+      proxima_escala_monto: { label: 'Sueldo próximo aumento ($)', tipo: 'currency', grupo: 'Próximo aumento', derivado: true },
+      proxima_escala_dif:   { label: 'Aumento estimado ($)', tipo: 'currency', grupo: 'Próximo aumento', derivado: true },
+      proxima_escala_dif_pct:{ label: 'Aumento estimado (%)', tipo: 'number', grupo: 'Próximo aumento', derivado: true },
+      dias_hasta_aumento:   { label: 'Días hasta aumento', tipo: 'number', grupo: 'Próximo aumento', derivado: true },
+
+      // ── SINDICATO ──
+      cod_sindicato:    { label: 'Código sindicato', tipo: 'string', grupo: 'Sindicato' },
+      nombre_sindicato: { label: 'Sindicato', tipo: 'string', grupo: 'Sindicato', derivado: true }
     },
     async getRows(){
       const nomina = (typeof getNomina === 'function') ? getNomina() : [];
       const hoy = new Date();
+      const hoyStr = hoy.toISOString().slice(0, 10);
+
+      // Buscar próxima versión de escala futura
+      let proximaVersion = null;
+      if(typeof getEscalaVersiones === 'function'){
+        try {
+          const versiones = getEscalaVersiones();
+          proximaVersion = versiones.find(v => v.vigencia > hoyStr) || null;
+        } catch(_){}
+      }
+
       return nomina.filter(e => !e.egreso).map(e => {
         const ingDate = _repParseFecha(e.ing);
         const antigAnios = ingDate ? Math.floor((hoy - ingDate) / (365.25 * 86400000)) : 0;
-        let escalaBasico = 0, pctAntig = 0;
-        if(typeof getEscalaSalarialPara === 'function'){
-          try { escalaBasico = getEscalaSalarialPara(e.cat) || 0; } catch(_){}
+        const antigMeses = ingDate ? Math.max(0, (hoy.getFullYear() - ingDate.getFullYear()) * 12 + (hoy.getMonth() - ingDate.getMonth())) : 0;
+
+        let escalaActual = 0, escalaProxima = 0;
+        if(typeof getMontoEscala === 'function'){
+          try {
+            escalaActual = getMontoEscala(e.cat, e.tramo) || 0;
+            if(proximaVersion){
+              escalaProxima = getMontoEscala(e.cat, e.tramo, proximaVersion.vigencia) || 0;
+            }
+          } catch(_){}
         }
-        if(typeof getPctAntigPorAnio === 'function'){
-          try { pctAntig = getPctAntigPorAnio(e); } catch(_){}
+        const sueldoActual = $m_safe(e.sueldo) || $m_safe(e.basico) || $m_safe(e.bruto);
+        const dif = sueldoActual - escalaActual;
+        const difPct = escalaActual > 0 ? +(dif / escalaActual * 100).toFixed(2) : 0;
+
+        let pctAntig = 0;
+        if(typeof getPctAntiguedadPorAnio === 'function'){
+          try { pctAntig = getPctAntiguedadPorAnio(e) || 0; } catch(_){}
         }
+
+        let nomSind = '';
+        if(typeof getNombreSindicato === 'function'){
+          try { nomSind = getNombreSindicato(e) || ''; } catch(_){}
+        }
+
+        // Próximo aumento
+        let proxFecha = null, proxDif = 0, proxDifPct = 0, diasAumento = null;
+        if(proximaVersion && escalaProxima > 0){
+          proxFecha = proximaVersion.vigencia;
+          proxDif = escalaProxima - escalaActual;
+          proxDifPct = escalaActual > 0 ? +(proxDif / escalaActual * 100).toFixed(2) : 0;
+          const fAumento = _repParseFecha(proximaVersion.vigencia);
+          if(fAumento) diasAumento = Math.ceil((fAumento - hoy) / 86400000);
+        }
+
         return {
           ...e,
-          escala_basico: escalaBasico,
-          diferencia: ($m_safe(e.sueldo_basico) - escalaBasico),
           antig_anios: antigAnios,
-          pct_antig: pctAntig
+          antig_meses: antigMeses,
+          sueldo_basico_actual: sueldoActual,
+          escala_basico: escalaActual,
+          diferencia: dif,
+          diferencia_pct: difPct,
+          pct_antig: pctAntig,
+          monto_antiguedad: $m_safe(e.antiguedad_monto),
+          proxima_escala_fecha: proxFecha,
+          proxima_escala_monto: escalaProxima,
+          proxima_escala_dif: proxDif,
+          proxima_escala_dif_pct: proxDifPct,
+          dias_hasta_aumento: diasAumento,
+          nombre_sindicato: nomSind
         };
       });
     }
@@ -247,55 +317,99 @@ const REPORTES_DATASETS = {
     label: 'Liquidaciones',
     icon: '💼',
     color: 'rgb(168,85,247)',
-    desc: 'Items de liquidación: haberes, descuentos, contribuciones, totales.',
+    desc: 'Items de liquidación: haberes, descuentos, contribuciones, totales por empleado y período.',
     campos: {
-      periodo:        { label: 'Período', tipo: 'string' },
-      tipo:           { label: 'Tipo (mensual/quincenal/SAC)', tipo: 'string' },
-      estado:         { label: 'Estado liq.', tipo: 'string' },
-      leg:            { label: 'Legajo', tipo: 'string' },
-      nom:            { label: 'Apellido y Nombre', tipo: 'string' },
-      empresa:        { label: 'Empresa', tipo: 'string' },
-      diasTrab:       { label: 'Días trabajados', tipo: 'number' },
-      sueldoBasico:   { label: 'Sueldo Básico ($)', tipo: 'currency' },
-      mAntig:         { label: 'Antigüedad ($)', tipo: 'currency' },
-      mPres:          { label: 'Presentismo ($)', tipo: 'currency' },
-      mHsE50:         { label: 'Hs Extras 50% ($)', tipo: 'currency' },
-      mHsE100:        { label: 'Hs Extras 100% ($)', tipo: 'currency' },
-      mSac:           { label: 'SAC ($)', tipo: 'currency' },
-      mVac:           { label: 'Vacaciones ($)', tipo: 'currency' },
-      totalHaberesRem:{ label: 'Total Remunerativo ($)', tipo: 'currency' },
-      totalExentos:   { label: 'Total No Remunerativo ($)', tipo: 'currency' },
-      totalHaberes:   { label: 'Total Haberes ($)', tipo: 'currency' },
-      jubilacion:     { label: 'Aporte Jubilatorio ($)', tipo: 'currency' },
-      obraSocial:     { label: 'Aporte OS ($)', tipo: 'currency' },
-      anssal:         { label: 'ANSSAL ($)', tipo: 'currency' },
-      pamiEmp:        { label: 'Aporte PAMI emp ($)', tipo: 'currency' },
-      sindicato:      { label: 'Cuota sindical ($)', tipo: 'currency' },
-      ganancias:      { label: 'Ret. Ganancias ($)', tipo: 'currency' },
-      embargo:        { label: 'Embargo ($)', tipo: 'currency' },
-      anticiposDesc:  { label: 'Desc. anticipos ($)', tipo: 'currency' },
-      totalDescuentos:{ label: 'Total descuentos ($)', tipo: 'currency' },
-      netoAPagar:     { label: 'Neto a pagar ($)', tipo: 'currency' },
-      jubPatronal:    { label: 'Contrib. Jubilación ($)', tipo: 'currency' },
-      osPatronal:     { label: 'Contrib. OS ($)', tipo: 'currency' },
-      pamiPatronal:   { label: 'Contrib. PAMI ($)', tipo: 'currency' },
-      desempleo:      { label: 'Fondo Desempleo ($)', tipo: 'currency' },
-      art:            { label: 'ART ($)', tipo: 'currency' },
-      sindPatronal:   { label: 'Contrib. Sind. Pat. ($)', tipo: 'currency' },
-      mFCL:           { label: 'FCL UOCRA ($)', tipo: 'currency' },
-      mIeric:         { label: 'IERIC ($)', tipo: 'currency' },
-      totalContrib:   { label: 'Total Contribuciones ($)', tipo: 'currency' },
-      totalCosto:     { label: 'Costo Empresa Total ($)', tipo: 'currency' }
+      // ── PERÍODO ──
+      periodo:        { label: 'Período (YYYY-MM)', tipo: 'string', grupo: 'Período' },
+      tipo:           { label: 'Tipo (mensual/quincenal/SAC)', tipo: 'string', grupo: 'Período' },
+      estado:         { label: 'Estado liquidación', tipo: 'string', grupo: 'Período' },
+      anio:           { label: 'Año', tipo: 'number', grupo: 'Período', derivado: true },
+      mes:            { label: 'Mes', tipo: 'number', grupo: 'Período', derivado: true },
+
+      // ── EMPLEADO ──
+      leg:            { label: 'Legajo', tipo: 'string', grupo: 'Empleado' },
+      nom:            { label: 'Apellido y Nombre', tipo: 'string', grupo: 'Empleado' },
+      empresa:        { label: 'Empresa', tipo: 'string', grupo: 'Empleado' },
+      cat:            { label: 'Categoría', tipo: 'string', grupo: 'Empleado', derivado: true },
+      tramo:          { label: 'Tramo', tipo: 'string', grupo: 'Empleado', derivado: true },
+      diasTrab:       { label: 'Días trabajados', tipo: 'number', grupo: 'Empleado' },
+      ausentismo:     { label: 'Días ausentismo', tipo: 'number', grupo: 'Empleado' },
+      anios:          { label: 'Antigüedad (años)', tipo: 'number', grupo: 'Empleado' },
+
+      // ── HABERES REMUNERATIVOS ──
+      sueldoBasico:    { label: 'Sueldo Básico ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      mAntig:          { label: 'Antigüedad ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      mPres:           { label: 'Presentismo ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      mHsE50:          { label: 'Hs Extras 50% ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      mHsE100:         { label: 'Hs Extras 100% ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      mSac:            { label: 'SAC ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      mVac:            { label: 'Vacaciones ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      mAjuste:         { label: 'Ajuste haberes ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      mCumpObj:        { label: 'Cumpl. Objetivos ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      mLicEspeciales:  { label: 'Lic. Especiales ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      mOtrosHRem:      { label: 'Otros haberes Rem ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+      totalHaberesRem: { label: 'Total Remunerativo ($)', tipo: 'currency', grupo: 'Haberes Rem' },
+
+      // ── HABERES NO REMUNERATIVOS ──
+      mHsExtrasExentas:{ label: 'Hs Extras exentas ($)', tipo: 'currency', grupo: 'Haberes No Rem' },
+      mBonoExento:     { label: 'Bono exento ($)', tipo: 'currency', grupo: 'Haberes No Rem' },
+      mIndemniz:       { label: 'Indemnización ($)', tipo: 'currency', grupo: 'Haberes No Rem' },
+      mOtrosExentos:   { label: 'Otros exentos ($)', tipo: 'currency', grupo: 'Haberes No Rem' },
+      totalExentos:    { label: 'Total No Remunerativo ($)', tipo: 'currency', grupo: 'Haberes No Rem' },
+      totalHaberes:    { label: 'Total Haberes (Rem + Exentos) ($)', tipo: 'currency', grupo: 'Haberes No Rem' },
+
+      // ── DESCUENTOS Y APORTES ──
+      jubilacion:     { label: 'Aporte Jubilatorio ($)', tipo: 'currency', grupo: 'Descuentos' },
+      obraSocial:     { label: 'Aporte Obra Social ($)', tipo: 'currency', grupo: 'Descuentos' },
+      anssal:         { label: 'ANSSAL ($)', tipo: 'currency', grupo: 'Descuentos' },
+      pamiEmp:        { label: 'Aporte PAMI emp. ($)', tipo: 'currency', grupo: 'Descuentos' },
+      sindicato:      { label: 'Cuota sindical ($)', tipo: 'currency', grupo: 'Descuentos' },
+      ganancias:      { label: 'Retención Ganancias ($)', tipo: 'currency', grupo: 'Descuentos' },
+      embargo:        { label: 'Embargo Judicial ($)', tipo: 'currency', grupo: 'Descuentos' },
+      anticiposDesc:  { label: 'Descuento Anticipos ($)', tipo: 'currency', grupo: 'Descuentos' },
+      mDescSuspension:{ label: 'Descuento Suspensión ($)', tipo: 'currency', grupo: 'Descuentos' },
+      totalDescuentos:{ label: 'Total Descuentos ($)', tipo: 'currency', grupo: 'Descuentos' },
+      netoAPagar:     { label: 'NETO A PAGAR ($)', tipo: 'currency', grupo: 'Descuentos' },
+
+      // ── CONTRIBUCIONES PATRONALES ──
+      jubPatronal:    { label: 'Contrib. Jubilación ($)', tipo: 'currency', grupo: 'Contribuciones Patronales' },
+      osPatronal:     { label: 'Contrib. OS ($)', tipo: 'currency', grupo: 'Contribuciones Patronales' },
+      pamiPatronal:   { label: 'Contrib. PAMI ($)', tipo: 'currency', grupo: 'Contribuciones Patronales' },
+      desempleo:      { label: 'Fondo Desempleo ($)', tipo: 'currency', grupo: 'Contribuciones Patronales' },
+      art:            { label: 'ART ($)', tipo: 'currency', grupo: 'Contribuciones Patronales' },
+      sindPatronal:   { label: 'Contrib. Sind. Pat. ($)', tipo: 'currency', grupo: 'Contribuciones Patronales' },
+      totalContrib:   { label: 'Total Contribuciones ($)', tipo: 'currency', grupo: 'Contribuciones Patronales' },
+
+      // ── UOCRA Ley 22.250 ──
+      esRegimenUOCRA: { label: 'Es UOCRA Ley 22.250', tipo: 'bool', grupo: 'UOCRA' },
+      mFCL:           { label: 'FCL UOCRA ($)', tipo: 'currency', grupo: 'UOCRA' },
+      mIeric:         { label: 'IERIC ($)', tipo: 'currency', grupo: 'UOCRA' },
+      mFondoSanidad:  { label: 'Fondo Sanidad UOCRA ($)', tipo: 'currency', grupo: 'UOCRA' },
+      mCAR:           { label: 'CAR UOCRA ($)', tipo: 'currency', grupo: 'UOCRA' },
+      mCeslu:         { label: 'CESLU UOCRA ($)', tipo: 'currency', grupo: 'UOCRA' },
+
+      // ── TOTALES ──
+      totalCosto:     { label: 'Costo Empresa Total ($)', tipo: 'currency', grupo: 'Totales', derivado: true }
     },
     async getRows(){
       const liqs = (typeof getLiquidaciones === 'function') ? await getLiquidaciones() : [];
+      const nomina = (typeof getNomina === 'function') ? getNomina() : [];
       const filas = [];
       liqs.forEach(liq => {
+        const [yy, mm] = (liq.periodo || '').split('-').map(Number);
         (liq.items || []).forEach(i => {
+          const empleado = nomina.find(x => x.leg === i.leg);
+          const totalCosto = $m_safe(i.totalHaberes) + $m_safe(i.totalContrib);
           filas.push({
             periodo: liq.periodo,
             tipo: liq.tipo,
             estado: liq.estado,
+            anio: yy || null,
+            mes: mm || null,
+            cat: empleado?.cat || '',
+            tramo: empleado?.tramo || '',
+            empresa: i.emp || empleado?.emp || '',
+            totalCosto,
             ...i
           });
         });
@@ -308,33 +422,55 @@ const REPORTES_DATASETS = {
     label: 'Licencias',
     icon: '🏖️',
     color: 'rgb(94,194,255)',
-    desc: 'Vacaciones, licencias especiales LCT y por enfermedad / maternidad.',
+    desc: 'Vacaciones anuales, licencias especiales LCT, médicas y de maternidad.',
     campos: {
-      tipo_origen:  { label: 'Origen (anual/especial/médica)', tipo: 'string', derivado: true },
-      leg:          { label: 'Legajo', tipo: 'string' },
-      nom:          { label: 'Apellido y Nombre', tipo: 'string', derivado: true },
-      empresa:      { label: 'Empresa', tipo: 'string', derivado: true },
-      area:         { label: 'Área', tipo: 'string', derivado: true },
-      tipo:         { label: 'Tipo de licencia', tipo: 'string' },
-      desde:        { label: 'Desde', tipo: 'date' },
-      hasta:        { label: 'Hasta', tipo: 'date' },
-      dias:         { label: 'Días', tipo: 'number' },
-      estado:       { label: 'Estado', tipo: 'string' },
-      motivo:       { label: 'Motivo / observaciones', tipo: 'string' },
-      solicitado_el:{ label: 'Solicitado el', tipo: 'date' },
-      aprobado_por: { label: 'Aprobado por', tipo: 'string' }
+      // ── ORIGEN ──
+      tipo_origen:  { label: 'Origen (anual/especial/médica)', tipo: 'string', grupo: 'Origen', derivado: true },
+      estado:       { label: 'Estado', tipo: 'string', grupo: 'Origen' },
+
+      // ── EMPLEADO ──
+      leg:          { label: 'Legajo', tipo: 'string', grupo: 'Empleado' },
+      nom:          { label: 'Apellido y Nombre', tipo: 'string', grupo: 'Empleado', derivado: true },
+      empresa:      { label: 'Empresa', tipo: 'string', grupo: 'Empleado', derivado: true },
+      area:         { label: 'Área', tipo: 'string', grupo: 'Empleado', derivado: true },
+
+      // ── PERÍODO DE LA LICENCIA ──
+      tipo:         { label: 'Tipo de licencia', tipo: 'string', grupo: 'Período' },
+      desde:        { label: 'Desde', tipo: 'date', grupo: 'Período' },
+      hasta:        { label: 'Hasta', tipo: 'date', grupo: 'Período' },
+      dias:         { label: 'Días', tipo: 'number', grupo: 'Período' },
+      esta_vigente: { label: '¿Vigente hoy?', tipo: 'bool', grupo: 'Período', derivado: true },
+      ya_termino:   { label: '¿Ya terminó?', tipo: 'bool', grupo: 'Período', derivado: true },
+      dias_restantes:{ label: 'Días restantes', tipo: 'number', grupo: 'Período', derivado: true },
+
+      // ── ADMINISTRATIVO ──
+      motivo:       { label: 'Motivo / Observaciones', tipo: 'string', grupo: 'Administrativo' },
+      solicitado_el:{ label: 'Solicitado el', tipo: 'date', grupo: 'Administrativo' },
+      aprobado_por: { label: 'Aprobado por', tipo: 'string', grupo: 'Administrativo' }
     },
     async getRows(){
       const filas = [];
       const nomina = (typeof getNomina === 'function') ? getNomina() : [];
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
       const enrich = (l, origen) => {
         const e = nomina.find(x => x.leg === l.leg);
+        const desdeDate = _repParseFecha(l.desde);
+        const hastaDate = _repParseFecha(l.hasta);
+        const estaVigente = !!(desdeDate && hastaDate && hoy >= desdeDate && hoy <= hastaDate);
+        const yaTermino = !!(hastaDate && hoy > hastaDate);
+        const diasRestantes = (estaVigente && hastaDate) ? Math.ceil((hastaDate - hoy) / 86400000) :
+                              (desdeDate && hoy < desdeDate) ? Math.ceil((desdeDate - hoy) / 86400000) * -1 :
+                              null;
         return {
           ...l,
           tipo_origen: origen,
           nom: e?.nom || l.nom || '',
           empresa: e?.emp || l.empresa || '',
-          area: e?.area || l.area || ''
+          area: e?.area || l.area || '',
+          esta_vigente: estaVigente,
+          ya_termino: yaTermino,
+          dias_restantes: diasRestantes
         };
       };
       if(typeof getLicAnuales === 'function'){
@@ -356,25 +492,47 @@ const REPORTES_DATASETS = {
     color: 'rgb(239,68,68)',
     desc: 'Sanciones aplicadas: llamados de atención, suspensiones, despidos.',
     campos: {
-      id:           { label: 'ID', tipo: 'number' },
-      leg:          { label: 'Legajo', tipo: 'string' },
-      nom:          { label: 'Apellido y Nombre', tipo: 'string' },
-      empresa:      { label: 'Empresa', tipo: 'string', derivado: true },
-      tipo:         { label: 'Tipo (llamado/suspensión/despido)', tipo: 'string' },
-      dias:         { label: 'Días suspensión', tipo: 'number' },
-      fecha:        { label: 'Fecha aplicación', tipo: 'date' },
-      desde:        { label: 'Desde', tipo: 'date' },
-      hasta:        { label: 'Hasta', tipo: 'date' },
-      motivo:       { label: 'Motivo / hechos', tipo: 'string' },
-      aplicada_por: { label: 'Aplicada por', tipo: 'string' },
-      estado:       { label: 'Estado', tipo: 'string' }
+      // ── EMPLEADO ──
+      leg:          { label: 'Legajo', tipo: 'string', grupo: 'Empleado' },
+      nom:          { label: 'Apellido y Nombre', tipo: 'string', grupo: 'Empleado' },
+      empresa:      { label: 'Empresa', tipo: 'string', grupo: 'Empleado', derivado: true },
+      area:         { label: 'Área', tipo: 'string', grupo: 'Empleado', derivado: true },
+      cat:          { label: 'Categoría', tipo: 'string', grupo: 'Empleado', derivado: true },
+
+      // ── SANCIÓN ──
+      id:           { label: 'ID', tipo: 'number', grupo: 'Sanción' },
+      tipo:         { label: 'Tipo (llamado/suspensión/despido)', tipo: 'string', grupo: 'Sanción' },
+      dias:         { label: 'Días suspensión', tipo: 'number', grupo: 'Sanción' },
+      fecha:        { label: 'Fecha aplicación', tipo: 'date', grupo: 'Sanción' },
+      desde:        { label: 'Desde', tipo: 'date', grupo: 'Sanción' },
+      hasta:        { label: 'Hasta', tipo: 'date', grupo: 'Sanción' },
+      esta_vigente: { label: '¿Vigente hoy?', tipo: 'bool', grupo: 'Sanción', derivado: true },
+      antiguedad:   { label: 'Antigüedad sanción (días)', tipo: 'number', grupo: 'Sanción', derivado: true },
+
+      // ── ADMINISTRATIVO ──
+      motivo:       { label: 'Motivo / hechos', tipo: 'string', grupo: 'Administrativo' },
+      aplicada_por: { label: 'Aplicada por', tipo: 'string', grupo: 'Administrativo' },
+      estado:       { label: 'Estado', tipo: 'string', grupo: 'Administrativo' }
     },
     async getRows(){
       const sanc = (typeof getSanciones === 'function') ? getSanciones() : [];
       const nomina = (typeof getNomina === 'function') ? getNomina() : [];
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
       return sanc.map(s => {
         const e = nomina.find(x => x.leg === s.leg);
-        return { ...s, empresa: e?.emp || '' };
+        const desdeDate = _repParseFecha(s.desde || s.fecha);
+        const hastaDate = _repParseFecha(s.hasta);
+        const estaVigente = !!(desdeDate && hastaDate && hoy >= desdeDate && hoy <= hastaDate);
+        const fechaAp = _repParseFecha(s.fecha);
+        const antigDias = fechaAp ? Math.floor((hoy - fechaAp) / 86400000) : null;
+        return {
+          ...s,
+          empresa: e?.emp || '',
+          area: e?.area || '',
+          cat: e?.cat || '',
+          esta_vigente: estaVigente,
+          antiguedad: antigDias
+        };
       });
     }
   },
@@ -385,25 +543,44 @@ const REPORTES_DATASETS = {
     color: 'rgb(234,179,8)',
     desc: 'Solicitudes de anticipo: pendientes, aprobadas, rechazadas.',
     campos: {
-      id:            { label: 'ID', tipo: 'number' },
-      leg:           { label: 'Legajo', tipo: 'string' },
-      nom:           { label: 'Apellido y Nombre', tipo: 'string' },
-      empresa:       { label: 'Empresa', tipo: 'string', derivado: true },
-      monto:         { label: 'Monto solicitado ($)', tipo: 'currency' },
-      monto_aprobado:{ label: 'Monto aprobado ($)', tipo: 'currency' },
-      cuotas:        { label: 'Cuotas', tipo: 'number' },
-      motivo:        { label: 'Motivo', tipo: 'string' },
-      estado:        { label: 'Estado', tipo: 'string' },
-      fecha:         { label: 'Fecha solicitud', tipo: 'date' },
-      aprobado_el:   { label: 'Aprobado el', tipo: 'date' },
-      aprobado_por:  { label: 'Aprobado por', tipo: 'string' }
+      // ── EMPLEADO ──
+      leg:           { label: 'Legajo', tipo: 'string', grupo: 'Empleado' },
+      nom:           { label: 'Apellido y Nombre', tipo: 'string', grupo: 'Empleado' },
+      empresa:       { label: 'Empresa', tipo: 'string', grupo: 'Empleado', derivado: true },
+      area:          { label: 'Área', tipo: 'string', grupo: 'Empleado', derivado: true },
+
+      // ── SOLICITUD ──
+      id:            { label: 'ID', tipo: 'number', grupo: 'Solicitud' },
+      monto:         { label: 'Monto solicitado ($)', tipo: 'currency', grupo: 'Solicitud' },
+      monto_aprobado:{ label: 'Monto aprobado ($)', tipo: 'currency', grupo: 'Solicitud' },
+      cuotas:        { label: 'Cuotas', tipo: 'number', grupo: 'Solicitud' },
+      monto_cuota:   { label: 'Monto por cuota ($)', tipo: 'currency', grupo: 'Solicitud', derivado: true },
+      motivo:        { label: 'Motivo', tipo: 'string', grupo: 'Solicitud' },
+
+      // ── ESTADO ──
+      estado:        { label: 'Estado', tipo: 'string', grupo: 'Estado' },
+      fecha:         { label: 'Fecha solicitud', tipo: 'date', grupo: 'Estado' },
+      antiguedad_dias:{ label: 'Antigüedad solicitud (días)', tipo: 'number', grupo: 'Estado', derivado: true },
+      aprobado_el:   { label: 'Aprobado el', tipo: 'date', grupo: 'Estado' },
+      aprobado_por:  { label: 'Aprobado por', tipo: 'string', grupo: 'Estado' }
     },
     async getRows(){
       const sols = (typeof solicitudes !== 'undefined' && Array.isArray(solicitudes)) ? solicitudes : [];
       const nomina = (typeof getNomina === 'function') ? getNomina() : [];
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
       return sols.map(s => {
         const e = nomina.find(x => x.leg === s.leg);
-        return { ...s, empresa: e?.emp || s.empresa || '' };
+        const fechaSol = _repParseFecha(s.fecha);
+        const antigDias = fechaSol ? Math.floor((hoy - fechaSol) / 86400000) : null;
+        const cuotas = $m_safe(s.cuotas) || 1;
+        const montoEf = $m_safe(s.monto_aprobado) || $m_safe(s.monto);
+        return {
+          ...s,
+          empresa: e?.emp || s.empresa || '',
+          area: e?.area || '',
+          monto_cuota: cuotas > 0 ? +(montoEf / cuotas).toFixed(2) : 0,
+          antiguedad_dias: antigDias
+        };
       });
     }
   },
@@ -414,21 +591,41 @@ const REPORTES_DATASETS = {
     color: 'rgb(168,85,247)',
     desc: 'Eventos de auditoría: cambios, aprobaciones, accesos sensibles.',
     campos: {
-      ts:         { label: 'Timestamp', tipo: 'date' },
-      fecha:      { label: 'Fecha', tipo: 'string' },
-      hora:       { label: 'Hora', tipo: 'string' },
-      category:   { label: 'Categoría', tipo: 'string' },
-      action:     { label: 'Acción', tipo: 'string' },
-      by_nom:     { label: 'Ejecutó', tipo: 'string' },
-      target_nom: { label: 'Sobre', tipo: 'string' },
-      detail:     { label: 'Detalle', tipo: 'string', derivado: true }
+      // ── TIEMPO ──
+      ts:         { label: 'Timestamp', tipo: 'date', grupo: 'Tiempo' },
+      fecha:      { label: 'Fecha', tipo: 'string', grupo: 'Tiempo' },
+      hora:       { label: 'Hora', tipo: 'string', grupo: 'Tiempo' },
+      antiguedad: { label: 'Antigüedad evento (días)', tipo: 'number', grupo: 'Tiempo', derivado: true },
+      ultimos_30: { label: '¿Últimos 30 días?', tipo: 'bool', grupo: 'Tiempo', derivado: true },
+      ultimos_7:  { label: '¿Últimos 7 días?', tipo: 'bool', grupo: 'Tiempo', derivado: true },
+
+      // ── EVENTO ──
+      category:   { label: 'Categoría', tipo: 'string', grupo: 'Evento' },
+      action:     { label: 'Acción', tipo: 'string', grupo: 'Evento' },
+
+      // ── PERSONAS ──
+      by_nom:     { label: 'Ejecutó (nombre)', tipo: 'string', grupo: 'Personas' },
+      by_dni:     { label: 'Ejecutó (DNI)', tipo: 'string', grupo: 'Personas' },
+      target_nom: { label: 'Sobre (nombre)', tipo: 'string', grupo: 'Personas' },
+      target_dni: { label: 'Sobre (DNI)', tipo: 'string', grupo: 'Personas' },
+
+      // ── DETALLE ──
+      detail:     { label: 'Detalle', tipo: 'string', grupo: 'Detalle', derivado: true }
     },
     async getRows(){
       const log = (typeof getAuditLog === 'function') ? getAuditLog() : [];
-      return log.map(r => ({
-        ...r,
-        detail: r.detail ? (typeof r.detail === 'string' ? r.detail : JSON.stringify(r.detail).slice(0, 300)) : ''
-      }));
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+      return log.map(r => {
+        const tsDate = r.ts ? new Date(r.ts) : null;
+        const antigDias = tsDate ? Math.floor((hoy - tsDate) / 86400000) : null;
+        return {
+          ...r,
+          antiguedad: antigDias,
+          ultimos_30: antigDias != null && antigDias <= 30,
+          ultimos_7: antigDias != null && antigDias <= 7,
+          detail: r.detail ? (typeof r.detail === 'string' ? r.detail : JSON.stringify(r.detail).slice(0, 300)) : ''
+        };
+      });
     }
   }
 };
