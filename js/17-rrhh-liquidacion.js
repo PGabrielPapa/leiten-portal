@@ -802,7 +802,89 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
                         + mPreaviso + mSacProporcional;
 
   // TOTAL HABERES = remunerativos + no remunerativos exentos (lo que cobra el empleado)
-  const totalHaberes = totalHaberesRem + totalExentos;
+  let totalHaberes = totalHaberesRem + totalExentos;
+
+  // ═══════════════════════════════════════════════════════════════
+  //   CONCEPTOS CUSTOM (definidos por RR.HH./Admin desde el panel)
+  //   Se aplican antes del cálculo de aportes para que los flags de
+  //   imponibilidad de cada concepto afecten correctamente la base.
+  //   Solo se aplican los conceptos en estado 'activo'.
+  // ═══════════════════════════════════════════════════════════════
+  const _ccItems = [];
+  let _ccTotalRem = 0, _ccTotalNoRem = 0, _ccTotalDesc = 0, _ccTotalAporte = 0, _ccTotalContribPat = 0;
+  let _ccBaseImpJub = 0, _ccBaseImpOS = 0, _ccBaseImpGan = 0, _ccBaseImpFCL = 0, _ccBaseEmbargable = 0, _ccBaseSAC = 0;
+
+  const _ccCacheLocal = (typeof _conceptosCustomCache !== 'undefined') ? _conceptosCustomCache : [];
+  if(_ccCacheLocal.length && typeof evaluarFormula === 'function'){
+    // Contexto de cálculo para los conceptos custom (variables disponibles en fórmulas)
+    const ctxConceptos = {
+      sueldoBasico, mAntig, mPres, mHsE50, mHsE100, mSac, mVac, mAjuste, mCumpObj,
+      totalHaberesRem, totalExentos, totalHaberes,
+      diasTrab, ausentismo, anios,
+      jubilacion: 0, obraSocial: 0, pamiEmp: 0, anssal: 0, sindicato: 0,  // se completan después
+      ganancias: 0, embargo: 0, anticiposDesc: 0
+    };
+    // Mapa de montos manuales cargados en la novedad
+    // nov.conceptosCustomManuales = [{ codigo, monto }]
+    const _ccManualesPorCodigo = {};
+    if(Array.isArray(nov.conceptosCustomManuales)){
+      nov.conceptosCustomManuales.forEach(m => {
+        if(m && m.codigo) _ccManualesPorCodigo[String(m.codigo).toUpperCase()] = $m(m.monto);
+      });
+    }
+
+    for(const concepto of _ccCacheLocal){
+      let monto = 0;
+      const esManual = (typeof _ccEsTipoManual === 'function') ? _ccEsTipoManual(concepto.tipo) : false;
+
+      if(esManual){
+        // Tipos MANUAL: el monto NO se calcula con fórmula, viene de la novedad
+        const cargado = _ccManualesPorCodigo[String(concepto.codigo).toUpperCase()];
+        if(cargado != null) monto = cargado;
+      } else {
+        // Tipos con fórmula
+        try { monto = evaluarFormula(concepto.formula, ctxConceptos); }
+        catch(e){ console.warn('Error evaluando concepto', concepto.codigo, e); monto = 0; }
+      }
+      monto = Math.round(monto * 100) / 100;  // redondeo a centavos
+      if(!monto || isNaN(monto)) continue;
+
+      const itemConcepto = { codigo: concepto.codigo, nombre: concepto.nombre, tipo: concepto.tipo, monto, concepto, esManual };
+      _ccItems.push(itemConcepto);
+
+      // Acumular según tipo (los manuales se asimilan a su tipo base)
+      const tipoEfectivo = concepto.tipo === 'REM_MANUAL' ? 'REM' :
+                           concepto.tipo === 'NO_REM_MANUAL' ? 'NO_REM' :
+                           concepto.tipo === 'DESCUENTO_MANUAL' ? 'DESCUENTO' :
+                           concepto.tipo;
+
+      if(tipoEfectivo === 'REM'){
+        _ccTotalRem += monto;
+        if(concepto.imponibleJub) _ccBaseImpJub += monto;
+        if(concepto.imponibleOS)  _ccBaseImpOS  += monto;
+        if(concepto.imponibleGanancias) _ccBaseImpGan += monto;
+        if(concepto.imponibleFCL) _ccBaseImpFCL += monto;
+        if(concepto.embargable)   _ccBaseEmbargable += monto;
+        if(concepto.habitualSAC)  _ccBaseSAC += monto;
+      } else if(tipoEfectivo === 'NO_REM'){
+        _ccTotalNoRem += monto;
+        if(concepto.imponibleGanancias) _ccBaseImpGan += monto;
+      } else if(tipoEfectivo === 'DESCUENTO'){
+        _ccTotalDesc += monto;
+      } else if(tipoEfectivo === 'APORTE'){
+        _ccTotalAporte += monto;
+      } else if(tipoEfectivo === 'CONTRIBUCION_PATRONAL'){
+        _ccTotalContribPat += monto;
+      }
+    }
+    // Las bases imponibles del REM custom se suman a las del motor
+    // pero respetando los flags individuales de cada concepto.
+    totalHaberes += _ccTotalRem + _ccTotalNoRem;
+  }
+
+  // Total remunerativo final (incluye custom REM)
+  const totalHaberesRemFinal = totalHaberesRem + _ccTotalRem;
+  const totalExentosFinal    = totalExentos + _ccTotalNoRem;
 
   // ═══════════════════════════════════════════════════════════════
   //   TOPES DE APORTES — Art. 9 Ley 24.241 (SIPA)
@@ -911,7 +993,7 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const otrosD=(nov.otrosDescuentos||[]);
   const mOtrosD=otrosD.reduce((s,d)=>s+$m(d.monto),0);
 
-  const totalDescuentos=jubilacion+obraSocial+anssal+pamiEmp+sindicato+ganancias+embargo+anticiposDesc+mOtrosD+mDescSuspension;
+  const totalDescuentos=jubilacion+obraSocial+anssal+pamiEmp+sindicato+ganancias+embargo+anticiposDesc+mOtrosD+mDescSuspension+_ccTotalDesc+_ccTotalAporte;
   const netoAPagar=Math.max(0,totalHaberes-totalDescuentos);
 
   // ─ Contribuciones patronales (sin tope máximo — Ley 26.417) ─
@@ -942,7 +1024,7 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const totalContribUOCRA = mFCL + mIeric + mFondoSanidad + mCAR + mCeslu;
 
   // El total de contribuciones patronales incluye las del régimen UOCRA si aplica
-  const totalContrib=jubPatronal+osPatronal+pamiPatronal+desempleo+art+sindPatronal+totalContribUOCRA;
+  const totalContrib=jubPatronal+osPatronal+pamiPatronal+desempleo+art+sindPatronal+totalContribUOCRA+_ccTotalContribPat;
 
   return {
     leg:emp.leg, nom:emp.nom, empresa:emp.emp, lugar:emp.lugar||'', cuil:emp.cuil||'',
@@ -966,8 +1048,21 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
     suspensionesAplicadas: nov.suspensionesAplicadas || [],
     mAjuste, mOtrosH, otrosH,
     // Conceptos exentos de ganancias (NO remunerativos)
-    mHsExtrasExentas, mBonoExento, mIndemniz, mOtrosExentos, totalExentos,
-    totalHaberesRem, totalHaberes,
+    mHsExtrasExentas, mBonoExento, mIndemniz, mOtrosExentos,
+    // Totales finales (incluyen conceptos custom)
+    totalExentos: totalExentosFinal,
+    totalHaberesRem: totalHaberesRemFinal,
+    totalHaberes,
+    // Trazabilidad: totales sin conceptos custom (para auditoría)
+    totalHaberesRemBase: totalHaberesRem,
+    totalExentosBase: totalExentos,
+    // Conceptos custom aplicados
+    conceptosCustom: _ccItems,
+    ccTotalRem: _ccTotalRem,
+    ccTotalNoRem: _ccTotalNoRem,
+    ccTotalDesc: _ccTotalDesc,
+    ccTotalAporte: _ccTotalAporte,
+    ccTotalContribPat: _ccTotalContribPat,
     // Topes Art. 9 Ley 24241
     topeMinAportes: topeMin, topeMaxAportes: topeMax,
     baseSueldoAportes, baseSacAportes, baseAportes,
@@ -1014,6 +1109,18 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
 
 // ── Tab switcher ─────────────────────────────────────────────────
 let _liqActiva = null;
+
+// Cache de conceptos custom activos — se refresca en cada cálculo de preview
+// para garantizar que cambios aprobados se apliquen sin necesidad de F5.
+let _conceptosCustomCache = [];
+async function _refreshConceptosCustomCache(){
+  if(typeof getConceptosCustomActivos === 'function'){
+    try { _conceptosCustomCache = await getConceptosCustomActivos(); }
+    catch(_){ _conceptosCustomCache = []; }
+  } else {
+    _conceptosCustomCache = [];
+  }
+}
 function liqTab(tab){
   ['periodos','novedades','preview','recibos','reportes','params'].forEach(t=>{
     const p=document.getElementById('liq-pane-'+t);
@@ -1371,9 +1478,14 @@ async function renderNovedades(){
       const _badgePlus = (_cntPlus + _cntDesc) > 0
         ? `<span title="${_cntPlus} plus / ${_cntDesc} desc." style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(168,85,247,.1);color:rgb(168,85,247);border:1px solid rgba(168,85,247,.3);margin-left:4px;cursor:pointer" onclick="abrirPlusDescuentos('${e.leg}','${e.nom.replace(/'/g,"\\'")}')">⚙ ${_cntPlus+_cntDesc}</span>`
         : `<span title="Agregar plus o descuentos categorizados" style="font-size:9px;padding:1px 6px;border-radius:8px;background:var(--bg2);color:var(--t3);border:1px solid var(--border);margin-left:4px;cursor:pointer" onclick="abrirPlusDescuentos('${e.leg}','${e.nom.replace(/'/g,"\\'")}')">+ plus</span>`;
+      // Conceptos custom MANUALES cargados
+      const _cntManual = (nov.conceptosCustomManuales||[]).length;
+      const _badgeManual = _cntManual > 0
+        ? `<span title="${_cntManual} concepto${_cntManual!==1?'s':''} manual${_cntManual!==1?'es':''}" style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(168,85,247,.1);color:rgb(168,85,247);border:1px solid rgba(168,85,247,.3);margin-left:4px;cursor:pointer" onclick="abrirCargaManualConceptos('${e.leg}')">✍️ ${_cntManual}</span>`
+        : `<span title="Cargar concepto manual" style="font-size:9px;padding:1px 6px;border-radius:8px;background:var(--bg2);color:var(--t3);border:1px solid var(--border);margin-left:4px;cursor:pointer" onclick="abrirCargaManualConceptos('${e.leg}')">✍️</span>`;
       return `<tr>
         <td style="${tdStyle}">
-          <div style="font-size:12px;font-weight:500;color:var(--t1)">${e.nom.split(',')[0]}${_badgeAlta}${_btnLiqFinal}${_badgePlus}</div>
+          <div style="font-size:12px;font-weight:500;color:var(--t1)">${e.nom.split(',')[0]}${_badgeAlta}${_btnLiqFinal}${_badgePlus}${_badgeManual}</div>
           <div style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">${e.leg} · ${e.emp}</div>
         </td>
         <td style="${tdStyle}">${inp('diasTrabajados',nov.diasTrabajados??Math.max(0,habiles-diasLic-diasSusp),55)}</td>
@@ -3119,6 +3231,14 @@ async function calcularYRenderPreview(){
   });
   nomina.sort((a,b)=>a.nom.localeCompare(b.nom));
 
+  // Refrescar cache de conceptos custom antes del cálculo masivo
+  await _refreshConceptosCustomCache();
+  // Si la liq estaba marcada como pendiente de recálculo, limpiamos el flag
+  if(liq._recalculoPendiente){
+    liq._recalculoPendienteResuelto = liq._recalculoPendiente;
+    delete liq._recalculoPendiente;
+  }
+
   const items=[];
   for(const emp of nomina){
     const nov=_novedadesActuales[emp.leg]||{};
@@ -3872,6 +3992,25 @@ function buildConceptRows(item, params){
     );
   }
   (item.otrosD||[]).forEach(function(d){ pR(d.concepto||'Otros descuentos', d.cod||9901, '', d.monto); });
+
+  // ─── Conceptos custom (definidos por RRHH/Admin) ─────────────────────
+  // Se ubican según seccionRecibo: haberes, descuentos o exentos.
+  // Código de visualización 9000+ para diferenciarlos de los estándar.
+  (item.conceptosCustom || []).forEach(function(cc){
+    const codigoVis = 9000 + (parseInt(cc.codigo.replace(/\D/g,''),10) || 0) % 999;
+    const desc = cc.nombre || cc.codigo;
+    if(cc.concepto?.seccionRecibo === 'descuentos' || cc.tipo === 'DESCUENTO' || cc.tipo === 'APORTE'){
+      pR(desc, codigoVis, '', cc.monto);
+    } else if(cc.concepto?.seccionRecibo === 'exentos' || cc.tipo === 'NO_REM'){
+      pA(desc, codigoVis, cc.monto);
+    } else {
+      // default: haberes (REM y CONTRIBUCION_PATRONAL)
+      // Las contribuciones patronales NO van al recibo del empleado pero sí dejamos el código preparado
+      if(cc.tipo !== 'CONTRIBUCION_PATRONAL'){
+        pH(desc, codigoVis, '', cc.monto);
+      }
+    }
+  });
 
   return R;
 }

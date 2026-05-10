@@ -709,6 +709,15 @@
             </div>
           </div>
 
+          <div class="card home-card" onclick="navRRHH('conceptos-custom')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">⚙</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Conceptos Custom</div>
+              <div style="font-size:11px;color:var(--t3)">Definición de conceptos de nómina con fórmulas editables</div>
+            </div>
+            <span id="rrhh-badge-cc-pendientes" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--yellow);border:1px solid rgba(234,179,8,.3);padding:2px 8px;border-radius:10px"></span>
+          </div>
+
           <div class="card home-card" onclick="navRRHH('simulacion')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(251,168,52,.08);border:1px solid rgba(251,168,52,.25);display:flex;align-items:center;justify-content:center;font-size:24px">🧮</div>
             <div>
@@ -1455,6 +1464,7 @@
               <input type="text" id="liq-nov-search" placeholder="Buscar empleado..." oninput="filtrarNov()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;color:var(--t1);font-size:12px;outline:none;width:200px">
               <button class="btn btn-ghost" onclick="abrirImportarSiradig()" style="font-size:12px;padding:6px 14px;color:rgb(168,85,247);border-color:rgba(168,85,247,.3)">📥 Importar SIRADIG</button>
               <button class="btn btn-ghost" onclick="abrirImportCumplObjetivos()" style="font-size:12px;padding:6px 14px;color:var(--green);border-color:rgba(34,197,94,.3)" title="Importar bulk de cumplimiento de objetivos desde CSV">🎯 Importar Cumpl. Obj.</button>
+              <button class="btn btn-ghost" onclick="abrirImportConceptosManuales()" style="font-size:12px;padding:6px 14px;color:rgb(168,85,247);border-color:rgba(168,85,247,.3)" title="Importar montos de conceptos manuales (legajo, codigo, monto)">✍️ Importar Conceptos Manuales</button>
               <button class="btn btn-primary" onclick="irAPreview()" style="font-size:12px;padding:6px 14px">Calcular →</button>
             </div>
           </div>
@@ -1845,6 +1855,13 @@
         <button onclick="navRRHH(null)" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--t2);font-size:12px;cursor:pointer;padding:6px 14px;margin-bottom:18px;font-family:var(--font-mono);transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--t2)'">← Volver al panel</button>
         <div style="font-size:12px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Sanciones disciplinarias · Solicitudes y aplicación</div>
         <div id="sanciones-content"></div>
+      </div>
+
+<!-- Conceptos custom -->
+      <div id="rrhh-sub-conceptos-custom" style="display:none">
+        <button onclick="navRRHH(null)" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--t2);font-size:12px;cursor:pointer;padding:6px 14px;margin-bottom:18px;font-family:var(--font-mono);transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--t2)'">← Volver al panel</button>
+        <div style="font-size:12px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Conceptos Custom · Definición de fórmulas de nómina</div>
+        <div id="panel-conceptos-custom" style="display:block"></div>
       </div>
 
 <!-- Mensajes -->
@@ -2380,5 +2397,8 @@
 <script src="js/38-libro-sueldos.js"></script>
 <script src="js/39-asiento-contable.js"></script>
 <script src="js/40-uocra.js"></script>
+<script src="js/41-conceptos-custom.js"></script>
+<script src="js/42-conceptos-custom-ui.js"></script>
+<script src="js/43-conceptos-manuales-carga.js"></script>
 </body>
 </html>

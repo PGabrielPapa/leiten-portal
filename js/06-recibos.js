@@ -24,7 +24,7 @@ async function inicializarCumpleanos(){
 let _reciboActual = null; // { key, nom, periodo, data }
 
 // ─── INDEXEDDB (recibos + readlog) ───
-const IDB_NAME = 'lsg_db', IDB_VER = 13;
+const IDB_NAME = 'lsg_db', IDB_VER = 14;
 let _idb = null;
 
 function abrirIDB(){
@@ -72,6 +72,12 @@ function abrirIDB(){
       if(!db.objectStoreNames.contains('empresas_abm')){
         const st = db.createObjectStore('empresas_abm', {keyPath:'id', autoIncrement:true});
         st.createIndex('nombre', 'nombre', {unique:true});
+      }
+      if(!db.objectStoreNames.contains('conceptos_custom')){
+        const st = db.createObjectStore('conceptos_custom', {keyPath:'id', autoIncrement:true});
+        st.createIndex('codigo', 'codigo', {unique:true});
+        st.createIndex('estado', 'estado', {unique:false});
+        st.createIndex('tipo', 'tipo', {unique:false});
       }
     };
     req.onsuccess = e=>{

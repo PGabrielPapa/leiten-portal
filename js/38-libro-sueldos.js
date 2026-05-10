@@ -282,6 +282,33 @@ function _lsdGenerarF901(liq, items, empresaCUIT){
     if($m(item.mOtrosD) > 0){
       filaConcepto('otrosDesc', -$m(item.mOtrosD), null);
     }
+
+    // ── Conceptos custom (definidos por RRHH/Admin) ──
+    // Cada concepto custom emite una línea propia con su lsdCodigo configurado.
+    // Si el código está vacío, se usa el genérico (110 rem / 210 no rem / 310 desc).
+    (item.conceptosCustom || []).forEach(cc => {
+      if(!cc || !cc.monto) return;
+      const codAFIP = (cc.concepto?.lsdCodigo || '').trim() || (
+        cc.tipo === 'REM' ? '110' :
+        cc.tipo === 'NO_REM' ? '210' : '310'
+      );
+      const tipoLetra = (cc.tipo === 'REM') ? 'R' :
+                        (cc.tipo === 'NO_REM') ? 'N' :
+                        (cc.tipo === 'CONTRIBUCION_PATRONAL') ? 'C' : 'D';
+      // Para descuentos/aportes el monto va negativo
+      const signo = (cc.tipo === 'DESCUENTO' || cc.tipo === 'APORTE') ? -1 : 1;
+      const monto = signo * cc.monto;
+      const linea =
+        _lsdPad(cuit, 11, '0', true) +
+        periodo +
+        cuil +
+        _lsdPad(codAFIP, 3, '0', true) +
+        _lsdPad(_lsdSinAcentos(cc.nombre || cc.codigo), 50, ' ') +
+        tipoLetra +
+        _lsdPad('0.00', 8, ' ', true) +
+        _lsdImporteCentavos(monto, 15);
+      lineas.push(linea);
+    });
   });
 
   return lineas.join('\r\n');

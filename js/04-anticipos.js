@@ -495,7 +495,7 @@ function renderPendientes(){
 }
 
 // ─── PANEL RR.HH. — NAVEGACIÓN POR SECCIONES ───
-const RRHH_SUBS = ['solicitudes','recibos','ganancias','contraseñas','delegacion','exportar','licencias','domicilios','mensajes','repositorio','abm','empresas','lic-anuales','lic-especiales','liquidacion','simulacion','evaluaciones','escala','sindicatos','hys','familiares','sanciones'];
+const RRHH_SUBS = ['solicitudes','recibos','ganancias','contraseñas','delegacion','exportar','licencias','domicilios','mensajes','repositorio','abm','empresas','lic-anuales','lic-especiales','liquidacion','simulacion','evaluaciones','escala','sindicatos','hys','familiares','sanciones','conceptos-custom'];
 
 function navRRHH(sub){
   if(currentUser?.role !== 'rrhh'){ mostrarAccesoNoAutorizado(); return; }
@@ -525,6 +525,7 @@ function navRRHH(sub){
   if(sub==='hys'){ renderHysPanel(); }
   if(sub==='familiares'){ renderFamiliaresPanel(); }
   if(sub==='sanciones'){ renderSancionesPanelRRHH(); }
+  if(sub==='conceptos-custom'){ abrirPanelConceptosCustom(); }
 }
 
 function renderDelegacionSub(){

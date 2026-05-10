@@ -237,6 +237,76 @@ function buildAsientoContable(liq){
     pushLinea('carAPagar',          mCAR,           `${glosaLiq} — CAR UOCRA`);
     pushLinea('cesluAPagar',        mCeslu,         `${glosaLiq} — CESLU`);
 
+    // ── Conceptos custom — cuenta contable dinámica por concepto ──
+    // Cada concepto custom puede declarar su propia cuenta contable. Si la
+    // declara, generamos una línea (debe o haber según tipo). Si no declara
+    // cuenta, lo agrupamos en una cuenta genérica para no perder el balance.
+    items.forEach(it => {
+      (it.conceptosCustom || []).forEach(cc => {
+        if(!cc.monto) return;
+        const cuentaCod = (cc.concepto?.cuentaContable || '').trim();
+        const esDebito  = (cc.tipo === 'REM' || cc.tipo === 'NO_REM' || cc.tipo === 'CONTRIBUCION_PATRONAL');
+        const esCredito = (cc.tipo === 'DESCUENTO' || cc.tipo === 'APORTE');
+        // Cuenta default si no definió
+        const codFinal = cuentaCod || (
+          cc.tipo === 'REM' ? '6.1.1.099' :
+          cc.tipo === 'NO_REM' ? '6.1.1.098' :
+          cc.tipo === 'CONTRIBUCION_PATRONAL' ? '6.1.1.097' :
+          cc.tipo === 'APORTE' ? '2.1.1.099' :
+          '2.1.1.098'  // DESCUENTO
+        );
+        // Empujamos línea agregada: una sola por concepto+empresa
+        // (pero como estamos dentro del forEach por item, agregamos por empleado).
+        // Acumulamos en un mapa para sumar por código:
+      });
+    });
+    // En lugar de una línea por empleado por concepto custom (explosión de líneas),
+    // sumamos por (codigo concepto custom) y emitimos UNA línea agregada por concepto.
+    const _ccAgregado = {};  // { codigoConcepto: { cuentaCod, nombre, tipo, monto } }
+    items.forEach(it => {
+      (it.conceptosCustom || []).forEach(cc => {
+        if(!cc.monto) return;
+        const k = cc.codigo;
+        if(!_ccAgregado[k]){
+          _ccAgregado[k] = {
+            cuentaCod: (cc.concepto?.cuentaContable || '').trim() || (
+              cc.tipo === 'REM' ? '6.1.1.099' :
+              cc.tipo === 'NO_REM' ? '6.1.1.098' :
+              cc.tipo === 'CONTRIBUCION_PATRONAL' ? '6.1.1.097' :
+              cc.tipo === 'APORTE' ? '2.1.1.099' :
+              '2.1.1.098'
+            ),
+            nombre: cc.nombre || cc.codigo, tipo: cc.tipo, monto: 0
+          };
+        }
+        _ccAgregado[k].monto += cc.monto;
+      });
+    });
+    Object.entries(_ccAgregado).forEach(([codigo, agg]) => {
+      const esDebe = (agg.tipo === 'REM' || agg.tipo === 'NO_REM' || agg.tipo === 'CONTRIBUCION_PATRONAL');
+      // Línea de DEBE (gasto) si REM/NoRem/Contrib
+      if(esDebe){
+        g.lineas.push({
+          cod: agg.cuentaCod, cuenta: agg.nombre,
+          debe: +agg.monto.toFixed(2), haber: 0,
+          glosa: `${glosaLiq} — concepto custom ${codigo}`
+        });
+        g.totales.D += agg.monto;
+      } else {
+        // DESCUENTO / APORTE → crédito (pasivo a pagar)
+        g.lineas.push({
+          cod: agg.cuentaCod, cuenta: agg.nombre,
+          debe: 0, haber: +agg.monto.toFixed(2),
+          glosa: `${glosaLiq} — concepto custom ${codigo}`
+        });
+        g.totales.C += agg.monto;
+      }
+    });
+    // Para que los REM custom queden balanceados, los pagos al empleado ya
+    // incluyen el monto en `netoAPagar` (que se computa con totalHaberes
+    // post-custom). Lo mismo para descuentos. Por lo tanto no hace falta
+    // sumar contrapartida adicional acá.
+
     // Verificación de balance — débitos deben igualar créditos.
     g.totales.dif = +(g.totales.D - g.totales.C).toFixed(2);
   });

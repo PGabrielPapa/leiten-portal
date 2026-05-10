@@ -107,9 +107,32 @@ function _f931SituacionItem(item){
 
 function _f931Bases(item, params){
   // Total remunerativo del período (incluye el SAC si lo hubiera)
-  const R1 = $m(item.totalHaberesRem);
-  // Topes AFIP — se toman del catálogo de parámetros si están cargados.
-  // Si no, sin tope. Estos topes los publica AFIP mensualmente.
+  let R1 = $m(item.totalHaberesRem);
+  let R6 = $m(item.totalExentos);
+  let R7 = $m(item.mHsExtrasExentas) + $m(item.mBonoExento);
+  let R8 = 0;
+
+  // Re-mapeo de conceptos custom a casilleros AFIP específicos.
+  // Por defecto: REM va a R1, NO_REM va a R6. Si el concepto define
+  // f931Casillero distinto, se sustrae del default y se suma al casillero
+  // específico (ej: una hora extra exenta nueva → se quita de R6 y va a R7).
+  (item.conceptosCustom || []).forEach(cc => {
+    const cas = cc.concepto?.f931Casillero;
+    if(!cas) return;
+    if(cc.tipo === 'REM' && cas !== 'R1'){
+      R1 -= cc.monto;
+      if(cas === 'R6') R6 += cc.monto;
+      else if(cas === 'R7') R7 += cc.monto;
+      else if(cas === 'R8') R8 += cc.monto;
+    } else if(cc.tipo === 'NO_REM' && cas !== 'R6'){
+      R6 -= cc.monto;
+      if(cas === 'R7') R7 += cc.monto;
+      else if(cas === 'R8') R8 += cc.monto;
+      else if(cas === 'R1') R1 += cc.monto;
+    }
+  });
+
+  // Topes AFIP
   const topeJubilacion = $m(params?.f931TopeJub) || 0;
   const topeObraSocial = $m(params?.f931TopeOS)  || 0;
 
@@ -120,13 +143,7 @@ function _f931Bases(item, params){
   // Base imponible 3 (obra social) con tope propio
   const R4 = topeObraSocial > 0 ? Math.min(R1, topeObraSocial) : R1;
   // Base imponible 4 (régimen diferencial) — solo aplica si la condición es insalubre
-  const R5 = 0;  // En esta implementación simplificada no se discrimina régimen diferencial
-  // No remunerativo
-  const R6 = $m(item.totalExentos);
-  // Adicionales — bono productivo, horas extras
-  const R7 = $m(item.mHsExtrasExentas) + $m(item.mBonoExento);
-  // Maternidad — no contemplado en esta versión (requiere flag separado)
-  const R8 = 0;
+  const R5 = 0;
   // Base ART — total rem. (sin tope)
   const R9 = R1;
 
