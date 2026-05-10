@@ -718,6 +718,14 @@
             <span id="rrhh-badge-cc-pendientes" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--yellow);border:1px solid rgba(234,179,8,.3);padding:2px 8px;border-radius:10px"></span>
           </div>
 
+          <div class="card home-card" onclick="navRRHH('reportes')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(94,194,255,.08);border:1px solid rgba(94,194,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📈</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Generador de Reportes</div>
+              <div style="font-size:11px;color:var(--t3)">Reportes a medida de empleados, nómina, liquidaciones, licencias…</div>
+            </div>
+          </div>
+
           <div class="card home-card" onclick="navRRHH('simulacion')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(251,168,52,.08);border:1px solid rgba(251,168,52,.25);display:flex;align-items:center;justify-content:center;font-size:24px">🧮</div>
             <div>
@@ -1864,6 +1872,13 @@
         <div id="panel-conceptos-custom" style="display:block"></div>
       </div>
 
+<!-- Generador de reportes -->
+      <div id="rrhh-sub-reportes" style="display:none">
+        <button onclick="navRRHH(null)" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--t2);font-size:12px;cursor:pointer;padding:6px 14px;margin-bottom:18px;font-family:var(--font-mono);transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--t2)'">← Volver al panel</button>
+        <div style="font-size:12px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Generador de Reportes</div>
+        <div id="panel-generador-reportes" style="display:block"></div>
+      </div>
+
 <!-- Mensajes -->
       <div id="rrhh-sub-mensajes" style="display:none">
         <button onclick="navRRHH(null)" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--t2);font-size:12px;cursor:pointer;padding:6px 14px;margin-bottom:18px;font-family:var(--font-mono);transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--t2)'">← Volver al panel</button>
@@ -2409,5 +2424,6 @@
 <script src="js/44-conceptos-plantillas.js"></script>
 <script src="js/45-conceptos-reporte-uso.js"></script>
 <script src="js/46-plan-cuentas-editor.js"></script>
+<script src="js/47-generador-reportes.js"></script>
 </body>
 </html>
