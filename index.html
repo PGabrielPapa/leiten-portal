@@ -2324,6 +2324,12 @@
           <textarea id="msg-texto" maxlength="500" rows="5" placeholder="Escribí tu consulta o mensaje..." oninput="document.getElementById('msg-counter').textContent=this.value.length+' / 500'"
             style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;color:var(--t1);font-size:13px;outline:none;width:100%;resize:vertical;font-family:inherit"></textarea>
         </div>
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;cursor:pointer;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2);font-size:11px;color:var(--t2);margin-top:8px">
+          <input type="checkbox" id="msg-delete-after-read" style="cursor:pointer;accent-color:var(--accent);margin-top:2px">
+          <span>
+            <strong style="color:var(--t1)">🔒 Borrar después de leer</strong> — el mensaje se elimina automáticamente cuando RR.HH. lo lea. Útil para temas sensibles. Queda registro en auditoría (autor + horario) pero sin el contenido completo.
+          </span>
+        </label>
         <div class="btn-row" style="justify-content:flex-end;margin-top:8px">
           <button class="btn btn-primary" onclick="enviarMensajeRRHH()">↑ Enviar mensaje</button>
         </div>
@@ -2400,5 +2406,8 @@
 <script src="js/41-conceptos-custom.js"></script>
 <script src="js/42-conceptos-custom-ui.js"></script>
 <script src="js/43-conceptos-manuales-carga.js"></script>
+<script src="js/44-conceptos-plantillas.js"></script>
+<script src="js/45-conceptos-reporte-uso.js"></script>
+<script src="js/46-plan-cuentas-editor.js"></script>
 </body>
 </html>

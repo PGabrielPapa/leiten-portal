@@ -20,6 +20,27 @@ async function marcarMensajeLeido(id){
   const todos=await getMensajes();
   const m=todos.find(x=>x.id===id); if(!m||m.estado==='leido') return;
   m.estado='leido';
+  m.leidoEl = new Date().toISOString();
+  m.leidoPor = currentUser?.emp?.nom || null;
+
+  // Si tiene deleteAfterRead, lo borramos en lugar de actualizarlo.
+  // Antes registramos la auditoría para conservar trazabilidad.
+  if(m.deleteAfterRead){
+    if(typeof logAuditX === 'function'){
+      logAuditX('mensajes','auto_delete_post_read', {
+        id: m.id, autor: m.nom, leg: m.leg,
+        textoPreview: (m.texto||'').slice(0, 80),
+        leidoPor: m.leidoPor
+      });
+    }
+    await new Promise((res,rej)=>{
+      const tx=db.transaction('mensajes','readwrite');
+      const req=tx.objectStore('mensajes').delete(id);
+      req.onsuccess=()=>res(); req.onerror=e=>rej(e.target.error);
+    });
+    return;
+  }
+
   await new Promise((res,rej)=>{
     const tx=db.transaction('mensajes','readwrite');
     const req=tx.objectStore('mensajes').put(m);
@@ -33,6 +54,7 @@ async function enviarMensajeRRHH(){
   if(!texto){ toast('⚠ Escribí un mensaje','var(--yellow)'); return; }
   if(texto.length>500){ toast('⚠ El mensaje no puede superar los 500 caracteres','var(--yellow)'); return; }
   const emp = currentUser.emp;
+  const deleteAfterRead = !!document.getElementById('msg-delete-after-read')?.checked;
   const btn = document.querySelector('#msg-form-card .btn-primary');
   btn.disabled=true; btn.textContent='Enviando...';
   await addMensaje({
@@ -40,6 +62,7 @@ async function enviarMensajeRRHH(){
     area: getValidador(emp)?.area||'', lugar:emp.lugar||'',
     texto,
     estado:'nuevo',
+    deleteAfterRead,  // si true, RRHH lee y se borra automáticamente
     fecha: new Date().toLocaleDateString('es-AR'),
     hora:  new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
   });
@@ -53,6 +76,8 @@ async function enviarMensajeRRHH(){
 
 function nuevoMensaje(){
   document.getElementById('msg-form-card').style.display='block';
+  const ck = document.getElementById('msg-delete-after-read');
+  if(ck) ck.checked = false;
   document.getElementById('msg-confirmacion').style.display='none';
   document.getElementById('msg-texto').value='';
   document.getElementById('msg-counter').textContent='0 / 500';
@@ -120,6 +145,7 @@ async function renderMensajesAdmin(){
         <div style="flex:1">
           <div style="font-size:13px;font-weight:600;color:var(--t1)">${m.nom}</div>
           <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">${m.emp} · ${m.area||'—'} · ${m.lugar||'—'}</div>
+          ${m.deleteAfterRead ? `<div style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:9px;padding:2px 7px;border-radius:8px;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.3);color:var(--yellow);font-family:var(--font-mono)">🔒 Se borra al marcar como leído</div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:10px;font-family:var(--font-mono);color:var(--t3)">${m.fecha} ${m.hora}</div>

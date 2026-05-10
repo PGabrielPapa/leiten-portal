@@ -575,6 +575,7 @@ function _asientoContinuarApertura(liq){
       </div>
 
       <div style="padding:14px 22px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-asiento').remove(); abrirEditorPlanCuentas();" style="font-size:13px;padding:8px 14px;color:rgb(168,85,247);border-color:rgba(168,85,247,.3)">⚙ Editar plan de cuentas</button>
         <button class="btn btn-ghost" onclick="document.getElementById('modal-asiento').remove()" style="font-size:13px;padding:8px 14px">Cerrar</button>
         <button class="btn btn-ghost" onclick="exportarAsientoCSV(_liqActiva)" style="font-size:13px;padding:8px 16px;color:var(--accent2);border-color:rgba(61,127,255,.3)">📄 CSV (un archivo por empresa)</button>
         <button class="btn btn-primary" onclick="exportarAsientoExcel(_liqActiva)" style="font-size:13px;padding:8px 18px">📊 Descargar Excel</button>

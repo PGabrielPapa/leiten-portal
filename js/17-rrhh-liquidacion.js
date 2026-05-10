@@ -817,12 +817,40 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const _ccCacheLocal = (typeof _conceptosCustomCache !== 'undefined') ? _conceptosCustomCache : [];
   if(_ccCacheLocal.length && typeof evaluarFormula === 'function'){
     // Contexto de cálculo para los conceptos custom (variables disponibles en fórmulas)
+    // Detección de regímenes
+    const _ccEsUOCRA = (typeof esRegimenLey22250 === 'function') ? !!esRegimenLey22250(emp) : false;
+    const _ccEsQuincenal = (tipoLiq === 'quincenal_1' || tipoLiq === 'quincenal_2') ? 1 : 0;
+    // Antigüedad en meses calendario
+    const _ccMeses = (() => {
+      if(typeof _uocraMesesAntiguedad === 'function') return _uocraMesesAntiguedad(emp.ing, anio, mes);
+      // Fallback inline si UOCRA aún no cargó
+      if(!emp.ing) return 0;
+      const partes = emp.ing.includes('-') ? emp.ing.split('-') : emp.ing.split('/').reverse();
+      const yIng = parseInt(partes[0],10), mIng = parseInt(partes[1],10);
+      if(isNaN(yIng) || isNaN(mIng)) return 0;
+      return Math.max(0, (anio - yIng) * 12 + (mes - mIng));
+    })();
+
     const ctxConceptos = {
+      // Haberes base
       sueldoBasico, mAntig, mPres, mHsE50, mHsE100, mSac, mVac, mAjuste, mCumpObj,
+      mLicEspeciales, mOtrosHRem,
+      // Totales (los descuentos/neto se completan en segunda pasada)
       totalHaberesRem, totalExentos, totalHaberes,
-      diasTrab, ausentismo, anios,
-      jubilacion: 0, obraSocial: 0, pamiEmp: 0, anssal: 0, sindicato: 0,  // se completan después
-      ganancias: 0, embargo: 0, anticiposDesc: 0
+      totalDescuentos: 0, netoAPagar: 0,
+      // Tiempo
+      diasTrab, ausentismo, habiles, diasMes, anios,
+      meses: _ccMeses,
+      diasVac: $m(item?.diasVac) || $m(diasVac) || 0,
+      diasSuspension: $m(diasSusp) || 0,
+      // Empleado
+      esQuincenal: _ccEsQuincenal,
+      esRegimenUOCRA: _ccEsUOCRA ? 1 : 0,
+      esRegimenLCT: _ccEsUOCRA ? 0 : 1,
+      // Aportes / descuentos / patronales (segunda pasada las completa)
+      jubilacion: 0, obraSocial: 0, pamiEmp: 0, anssal: 0, sindicato: 0,
+      ganancias: 0, embargo: 0, anticiposDesc: 0,
+      jubPatronal: 0, osPatronal: 0, pamiPatronal: 0, desempleo: 0, art: 0
     };
     // Mapa de montos manuales cargados en la novedad
     // nov.conceptosCustomManuales = [{ codigo, monto }]
@@ -1113,9 +1141,9 @@ let _liqActiva = null;
 // Cache de conceptos custom activos — se refresca en cada cálculo de preview
 // para garantizar que cambios aprobados se apliquen sin necesidad de F5.
 let _conceptosCustomCache = [];
-async function _refreshConceptosCustomCache(){
+async function _refreshConceptosCustomCache(periodo){
   if(typeof getConceptosCustomActivos === 'function'){
-    try { _conceptosCustomCache = await getConceptosCustomActivos(); }
+    try { _conceptosCustomCache = await getConceptosCustomActivos(periodo); }
     catch(_){ _conceptosCustomCache = []; }
   } else {
     _conceptosCustomCache = [];
@@ -3232,7 +3260,7 @@ async function calcularYRenderPreview(){
   nomina.sort((a,b)=>a.nom.localeCompare(b.nom));
 
   // Refrescar cache de conceptos custom antes del cálculo masivo
-  await _refreshConceptosCustomCache();
+  await _refreshConceptosCustomCache({ anio: liq.anio, mes: liq.mes });
   // Si la liq estaba marcada como pendiente de recálculo, limpiamos el flag
   if(liq._recalculoPendiente){
     liq._recalculoPendienteResuelto = liq._recalculoPendiente;

@@ -58,6 +58,7 @@ async function renderConceptosCustom(){
             ${c.imponibleFCL ? '<span title="Aporta al FCL UOCRA">FCL ✓</span>' : ''}
             ${c.embargable ? '<span title="Computa para tope embargo">EMB ✓</span>' : ''}
             ${c.habitualSAC ? '<span title="Integra base SAC">SAC ✓</span>' : ''}
+            ${(c.vigenciaDesde || c.vigenciaHasta) ? `<span title="Vigencia" style="color:var(--accent2)">📅 ${c.vigenciaDesde || '∞'} → ${c.vigenciaHasta || '∞'}</span>` : ''}
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
@@ -78,7 +79,11 @@ async function renderConceptosCustom(){
         <div style="font-size:14px;font-weight:600;color:var(--t1)">⚙ Conceptos Custom de Liquidación</div>
         <div style="font-size:11px;color:var(--t3);margin-top:2px">${conceptos.length} concepto${conceptos.length!==1?'s':''} · ${pendientes.length} pendiente${pendientes.length!==1?'s':''} de aprobación</div>
       </div>
-      <button class="btn btn-primary" onclick="abrirEditorConceptoCustom(null)" style="font-size:13px;padding:8px 14px">+ Nuevo concepto</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="abrirReporteUsoConceptos()" style="font-size:13px;padding:8px 14px;color:rgb(168,85,247);border-color:rgba(168,85,247,.3)">📊 Reporte de uso</button>
+        <button class="btn btn-ghost" onclick="abrirGaleriaPlantillas()" style="font-size:13px;padding:8px 14px;color:var(--accent2);border-color:rgba(61,127,255,.3)">📋 Plantillas</button>
+        <button class="btn btn-primary" onclick="abrirEditorConceptoCustom(null)" style="font-size:13px;padding:8px 14px">+ Nuevo concepto</button>
+      </div>
     </div>
 
     ${pendientes.length ? `
@@ -118,7 +123,15 @@ async function renderConceptosCustom(){
 async function abrirEditorConceptoCustom(id){
   if(!_ccEsRRHHoAdmin()){ toast('⚠ Sin permiso','var(--red)'); return; }
   _ccConceptoEditando = id ? await getConceptoCustom(id) : null;
-  const c = _ccConceptoEditando || {
+
+  // Si hay una plantilla precargada (desde la galería), la usamos como base
+  let plantillaBase = null;
+  if(!id && typeof _ccPlantillaPrecarga !== 'undefined' && _ccPlantillaPrecarga){
+    plantillaBase = _ccPlantillaPrecarga;
+    _ccPlantillaPrecarga = null;  // consumimos
+  }
+
+  const c = _ccConceptoEditando || plantillaBase || {
     codigo: '', nombre: '', descripcion: '',
     tipo: 'REM', formula: '',
     imponibleJub: true, imponibleOS: true, imponibleGanancias: true,
@@ -297,6 +310,24 @@ async function abrirEditorConceptoCustom(id){
           </div>
         </div>
 
+        <!-- Sección VIGENCIA -->
+        <div>
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">6. Vigencia (opcional)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:4px">Vigente desde (YYYY-MM)</label>
+              <input type="text" id="cc-vigenciaDesde" value="${c.vigenciaDesde || ''}" placeholder="2026-01" pattern="[0-9]{4}-[0-9]{2}" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:8px 10px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:4px">Vigente hasta (YYYY-MM)</label>
+              <input type="text" id="cc-vigenciaHasta" value="${c.vigenciaHasta || ''}" placeholder="2026-12 (vacío = sin vencimiento)" pattern="[0-9]{4}-[0-9]{2}" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:8px 10px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)">
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--t3);margin-top:6px;font-style:italic">
+            Si dejás los dos campos vacíos, el concepto se aplica desde su aprobación y sin vencimiento. Útil para bonos extraordinarios, conceptos de transición, gratificaciones puntuales.
+          </div>
+        </div>
+
         ${id && _ccConceptoEditando ? `
           <div style="background:rgba(234,179,8,.05);border:1px solid rgba(234,179,8,.2);border-radius:4px;padding:10px 14px;font-size:10px;color:var(--t2);line-height:1.5">
             <strong>Cambios críticos:</strong> modificar fórmula, tipo, código o flags imponibles requiere aprobación de Admin (Gabriel Papa). Otras ediciones (nombre, descripción, mapeos a outputs) se aplican directo.
@@ -441,6 +472,19 @@ async function guardarConceptoCustom(){
   const f931Casillero = document.getElementById('cc-f931Casillero')?.value;
   const lsdCodigo     = (document.getElementById('cc-lsdCodigo')?.value || '').trim();
   const cuentaContable = (document.getElementById('cc-cuentaContable')?.value || '').trim();
+  const vigenciaDesde  = (document.getElementById('cc-vigenciaDesde')?.value || '').trim();
+  const vigenciaHasta  = (document.getElementById('cc-vigenciaHasta')?.value || '').trim();
+
+  // Validación de formato YYYY-MM (opcional)
+  if(vigenciaDesde && !/^\d{4}-(0[1-9]|1[0-2])$/.test(vigenciaDesde)){
+    toast('⚠ Vigencia desde inválida. Formato YYYY-MM (ej: 2026-03)','var(--yellow)'); return;
+  }
+  if(vigenciaHasta && !/^\d{4}-(0[1-9]|1[0-2])$/.test(vigenciaHasta)){
+    toast('⚠ Vigencia hasta inválida. Formato YYYY-MM','var(--yellow)'); return;
+  }
+  if(vigenciaDesde && vigenciaHasta && vigenciaDesde > vigenciaHasta){
+    toast('⚠ Vigencia desde no puede ser posterior a hasta','var(--yellow)'); return;
+  }
 
   const ahora = new Date().toISOString();
   const usuario = currentUser?.emp?.nom || 'desconocido';
@@ -450,6 +494,8 @@ async function guardarConceptoCustom(){
     codigo, nombre, descripcion, tipo, formula,
     ...flags,
     seccionRecibo, f931Casillero, lsdCodigo, cuentaContable,
+    vigenciaDesde: vigenciaDesde || null,
+    vigenciaHasta: vigenciaHasta || null,
     actualizadoEl: ahora,
     actualizadoPor: usuario
   };

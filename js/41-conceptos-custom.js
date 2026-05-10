@@ -76,7 +76,8 @@ const ESTADOS_CONCEPTO = [
 
 // Variables disponibles en las fórmulas — whitelist estricta para seguridad
 const VARIABLES_FORMULA = {
-  sueldoBasico:    { label:'Sueldo Básico', categoria:'haberes_base' },
+  // ── Haberes base ──
+  sueldoBasico:    { label:'Sueldo Básico ($)', categoria:'haberes_base' },
   mAntig:          { label:'Antigüedad ($)', categoria:'haberes_base' },
   mPres:           { label:'Presentismo ($)', categoria:'haberes_base' },
   mHsE50:          { label:'Hs Extras 50% ($)', categoria:'haberes_base' },
@@ -85,20 +86,43 @@ const VARIABLES_FORMULA = {
   mVac:            { label:'Vacaciones ($)', categoria:'haberes_base' },
   mAjuste:         { label:'Ajuste de Haberes ($)', categoria:'haberes_base' },
   mCumpObj:        { label:'Cumplimiento Objetivos ($)', categoria:'haberes_base' },
+  mLicEspeciales:  { label:'Licencias Especiales ($)', categoria:'haberes_base' },
+  mOtrosHRem:      { label:'Otros Haberes Remunerativos ($)', categoria:'haberes_base' },
+  // ── Totales ──
   totalHaberesRem: { label:'Total Remunerativo', categoria:'totales' },
   totalExentos:    { label:'Total No Remunerativo', categoria:'totales' },
   totalHaberes:    { label:'Total Haberes (Rem + No Rem)', categoria:'totales' },
+  totalDescuentos: { label:'Total Descuentos', categoria:'totales' },
+  netoAPagar:      { label:'Neto a Pagar', categoria:'totales' },
+  // ── Tiempo y antigüedad ──
   diasTrab:        { label:'Días Trabajados', categoria:'tiempo' },
   ausentismo:      { label:'Ausentismo (días)', categoria:'tiempo' },
-  anios:           { label:'Años de Antigüedad', categoria:'tiempo' },
+  habiles:         { label:'Días Hábiles del período', categoria:'tiempo' },
+  diasMes:         { label:'Días del Mes', categoria:'tiempo' },
+  anios:           { label:'Años de Antigüedad (entero)', categoria:'tiempo' },
+  meses:           { label:'Meses de Antigüedad (total)', categoria:'tiempo' },
+  diasVac:         { label:'Días de Vacaciones', categoria:'tiempo' },
+  diasSuspension:  { label:'Días de Suspensión', categoria:'tiempo' },
+  // ── Datos del empleado ──
+  esQuincenal:     { label:'Es liquidación quincenal (1/0)', categoria:'empleado' },
+  esRegimenUOCRA:  { label:'Es régimen Ley 22.250 UOCRA (1/0)', categoria:'empleado' },
+  esRegimenLCT:    { label:'Es régimen LCT general (1/0)', categoria:'empleado' },
+  // ── Aportes (calculados ANTES de los conceptos custom) ──
   jubilacion:      { label:'Aporte Jubilatorio ($)', categoria:'aportes' },
   obraSocial:      { label:'Aporte Obra Social ($)', categoria:'aportes' },
   pamiEmp:         { label:'Aporte PAMI Empleado ($)', categoria:'aportes' },
   anssal:          { label:'Aporte ANSSAL ($)', categoria:'aportes' },
   sindicato:       { label:'Cuota Sindical Empleado ($)', categoria:'aportes' },
+  // ── Descuentos ──
   ganancias:       { label:'Retención Ganancias 4ta ($)', categoria:'descuentos' },
   embargo:         { label:'Embargo Judicial ($)', categoria:'descuentos' },
-  anticiposDesc:   { label:'Descuento Anticipos ($)', categoria:'descuentos' }
+  anticiposDesc:   { label:'Descuento Anticipos ($)', categoria:'descuentos' },
+  // ── Contribuciones patronales ──
+  jubPatronal:     { label:'Contribución Jubilación Patronal ($)', categoria:'patronales' },
+  osPatronal:      { label:'Contribución OS Patronal ($)', categoria:'patronales' },
+  pamiPatronal:    { label:'Contribución PAMI Patronal ($)', categoria:'patronales' },
+  desempleo:       { label:'Fondo Desempleo ($)', categoria:'patronales' },
+  art:             { label:'ART ($)', categoria:'patronales' }
 };
 
 // Funciones disponibles
@@ -350,10 +374,24 @@ async function getConceptosCustom(){
   }
 }
 
-// Solo conceptos activos — usado por el motor de liquidación
-async function getConceptosCustomActivos(){
+// Solo conceptos activos — usado por el motor de liquidación.
+// Si se pasa { anio, mes } filtra por vigenciaDesde/vigenciaHasta.
+async function getConceptosCustomActivos(periodo){
   const todos = await getConceptosCustom();
-  return todos.filter(c => c.estado === 'activo');
+  const activos = todos.filter(c => c.estado === 'activo');
+  if(!periodo || !periodo.anio || !periodo.mes) return activos;
+  const yyyymm = periodo.anio * 100 + periodo.mes;
+  return activos.filter(c => {
+    if(c.vigenciaDesde){
+      const [yD, mD] = String(c.vigenciaDesde).split('-').map(Number);
+      if(yD * 100 + mD > yyyymm) return false;
+    }
+    if(c.vigenciaHasta){
+      const [yH, mH] = String(c.vigenciaHasta).split('-').map(Number);
+      if(yH * 100 + mH < yyyymm) return false;
+    }
+    return true;
+  });
 }
 
 async function getConceptoCustom(id){
