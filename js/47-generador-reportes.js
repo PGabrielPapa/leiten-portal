@@ -781,12 +781,14 @@ function _repRenderPaso2(){
 
   const renderCampo = (key, c) => {
     const checked = _repEstado.campos.includes(key);
+    const tipoLabel = c.tipo + (c.derivado ? ' · calc.' : '');
+    const labelEsc = String(c.label).replace(/</g, '&lt;');
     return `
-      <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border:1px solid var(--border);border-radius:4px;background:${checked?'rgba(61,127,255,.05)':'var(--bg2)'};font-size:11px;color:var(--t1)" onclick="_repToggleCampo('${key}')">
-        <input type="checkbox" ${checked?'checked':''} style="cursor:pointer;accent-color:var(--accent);pointer-events:none">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:500">${c.label}</div>
-          <div style="font-size:9px;color:var(--t3);font-family:var(--font-mono)">${key} · ${c.tipo}${c.derivado?' (calc.)':''}</div>
+      <label class="rep-campo-item" data-key="${key}" onclick="_repToggleCampo('${key}')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:${checked?'rgba(61,127,255,.08)':'var(--bg2)'};${checked?'border-color:rgba(61,127,255,.4);':''}min-height:48px;text-align:left;text-transform:none">
+        <input type="checkbox" ${checked?'checked':''} style="cursor:pointer;accent-color:var(--accent);pointer-events:none;flex-shrink:0;width:14px;height:14px">
+        <div style="flex:1;min-width:0;overflow:hidden">
+          <div style="font-size:12px;font-weight:500;color:var(--t1);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:none" title="${labelEsc}">${labelEsc}</div>
+          <div style="font-size:9px;color:var(--t3);font-family:var(--font-mono);margin-top:2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:none" title="${key} · ${tipoLabel}">${key} <span style="opacity:.6">·</span> ${tipoLabel}</div>
         </div>
       </label>
     `;
@@ -804,7 +806,7 @@ function _repRenderPaso2(){
             <button onclick="event.preventDefault();event.stopPropagation();_repDeseleccionarGrupo('${nombre.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);border-radius:3px;color:var(--t3);font-size:9px;cursor:pointer;padding:2px 6px" title="Deseleccionar todos del grupo">− todos</button>
           </span>
         </summary>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;margin-top:10px">
+        <div class="rep-campos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-top:12px;text-align:left">
           ${campos.map(c => renderCampo(c.key, c)).join('')}
         </div>
       </details>
