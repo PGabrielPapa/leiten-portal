@@ -1178,7 +1178,19 @@ async function toggleMiHistorial(){
   if(!w) return;
   if(w.style.display === 'none' || !w.style.display){
     w.style.display = 'block';
-    await renderMiHistorial();
+    // Mostrar loading inmediato para feedback visual
+    const cont = document.getElementById('mi-historial-content');
+    const cnt  = document.getElementById('mi-historial-count');
+    if(cont) cont.innerHTML = '<div style="padding:24px;text-align:center;color:var(--t3);font-size:12px">⏳ Cargando historial...</div>';
+    if(cnt) cnt.textContent = '';
+    // Scroll suave al wrap para que el usuario lo vea
+    setTimeout(() => w.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    try {
+      await renderMiHistorial();
+    } catch(err){
+      console.error('Error renderMiHistorial:', err);
+      if(cont) cont.innerHTML = `<div style="padding:24px;text-align:center;color:var(--red);font-size:12px;line-height:1.5">⚠ Error al cargar el historial.<br><span style="color:var(--t3);font-size:10px">${(err.message||err).toString().slice(0,200)}</span><br><br><button class="btn btn-ghost" onclick="renderMiHistorial()" style="font-size:11px;padding:5px 10px">Reintentar</button></div>`;
+    }
   } else {
     w.style.display = 'none';
   }
@@ -1203,7 +1215,21 @@ async function renderMiHistorial(){
   const cnt  = document.getElementById('mi-historial-count');
   if(!cont || !currentUser) return;
   const leg = currentUser.emp.leg;
-  const historial = await getHistorialEmpleado(leg);
+
+  let historial = [];
+  try {
+    historial = await getHistorialEmpleado(leg);
+  } catch(err){
+    console.error('getHistorialEmpleado falló:', err);
+    if(cnt) cnt.textContent = 'error';
+    cont.innerHTML = `<div style="padding:24px 16px;color:var(--red);font-size:12px;text-align:center;line-height:1.5">
+      ⚠ No se pudo cargar el historial.<br>
+      <span style="color:var(--t3);font-size:10px">${(err.message||err).toString().slice(0,200)}</span><br><br>
+      <span style="color:var(--t3);font-size:11px">Si el problema persiste, cerrá todas las pestañas del portal y volvé a entrar para actualizar la base local.</span>
+    </div>`;
+    return;
+  }
+
   if(cnt) cnt.textContent = historial.length ? `${historial.length} cambio${historial.length!==1?'s':''}` : 'sin cambios';
   if(!historial.length){
     cont.innerHTML = `<div style="padding:24px 16px;color:var(--t3);font-size:12px;text-align:center;font-style:italic">Todavía no tenés cambios registrados. Cuando RR.HH. actualice tus datos, vas a verlos acá.</div>`;
@@ -1216,14 +1242,16 @@ async function renderMiHistorial(){
   });
   const fmtD = iso => { if(!iso) return 'vigente'; const[y,m,d]=iso.split('-'); return`${d}/${m}/${y}`; };
   const partes = [];
+  // Recorrer primero los campos del whitelist (orden controlado)
+  const camposRecorridos = new Set();
   for(const c of CAMPOS_HISTORIAL){
     const regs = porCampo[c.key];
     if(!regs) continue;
+    camposRecorridos.add(c.key);
     regs.sort((a,b) => (b.desde||'').localeCompare(a.desde||''));
     const render = c.render ? c.render : (v => v == null ? '—' : String(v));
     const rows = regs.map((r, i) => {
       const vigente = !r.hasta;
-      const primero = i === 0;
       return `<div style="padding:10px 0;${i<regs.length-1?'border-bottom:1px solid var(--border);':''}display:flex;gap:14px;align-items:flex-start">
         <div style="min-width:140px;font-family:var(--font-mono);color:${vigente?'var(--green)':'var(--t3)'};font-size:10px;line-height:1.5">
           ${fmtD(r.desde)} →<br>${fmtD(r.hasta)}${vigente?'<br><span style="font-weight:600">✓ vigente</span>':''}
@@ -1239,7 +1267,34 @@ async function renderMiHistorial(){
       ${rows}
     </div>`);
   }
-  cont.innerHTML = partes.join('');
+  // Fallback: si hay registros con campos NO whitelisted, mostrarlos también
+  // (puede pasar con cambios viejos de claves obsoletas o nuevas no listadas)
+  for(const campo of Object.keys(porCampo)){
+    if(camposRecorridos.has(campo)) continue;
+    const regs = porCampo[campo];
+    regs.sort((a,b) => (b.desde||'').localeCompare(a.desde||''));
+    const rows = regs.map((r, i) => {
+      const vigente = !r.hasta;
+      const valor = r.valorNuevo;
+      const valorStr = valor == null ? '—' :
+                       typeof valor === 'object' ? JSON.stringify(valor) :
+                       String(valor);
+      return `<div style="padding:10px 0;${i<regs.length-1?'border-bottom:1px solid var(--border);':''}display:flex;gap:14px;align-items:flex-start">
+        <div style="min-width:140px;font-family:var(--font-mono);color:${vigente?'var(--green)':'var(--t3)'};font-size:10px;line-height:1.5">
+          ${fmtD(r.desde)} →<br>${fmtD(r.hasta)}${vigente?'<br><span style="font-weight:600">✓ vigente</span>':''}
+        </div>
+        <div style="flex:1;font-size:12px">
+          <div style="color:var(--t1);line-height:1.5">${valorStr.replace(/</g,'&lt;')}</div>
+          ${r.motivo ? `<div style="color:var(--t3);font-size:10px;margin-top:3px;font-style:italic">Motivo: ${r.motivo}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    partes.push(`<div style="margin-bottom:16px">
+      <div style="padding:6px 10px;background:var(--bg2);border-radius:4px;font-size:11px;font-weight:600;color:var(--t1);margin-bottom:6px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em">• ${campo}</div>
+      ${rows}
+    </div>`);
+  }
+  cont.innerHTML = partes.length ? partes.join('') : `<div style="padding:24px 16px;color:var(--t3);font-size:12px;text-align:center;font-style:italic">Hay ${historial.length} cambio${historial.length!==1?'s':''} registrado${historial.length!==1?'s':''} pero ninguno se puede mostrar (campos no soportados).</div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════
