@@ -538,12 +538,14 @@ function renderDelegacionSub(){
     return;
   }
   cont.innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:16px;max-width:480px">
+    <div style="display:flex;flex-direction:column;gap:16px;max-width:560px">
       <div class="card" style="padding:20px">
+        <div style="font-size:13px;color:var(--t1);font-weight:600;margin-bottom:4px">Delegación de autorización de RR.HH.</div>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Durante el período que indiques, otra persona podrá aprobar solicitudes en tu lugar. Solo gerentes y staff de RR.HH. pueden recibir la delegación.</div>
         <div id="delegacion-banner-sub" style="margin-bottom:16px"></div>
-        <div style="display:flex;gap:10px">
-          <button class="btn btn-primary" onclick="abrirDelegacion()">👤 Delegar autorización</button>
-          <button class="btn-blanquear" onclick="revocarDelegacion()" style="padding:8px 16px;font-size:12px">✕ Revocar</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="abrirDelegacion()" style="font-size:13px;padding:9px 16px">👤 Delegar autorización</button>
+          <button class="btn btn-ghost" onclick="revocarDelegacion()" style="font-size:13px;padding:9px 16px;color:var(--red);border-color:rgba(239,68,68,.3)">✕ Revocar delegación</button>
         </div>
       </div>
     </div>`;
@@ -677,14 +679,15 @@ function renderDelList(){
   div.innerHTML = lista.map(e => {
     const etiqueta = e.cat === 'GER' ? 'GERENTE' : 'RR.HH.';
     const color = e.cat === 'GER' ? 'var(--accent2)' : 'var(--green)';
-    return `<div class="del-row" data-dni="${e.dni}">
-      <div class="del-avatar">${e.nom.split(',')[0].trim().substring(0,2)}</div>
-      <div class="del-info">
-        <div class="del-name">${e.nom}</div>
-        <div class="del-meta">${e.leg} · ${e.emp}</div>
+    const iniciales = e.nom.split(',')[0].trim().substring(0,2).toUpperCase();
+    return `<div data-dni="${e.dni}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='transparent'">
+      <div style="width:34px;height:34px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--t1);flex-shrink:0">${iniciales}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;color:var(--t1);font-weight:500">${e.nom}</div>
+        <div style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-top:2px">Leg. ${e.leg} · ${e.emp}</div>
       </div>
-      <span style="font-size:10px;font-family:var(--font-mono);color:${color};border:1px solid ${color};padding:2px 7px;border-radius:10px;opacity:.8;margin-right:6px">${etiqueta}</span>
-      <span style="font-size:11px;color:var(--accent2);font-family:var(--font-mono)">→</span>
+      <span style="font-size:10px;font-family:var(--font-mono);color:${color};border:1px solid ${color};padding:2px 7px;border-radius:10px;opacity:.85;flex-shrink:0">${etiqueta}</span>
+      <span style="font-size:13px;color:var(--accent2);font-family:var(--font-mono);flex-shrink:0">→</span>
     </div>`;
   }).join('');
   // Attach listeners via event delegation on container
@@ -773,6 +776,33 @@ function actualizarBannerDelegacion(){
     banner.style.display = 'none';
     if(headerActiva) headerActiva.style.display = 'none';
     if(isOwner && btnDelegar) btnDelegar.style.display = 'inline-flex';
+  }
+
+  // Sub-banner dentro de la sub-página de Delegación (sumario visible siempre que se entra al módulo)
+  const bannerSub = document.getElementById('delegacion-banner-sub');
+  if(bannerSub){
+    if(d){
+      const vigente = (!d.inicio || hoy >= d.inicio) && (!d.fin || hoy <= d.fin);
+      const estadoColor = vigente ? 'var(--green)' : 'var(--red)';
+      const estadoTxt   = vigente ? '● Vigente' : '● Vencida';
+      const periodo = (d.inicio && d.fin) ? `${fmtD(d.inicio)} → ${fmtD(d.fin)}` : d.fecha;
+      bannerSub.innerHTML = `
+        <div style="background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.25);border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+          <span style="font-size:18px;flex-shrink:0">👤</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;color:var(--t1);font-weight:600">Hay una delegación activa</div>
+            <div style="font-size:11px;color:var(--t2);margin-top:3px;line-height:1.4">
+              Delegada a: <strong>${d.delegadoNom}</strong> &nbsp;<span style="font-size:10px;color:${estadoColor}">${estadoTxt}</span><br>
+              <span style="color:var(--t3);font-family:var(--font-mono);font-size:10px">Legajo ${d.delegadoLeg} · ${d.delegadoEmp} · ${periodo}</span>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      bannerSub.innerHTML = `
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;color:var(--t3);font-size:12px;font-style:italic">
+          No hay delegación activa actualmente.
+        </div>`;
+    }
   }
 }
 
