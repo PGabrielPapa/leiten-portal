@@ -4117,7 +4117,7 @@ function reciboUnaCopiaPag(item, liq, pageRows, params, empDB, tipo, pagActual, 
   };
   const td=function(v,opts){
     opts=opts||{};
-    return '<td style="padding:2px 5px;font-size:8px;border:1px solid #999;'
+    return '<td style="padding:2px 5px;font-size:8px;border:1px solid #999;color:#000;'
       +'text-align:'+(opts.a||'left')+';'
       +'font-weight:'+(opts.b?'bold':'normal')+';'
       +'font-family:'+(opts.m?'Courier New,monospace':'Arial,sans-serif')+';'
@@ -4140,12 +4140,12 @@ function reciboUnaCopiaPag(item, liq, pageRows, params, empDB, tipo, pagActual, 
 
   const thS='padding:3px 5px;font-size:8px;border:1px solid #999;background:#f5f5f5;font-weight:bold;text-align:';
 
-  return `<div style="border:1.5px solid #333;padding:6px 8px;font-family:Arial,sans-serif;font-size:8px;width:100%;box-sizing:border-box;background:#fff">
+  return `<div style="border:1.5px solid #333;padding:6px 8px;font-family:Arial,sans-serif;font-size:8px;width:100%;box-sizing:border-box;background:#fff;color:#000">
 
   <!-- HEADER: "Recibo de Haberes" con Página X de Y y marca ORIGINAL/DUPLICADO -->
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;padding-bottom:2px;border-bottom:1px solid #333">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;padding-bottom:2px;border-bottom:1px solid #333;color:#000">
     <div style="flex:1"></div>
-    <div style="font-size:12px;font-weight:bold;text-align:center;flex:1">Recibo de Haberes</div>
+    <div style="font-size:12px;font-weight:bold;text-align:center;flex:1;color:#000">Recibo de Haberes</div>
     <div style="flex:1;text-align:right;font-size:8px;color:#555">Página ${pagActual} de ${totalPags}</div>
   </div>
 
@@ -4456,9 +4456,22 @@ async function imprimirRecibo(leg){
   <title>Recibo ${leg} ${periodoMM(liq)}</title>
   <style>
     @page{size:A4 landscape;margin:8mm}
-    body{margin:0;padding:8px;font-family:Arial,sans-serif}
+    /* Reset y forzar contraste explícito — antes algunos navegadores
+       heredaban el color del documento padre (modo oscuro de la app)
+       y los recibos salían casi invisibles. */
+    html, body { color: #000 !important; background: #fff !important; }
+    body{margin:0;padding:8px;font-family:Arial,sans-serif;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    /* Forzar color negro en todas las celdas y bloques del recibo aunque
+       el inline-style no lo haya declarado. Los inline-style que SÍ tienen
+       color explícito (ej. #555 o #666) prevalecen por especificidad de
+       'style' attr vs CSS regular. */
+    table, td, th, div, span, p, b, strong { color: inherit }
     .no-print{margin-bottom:10px}
-    @media print{.no-print{display:none}}
+    @media print{
+      .no-print{display:none}
+      /* Forzar colores en impresión también */
+      body { color: #000 !important; background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+    }
   </style></head><body>
   <div class="no-print">
     <button onclick="window.print()" style="padding:7px 16px;background:#1E6B3A;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-right:8px">
