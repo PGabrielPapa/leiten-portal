@@ -808,17 +808,33 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   // Monto pactado en acuerdo colectivo, definido por sindicato en params.
   // Se prorratea por días trabajados Y al 50% en quincenales (igual que
   // el sueldo básico). Empleados Fuera de Convenio usan la clave 'FC'.
-  // No paga aportes ni genera contribuciones patronales (es exento).
+  // No paga aportes ni genera contribuciones patronales (es exento)
+  // EXCEPTO para SEC, que tiene reglas especiales (ver más abajo).
   // Cita legal: Art. 103 bis LCT — acuerdos paritarios.
   const _claveSindParitaria = emp.cod_sindicato || 'FC';
   const _tablaParitaria = (params.asignacionNoRemPorSindicato || {});
   const _montoParitariaPlena = $m(_tablaParitaria[_claveSindParitaria]);
   const mAsigNoRem = _montoParitariaPlena * proporcion * _factorPeriodo;
 
+  // ─── REGLAS ESPECIALES SEC (Empleados de Comercio) ─────────────────────
+  // La paritaria del SEC tiene 3 particularidades sobre la asignación NR:
+  //  (1) Antigüedad calculada también sobre el no remunerativo
+  //  (2) Presentismo calculado sobre (no rem + antig sobre no rem)
+  //  (3) Aportes de OS (3%) + ANSSAL (0,5%) + contrib. patronal (6%)
+  //     sobre TODOS los conceptos no remunerativos del empleado
+  // Los items (1) y (2) SE SUMAN al total exento (no pagan jubilación)
+  // pero SÍ pagan OS según regla (3).
+  const _esSEC = (emp.cod_sindicato === 'SEC');
+  const mAntigSobreNoRem = _esSEC ? (mAsigNoRem * pctAntig / 100) : 0;
+  const mPresSobreNoRem  = (_esSEC && tienePres)
+                         ? ((mAsigNoRem + mAntigSobreNoRem) * params.pctPresentismo / 100)
+                         : 0;
+
   // Los plus no-remunerativos del catálogo + conceptos exentos de liq. final
   // ENGROSAN los exentos:
   const totalExentos = mHsExtrasExentas + mBonoExento + mIndemniz + mOtrosExentos + mOtrosHNoRem
                      + mAsigNoRem
+                     + mAntigSobreNoRem + mPresSobreNoRem
                      + mVacNoGozadas + mIntegrMesDesp + mIndemAntig;
 
   // BASE REMUNERATIVA (sujeta a aportes y base imponible de ganancias)
@@ -964,13 +980,28 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
 
   // ─ Aportes del trabajador (sobre base con topes Art. 9 Ley 24241) ─
   const jubilacion=baseAportes*params.pctJubilacion/100;
-  const obraSocial=baseAportes*params.pctObraSocial/100;
-  const anssal    =baseAportes*params.pctAnssal/100;
+  let obraSocial=baseAportes*params.pctObraSocial/100;
+  let anssal    =baseAportes*params.pctAnssal/100;
   const pamiEmp   =baseAportes*params.pctPamiEmp/100;
   // Sindicato: según código del empleado. Si no tiene código → 0%.
   const pctSindEmp = getPctSindicatoEmpleado(emp);
   const sindicato=totalHaberesRem*pctSindEmp/100;
   const ganancias=$m(nov.ganancias);
+
+  // ─── REGLA SEC: Aportes OS sobre TODOS los no remunerativos ────────────
+  // La paritaria del SEC obliga a que OS (3%) + ANSSAL (0,5%) se calculen
+  // también sobre TODOS los conceptos no remunerativos (asignación, antig
+  // sobre NR, presentismo sobre NR, hs ext exentas, bono exento, etc).
+  // La contribución patronal de OS (6%) también se calcula sobre estos
+  // conceptos — se aplica más abajo, junto con las demás contribuciones.
+  // Cita: CCT 130/75 SEC + acuerdos paritarios sucesivos.
+  let osSobreNoRem = 0, anssalSobreNoRem = 0;
+  if(_esSEC){
+    osSobreNoRem     = totalExentos * params.pctObraSocial / 100;
+    anssalSobreNoRem = totalExentos * params.pctAnssal     / 100;
+    obraSocial += osSobreNoRem;
+    anssal     += anssalSobreNoRem;
+  }
 
   // ═══════════════════════════════════════════════════════════════
   //   EMBARGOS — modelo de array (múltiples coexistentes)
@@ -1054,12 +1085,23 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   // ─ Contribuciones patronales (sin tope máximo — Ley 26.417) ─
   // Se calculan sobre REMUNERATIVOS (los conceptos exentos no generan contribuciones)
   const jubPatronal=totalHaberesRem*params.pctJubPatronal/100;
-  const osPatronal=totalHaberesRem*params.pctOsPatronal/100;
+  let osPatronal=totalHaberesRem*params.pctOsPatronal/100;
   const pamiPatronal=totalHaberesRem*params.pctPamiPatronal/100;
   const desempleo=totalHaberesRem*params.pctDesempleo/100;
   const art=totalHaberesRem*params.pctArt/100;
   const pctSindPatronal = getPctSindicatoPatronal(emp);
   const sindPatronal=totalHaberesRem*pctSindPatronal/100;
+
+  // ─── REGLA SEC: Contribución patronal de OS también sobre no rem ───────
+  // Por paritaria CCT 130/75, la contribución patronal de Obra Social (6%)
+  // se aplica también sobre todos los conceptos no remunerativos del
+  // empleado SEC. NO afecta el neto del empleado (es contribución patronal)
+  // pero SÍ engrosa el costo laboral total para la empresa.
+  let osPatronalSobreNoRem = 0;
+  if(_esSEC){
+    osPatronalSobreNoRem = totalExentos * params.pctOsPatronal / 100;
+    osPatronal += osPatronalSobreNoRem;
+  }
 
   // ─── Contribuciones específicas régimen UOCRA Ley 22.250 ───────────────
   // Si el empleado está bajo régimen 22.250, se suman FCL, IERIC, Fondo
@@ -1107,6 +1149,14 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
     // Asignación no remunerativa por paritaria (Art. 103 bis LCT)
     mAsigNoRem,
     asigNoRemParitaria: _montoParitariaPlena,  // monto pleno antes del prorrateo (para trazabilidad)
+    // SEC: antigüedad y presentismo calculados sobre el no remunerativo (paritaria CCT 130/75)
+    mAntigSobreNoRem,
+    mPresSobreNoRem,
+    esSEC: _esSEC,
+    // SEC: aportes adicionales sobre no rem (trazabilidad — ya están sumados en obraSocial/anssal)
+    osSobreNoRem,
+    anssalSobreNoRem,
+    osPatronalSobreNoRem,
     // Totales finales (incluyen conceptos custom)
     totalExentos: totalExentosFinal,
     totalHaberesRem: totalHaberesRemFinal,
@@ -4073,6 +4123,9 @@ function buildConceptRows(item, params){
   pA('Indemnización Art.180 bis LCT',     58300, $m(item.mIndemniz));
   pA('Otros conceptos exentos',           58400, $m(item.mOtrosExentos));
   pA('Asignación no remunerativa (Acuerdos paritarios)', 58500, $m(item.mAsigNoRem));
+  // SEC: antigüedad y presentismo calculados sobre el no remunerativo
+  pA('Antigüedad s/ No Remunerativo (SEC)',  58510, $m(item.mAntigSobreNoRem));
+  pA('Presentismo s/ No Remunerativo (SEC)', 58520, $m(item.mPresSobreNoRem));
 
   // RETENCIONES
   // Línea informativa cuando los aportes fueron topeados por Art. 9 Ley 24.241
