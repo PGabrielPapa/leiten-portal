@@ -537,68 +537,94 @@ function renderDelegacionSub(){
   const isOwner = userNom.includes('PAPA, PABLO GABRIEL') || userNom.includes('PAPA PABLO GABRIEL');
   const isRRHH = currentUser?.role === 'rrhh';
   const isCEO = userNom.includes('PARERA, MARTIN') || userNom.includes('PARERA MARTIN');
+  // ¿Es gerente con equipo a cargo? (cualquier validador en el sistema)
+  const tieneEquipo = (typeof _getEquipoDelGerente === 'function')
+    ? _getEquipoDelGerente(false).length > 0
+    : (currentUser?.emp?.cat === 'GER');
+  const puedeDelegar = isOwner || isCEO || isRRHH || tieneEquipo;
 
-  // Estado actual de la delegación (visible para todo RR.HH.)
-  const deleg = (typeof getDelegacion === 'function') ? getDelegacion() : null;
-  const delegInfoHtml = deleg && deleg.delegadoNom ? `
-    <div style="padding:10px 14px;background:rgba(234,179,8,.06);border:1px solid rgba(234,179,8,.25);border-radius:var(--r);font-size:12px;color:var(--t2);margin-bottom:14px">
-      <div style="font-weight:600;color:var(--yellow);margin-bottom:3px">⏱ Delegación activa</div>
-      <div>Delegado a: <strong style="color:var(--t1)">${deleg.delegadoNom}</strong></div>
-      <div style="font-size:11px;color:var(--t3);margin-top:3px">Vigencia: ${deleg.inicio || '—'} → ${deleg.fin || '—'}</div>
+  // Mi delegación EMITIDA (la que yo le di a otro)
+  const miDeleg = (typeof getMiDelegacionEmitida === 'function') ? getMiDelegacionEmitida() : null;
+
+  // Vigencia para mi delegación
+  const hoy = new Date().toISOString().split('T')[0];
+  const miDelegVigente = miDeleg &&
+    (!miDeleg.inicio || hoy >= miDeleg.inicio) &&
+    (!miDeleg.fin    || hoy <= miDeleg.fin);
+
+  const miDelegHtml = miDeleg ? `
+    <div style="padding:12px 14px;background:${miDelegVigente?'rgba(34,197,94,.06)':'rgba(234,179,8,.06)'};border:1px solid ${miDelegVigente?'rgba(34,197,94,.3)':'rgba(234,179,8,.25)'};border-radius:var(--r);font-size:12px;color:var(--t2);margin-bottom:14px">
+      <div style="font-weight:600;color:${miDelegVigente?'var(--green)':'var(--yellow)'};margin-bottom:3px">${miDelegVigente?'✓ Tu delegación está activa':'⏱ Tu delegación está fuera de vigencia'}</div>
+      <div>Delegaste tus autorizaciones a: <strong style="color:var(--t1)">${miDeleg.delegadoNom}</strong></div>
+      <div style="font-size:11px;color:var(--t3);margin-top:3px">Vigencia: ${miDeleg.inicio || '—'} → ${miDeleg.fin || '—'}</div>
     </div>
   ` : `
     <div style="padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);font-size:12px;color:var(--t3);margin-bottom:14px">
-      Actualmente no hay delegación activa. Las autorizaciones se procesan normalmente con el dueño del flujo.
+      No tenés ninguna delegación activa. Las solicitudes de tu equipo te llegan directamente.
     </div>
   `;
 
-  if(isOwner){
-    // Panel completo de gestión
-    cont.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:16px;max-width:560px">
-        <div class="card" style="padding:20px">
-          <div style="font-size:13px;color:var(--t1);font-weight:600;margin-bottom:4px">Delegación de autorización de RR.HH.</div>
-          <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Durante el período que indiques, otra persona podrá aprobar solicitudes en tu lugar. Solo gerentes y staff de RR.HH. pueden recibir la delegación.</div>
-          <div id="delegacion-banner-sub" style="margin-bottom:16px"></div>
-          ${delegInfoHtml}
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="abrirDelegacion()" style="font-size:13px;padding:9px 16px">👤 Delegar autorización</button>
-            <button class="btn btn-ghost" onclick="revocarDelegacion()" style="font-size:13px;padding:9px 16px;color:var(--red);border-color:rgba(239,68,68,.3)" ${!deleg ? 'disabled' : ''}>✕ Revocar delegación</button>
+  // Listado de delegaciones existentes en el grupo (visibilidad para todo el RR.HH.)
+  let resumenGrupoHtml = '';
+  if(isOwner || isRRHH){
+    try {
+      const mapa = (typeof getDelegacionesMapa === 'function') ? getDelegacionesMapa() : {};
+      const activas = Object.values(mapa).filter(d => {
+        if(d.inicio && hoy < d.inicio) return false;
+        if(d.fin    && hoy > d.fin) return false;
+        return true;
+      });
+      if(activas.length){
+        const filas = activas.map(d => `
+          <div style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);font-size:11px">
+            <div style="flex:1;min-width:0">
+              <div style="color:var(--t1)"><strong>${d.deleganteNom || '?'}</strong> → ${d.delegadoNom || '?'}</div>
+              <div style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-top:2px">${d.inicio || '—'} → ${d.fin || '—'}</div>
+            </div>
           </div>
-        </div>
-      </div>`;
-    actualizarBannerDelegacion();
+        `).join('');
+        resumenGrupoHtml = `
+          <div class="card" style="padding:0;overflow:hidden;margin-top:14px">
+            <div style="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em">
+              Delegaciones activas en el grupo (${activas.length})
+            </div>
+            ${filas}
+          </div>
+        `;
+      }
+    } catch(_){}
+  }
+
+  if(!puedeDelegar){
+    cont.innerHTML = `<div class="card" style="padding:20px;color:var(--t3);text-align:center">Las delegaciones de autorización son para gerentes y staff de RR.HH. con equipo a cargo.</div>`;
     return;
   }
 
-  if(isCEO){
-    // El CEO ve la info pero no puede delegar (no es su flujo)
-    cont.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:16px;max-width:560px">
-        <div class="card" style="padding:20px">
-          <div style="font-size:13px;color:var(--t1);font-weight:600;margin-bottom:4px">Delegación de autorización de RR.HH.</div>
-          <div style="font-size:11px;color:var(--t3);margin-bottom:14px">El flujo de delegación de autorizaciones de RR.HH. lo gestiona el Gerente de RR.HH. (Papa, Pablo Gabriel). Acá podés ver el estado actual.</div>
-          ${delegInfoHtml}
-        </div>
-      </div>`;
-    return;
-  }
+  // Panel principal — todos los autorizados ven los mismos controles
+  const rolLabel = isOwner ? 'Gerente de RR.HH.' :
+                   isCEO   ? 'CEO' :
+                   isRRHH  ? 'Staff RR.HH.' :
+                             'Gerente de área';
 
-  if(isRRHH){
-    // Otros usuarios de RR.HH. ven el estado actual pero no pueden delegar
-    cont.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:16px;max-width:560px">
-        <div class="card" style="padding:20px">
-          <div style="font-size:13px;color:var(--t1);font-weight:600;margin-bottom:4px">Delegación de autorización de RR.HH.</div>
-          <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Esta delegación la gestiona el Gerente de RR.HH. (Papa, Pablo Gabriel). Acá podés consultar el estado actual.</div>
-          ${delegInfoHtml}
+  cont.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:16px;max-width:680px">
+      <div class="card" style="padding:20px">
+        <div style="font-size:13px;color:var(--t1);font-weight:600;margin-bottom:4px">Delegación de autorizaciones</div>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:14px">
+          Durante el período que indiques, otra persona podrá aprobar en tu lugar las solicitudes que normalmente te llegan.
+          ${isOwner ? 'Aplica a aprobaciones de RR.HH.' : isCEO ? 'Aplica a tus aprobaciones como CEO.' : 'Aplica a las solicitudes de tu equipo.'}
         </div>
-      </div>`;
-    return;
-  }
-
-  // Caso raro: alguien sin rol RR.HH. accedió al sub-panel (por permisos delegados)
-  cont.innerHTML = `<div class="card" style="padding:20px;color:var(--t3);text-align:center">No tenés permisos para gestionar la delegación.</div>`;
+        <div style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Estás logueado como: ${rolLabel}</div>
+        <div id="delegacion-banner-sub" style="margin-bottom:16px"></div>
+        ${miDelegHtml}
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="abrirDelegacion()" style="font-size:13px;padding:9px 16px">👤 ${miDeleg?'Cambiar delegado':'Delegar autorización'}</button>
+          <button class="btn btn-ghost" onclick="revocarDelegacion()" style="font-size:13px;padding:9px 16px;color:var(--red);border-color:rgba(239,68,68,.3)" ${!miDeleg ? 'disabled' : ''}>✕ Revocar mi delegación</button>
+        </div>
+      </div>
+      ${resumenGrupoHtml}
+    </div>`;
+  if(typeof actualizarBannerDelegacion === 'function') actualizarBannerDelegacion();
 }
 
 function actualizarRRHHBadges(){
@@ -685,16 +711,113 @@ function renderPendientesGerentes(){
   });
 }
 // ─── DELEGACIÓN DE AUTORIZACIÓN ───
-function getDelegacion(){ try{ return JSON.parse(localStorage.getItem('lsg_delegacion')||'null'); }catch(e){return null;} }
-function saveDelegacion(d){ localStorage.setItem('lsg_delegacion', JSON.stringify(d)); }
-function clearDelegacion(){ localStorage.removeItem('lsg_delegacion'); }
+// ═══════════════════════════════════════════════════════════════════
+// SISTEMA DE DELEGACIÓN — v2: múltiples delegaciones por delegante
+// ───────────────────────────────────────────────────────────────────
+// Antes: una sola delegación global (solo Papa podía delegar).
+// Ahora: cada gerente, RR.HH. y CEO pueden delegar sus propias
+// autorizaciones a sus subordinados. Cada delegación se almacena
+// indexada por el DNI del delegante.
+//
+// Compat: si existe legacy 'lsg_delegacion' (formato antiguo), se
+// migra automáticamente al primer acceso al nuevo mapa.
+// ═══════════════════════════════════════════════════════════════════
+const _LS_DELEG_MAP = 'lsg_delegaciones';
+const _LS_DELEG_LEGACY = 'lsg_delegacion';
+
+function _migrarDelegacionLegacy(){
+  // Migración silenciosa una sola vez: si hay legacy y NO hay mapa nuevo,
+  // se traslada al mapa nuevo bajo el DNI del delegante (Papa).
+  try {
+    const mapa = JSON.parse(localStorage.getItem(_LS_DELEG_MAP) || 'null');
+    const legacy = JSON.parse(localStorage.getItem(_LS_DELEG_LEGACY) || 'null');
+    if(mapa) return; // ya migrado
+    if(legacy && legacy.delegadoDni){
+      // El legacy no guardaba el delegante DNI (siempre era Papa). Buscar a Papa en nómina.
+      const papa = getNomina().find(e => e.nom && e.nom.toUpperCase().includes('PAPA, PABLO GABRIEL'));
+      const delegantedni = legacy.deleganteDni || (papa && papa.dni) || 'unknown';
+      const nuevoMapa = {};
+      nuevoMapa[delegantedni] = {
+        ...legacy,
+        deleganteDni: delegantedni,
+        deleganteNom: legacy.deleganteNom || (papa && papa.nom) || 'PAPA, PABLO GABRIEL'
+      };
+      localStorage.setItem(_LS_DELEG_MAP, JSON.stringify(nuevoMapa));
+    } else {
+      localStorage.setItem(_LS_DELEG_MAP, JSON.stringify({}));
+    }
+  } catch(_){}
+}
+
+function getDelegacionesMapa(){
+  _migrarDelegacionLegacy();
+  try { return JSON.parse(localStorage.getItem(_LS_DELEG_MAP) || '{}'); }
+  catch(_){ return {}; }
+}
+
+function saveDelegacionesMapa(mapa){
+  localStorage.setItem(_LS_DELEG_MAP, JSON.stringify(mapa));
+}
+
+// Devuelve la delegación HACIA el dni dado (es decir, alguien delegó EN ESTE usuario).
+// Esta es la que usa el login para subir de nivel.
+function getDelegacion(){
+  // Compat: el código viejo de auth llama getDelegacion() para verificar si
+  // ESTE usuario tiene una delegación recibida. Buscamos en el mapa una
+  // delegación cuyo delegadoDni coincida con emp.dni del que pregunta.
+  // PROBLEMA: getDelegacion() se llama SIN el dni (durante login).
+  // Solución compat: devolvemos la PRIMERA delegación vigente que matchee con
+  // loginEmp.dni (la persona que está intentando ingresar) si está disponible.
+  const mapa = getDelegacionesMapa();
+  const dniLogin = (typeof loginEmp !== 'undefined' && loginEmp?.dni) ||
+                   currentUser?.emp?.dni;
+  if(!dniLogin) return null;
+  const hoy = new Date().toISOString().split('T')[0];
+  for(const d of Object.values(mapa)){
+    if(d.delegadoDni !== dniLogin) continue;
+    if(d.inicio && hoy < d.inicio) continue;
+    if(d.fin    && hoy > d.fin) continue;
+    return d; // primera vigente
+  }
+  return null;
+}
+
+// Devuelve la delegación QUE EMITIÓ el usuario actual (su propia delegación activa).
+function getMiDelegacionEmitida(){
+  const mapa = getDelegacionesMapa();
+  const dni = currentUser?.emp?.dni;
+  if(!dni) return null;
+  return mapa[dni] || null;
+}
+
+function saveDelegacion(d){
+  // d incluye: deleganteDni, deleganteNom, delegadoDni, delegadoNom, inicio, fin, fecha
+  const mapa = getDelegacionesMapa();
+  mapa[d.deleganteDni] = d;
+  saveDelegacionesMapa(mapa);
+}
+
+function clearDelegacion(){
+  // Limpia SOLO la delegación emitida por el usuario actual
+  const mapa = getDelegacionesMapa();
+  const dni = currentUser?.emp?.dni;
+  if(dni && mapa[dni]){
+    delete mapa[dni];
+    saveDelegacionesMapa(mapa);
+  }
+}
 
 function abrirDelegacion(){
   // Validar permisos antes de abrir el modal
   const userNom = (currentUser?.emp?.nom || '').toUpperCase();
   const isOwner = userNom.includes('PAPA, PABLO GABRIEL') || userNom.includes('PAPA PABLO GABRIEL');
-  if(!isOwner){
-    toast('⚠ Solo el Gerente de RR.HH. puede delegar autorizaciones', 'var(--red)');
+  const isCEO = userNom.includes('PARERA, MARTIN') || userNom.includes('PARERA MARTIN');
+  const isRRHH = currentUser?.role === 'rrhh';
+  const tieneEquipo = (typeof _getEquipoDelGerente === 'function')
+    ? _getEquipoDelGerente(false).length > 0
+    : (currentUser?.emp?.cat === 'GER');
+  if(!isOwner && !isCEO && !isRRHH && !tieneEquipo){
+    toast('⚠ Solo gerentes y staff de RR.HH. pueden delegar autorizaciones', 'var(--red)');
     return;
   }
   const modal = document.getElementById('modal-delegacion');
@@ -726,10 +849,32 @@ const _delMap = {};
 
 function renderDelList(){
   const q = document.getElementById('del-search').value.toLowerCase();
+  const userNom = (currentUser?.emp?.nom || '').toUpperCase();
+  const isOwner = userNom.includes('PAPA, PABLO GABRIEL') || userNom.includes('PAPA PABLO GABRIEL');
+  const isCEO = userNom.includes('PARERA, MARTIN') || userNom.includes('PARERA MARTIN');
+  const isRRHH = currentUser?.role === 'rrhh';
+
   const rrhhStaff = ['BOZZUTO','AGUIAR, LUNA','DONATO','PAPA, LUCIANO'];
-  const esElegible = e =>
-    e.dni !== currentUser?.emp?.dni &&
-    (e.cat === 'GER' || rrhhStaff.some(s => e.nom.toUpperCase().includes(s.toUpperCase())));
+
+  let esElegible;
+  if(isOwner || isCEO || isRRHH){
+    // Papa, CEO y staff RRHH delegan a gerentes o staff de RRHH
+    esElegible = e =>
+      e.dni !== currentUser?.emp?.dni &&
+      !e._deBaja && !e.egreso &&
+      (e.cat === 'GER' || rrhhStaff.some(s => e.nom.toUpperCase().includes(s.toUpperCase())));
+  } else {
+    // Gerente regular: delega a su propio equipo o a otros gerentes
+    const equipo = (typeof _getEquipoDelGerente === 'function')
+      ? _getEquipoDelGerente(false)
+      : [];
+    const equipoLegs = new Set(equipo.map(e => e.leg));
+    esElegible = e =>
+      e.dni !== currentUser?.emp?.dni &&
+      !e._deBaja && !e.egreso &&
+      (equipoLegs.has(e.leg) || e.cat === 'GER');
+  }
+
   const lista = getNomina().filter(e =>
     esElegible(e) &&
     (q === '' || e.nom.toLowerCase().includes(q) || e.leg.includes(q))
@@ -742,8 +887,12 @@ function renderDelList(){
   // Store data in map to avoid escaping issues in onclick
   lista.forEach(e => { _delMap[e.dni] = e; });
   div.innerHTML = lista.map(e => {
-    const etiqueta = e.cat === 'GER' ? 'GERENTE' : 'RR.HH.';
-    const color = e.cat === 'GER' ? 'var(--accent2)' : 'var(--green)';
+    const etiqueta = e.cat === 'GER' ? 'GERENTE' :
+                     rrhhStaff.some(s => e.nom.toUpperCase().includes(s)) ? 'RR.HH.' :
+                     'EQUIPO';
+    const color = etiqueta === 'GERENTE' ? 'var(--accent2)' :
+                  etiqueta === 'RR.HH.'  ? 'var(--green)'   :
+                                           'var(--t2)';
     const iniciales = e.nom.split(',')[0].trim().substring(0,2).toUpperCase();
     return `<div data-dni="${e.dni}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='transparent'">
       <div style="width:34px;height:34px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--t1);flex-shrink:0">${iniciales}</div>
@@ -775,8 +924,11 @@ function confirmarDelegacion(e){
   }
   const fmtDisplay = iso => { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
   const nombre = e.nom.split(',')[0].trim();
-  if(!confirm(`¿Delegar la autorización de RR.HH. a ${e.nom}?\n\nPeríodo: ${fmtDisplay(inicio)} al ${fmtDisplay(fin)}\n\n${nombre} podrá aprobar solicitudes durante ese período.`)) return;
+  if(!confirm(`¿Delegar tus autorizaciones a ${e.nom}?\n\nPeríodo: ${fmtDisplay(inicio)} al ${fmtDisplay(fin)}\n\n${nombre} podrá aprobar en tu lugar durante ese período.`)) return;
   saveDelegacion({
+    deleganteDni: currentUser.emp.dni,
+    deleganteNom: currentUser.emp.nom,
+    deleganteLeg: currentUser.emp.leg,
     delegadoDni: e.dni,
     delegadoNom: e.nom,
     delegadoLeg: e.leg,
@@ -786,6 +938,13 @@ function confirmarDelegacion(e){
     fin,
     fecha: new Date().toLocaleDateString('es-AR')
   });
+  if(typeof logAuditX === 'function'){
+    logAuditX('delegacion', 'crear', {
+      delegante: currentUser.emp.nom,
+      delegado: e.nom,
+      inicio, fin
+    });
+  }
   cerrarDelegacion();
   actualizarBannerDelegacion();
   // Refrescar el panel para mostrar la nueva delegación
@@ -794,18 +953,23 @@ function confirmarDelegacion(e){
 }
 
 function revocarDelegacion(){
-  const d = getDelegacion();
+  const d = getMiDelegacionEmitida();
   if(!d){
-    toast('No hay delegación activa para revocar', 'var(--t3)');
+    toast('No tenés delegación activa para revocar', 'var(--t3)');
     return;
   }
   const nombre = (d.delegadoNom || '').split(',')[0].trim() || 'la persona delegada';
-  if(!confirm(`¿Revocar la delegación de ${d.delegadoNom || 'la persona delegada'}?`)) return;
+  if(!confirm(`¿Revocar tu delegación a ${d.delegadoNom || 'la persona delegada'}?`)) return;
   clearDelegacion();
+  if(typeof logAuditX === 'function'){
+    logAuditX('delegacion', 'revocar', {
+      delegante: currentUser?.emp?.nom,
+      delegado: d.delegadoNom
+    });
+  }
   actualizarBannerDelegacion();
-  // Refrescar el panel para reflejar la revocación
   if(typeof renderDelegacionSub === 'function') renderDelegacionSub();
-  toast(`✓ Delegación de ${nombre} revocada`, 'var(--yellow)');
+  toast(`✓ Delegación a ${nombre} revocada`, 'var(--yellow)');
 }
 
 function actualizarBannerDelegacion(){
