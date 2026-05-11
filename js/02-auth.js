@@ -212,6 +212,11 @@ function doLogout(){
   }
   currentUser = null; loginEmp = null;
   solicitudes = [];
+  // Reset auto-expansión del organigrama para el próximo usuario
+  if(typeof _orgUsuarioYaAutoExpandido !== 'undefined'){
+    _orgUsuarioYaAutoExpandido = false;
+    if(typeof _orgExpandido !== 'undefined') _orgExpandido = new Set();
+  }
   document.body.classList.remove('employee-mode');
   document.getElementById('nav-user-chip').style.display = 'none';
   document.getElementById('nav-role-badge').style.display = 'none';

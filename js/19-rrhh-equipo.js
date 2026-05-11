@@ -195,6 +195,7 @@ function construirOrganigrama(filtroEmpresa){
 }
 
 let _orgExpandido = new Set(); // claves de nodos expandidos
+let _orgUsuarioYaAutoExpandido = false; // flag para auto-expandir solo la primera vez
 
 function renderOrganigrama(){
   const cont = document.getElementById('organigrama-container');
@@ -202,6 +203,29 @@ function renderOrganigrama(){
   const filtroEmp = document.getElementById('org-empresa')?.value || '';
   const q = (document.getElementById('org-search')?.value || '').toLowerCase().trim();
   const { nodos, raices, totalEmpleados } = construirOrganigrama(filtroEmp);
+
+  // ── AUTO-EXPANSIÓN DEL NODO DEL USUARIO LOGUEADO ────────────────────
+  // La primera vez que el usuario abre el organigrama, expandimos
+  // automáticamente su propio nodo y todo su subárbol descendente, así
+  // ve a su gente sin tener que ir clickeando cada nivel.
+  // Esto reemplaza la experiencia "vacía" que tenía Papa (y cualquier
+  // gerente con varios niveles debajo) al entrar al organigrama.
+  if(!_orgUsuarioYaAutoExpandido && currentUser?.emp?.nom){
+    const miNombre = currentUser.emp.nom.toUpperCase().trim();
+    if(nodos[miNombre]){
+      _orgExpandido.add(miNombre);
+      // Expandir recursivamente todo el subárbol que cuelga de mí
+      const expandirSubArbol = (nodo, profundidad) => {
+        if(profundidad > 10) return; // safety
+        for(const subKey of Object.keys(nodo.subManagers)){
+          _orgExpandido.add(subKey);
+          expandirSubArbol(nodo.subManagers[subKey], profundidad + 1);
+        }
+      };
+      expandirSubArbol(nodos[miNombre], 0);
+      _orgUsuarioYaAutoExpandido = true;
+    }
+  }
 
   // Filtro por búsqueda: expandir nodos que contengan match (en nombre, área, o empleados)
   let resaltados = null;
