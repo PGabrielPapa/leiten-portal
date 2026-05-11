@@ -77,6 +77,20 @@ function getDefaultLiqParams(){
     pctPresentismo:5, pctAntiguedadPorAnio:1,
     bancoEmpresa:'', cbuEmpresa:'',
 
+    // ── ASIGNACIONES NO REMUNERATIVAS POR PARITARIA ──
+    // Montos mensuales no remunerativos pactados en acuerdos colectivos por
+    // sindicato (Art. 103 bis LCT, jurisprudencia). Se prorratean por días
+    // trabajados y al 50% en quincenales, igual que el sueldo básico.
+    // Los empleados Fuera de Convenio (FC) usan la clave 'FC'.
+    // RRHH actualiza estos valores cuando se firman nuevos acuerdos paritarios.
+    asignacionNoRemPorSindicato: {
+      SEC:      0,
+      UOM:      0,
+      PLASTICO: 0,
+      ASIMRA:   0,
+      FC:       0
+    },
+
     // SMVM (Salario Mínimo Vital y Móvil) para tope embargo Art. 147 LCT.
     // Editable en pestaña Parámetros. Valor a actualizar mensualmente según
     // resoluciones del Consejo del Salario.
@@ -789,9 +803,22 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const mBonoExento         = $m(nov.bonoProductividadExento);
   const mIndemniz           = $m(nov.indemnizaciones);
   const mOtrosExentos       = $m(nov.otrosExentos);
+
+  // ─── Asignación NO REMUNERATIVA por paritaria (CCT del empleado) ───────
+  // Monto pactado en acuerdo colectivo, definido por sindicato en params.
+  // Se prorratea por días trabajados Y al 50% en quincenales (igual que
+  // el sueldo básico). Empleados Fuera de Convenio usan la clave 'FC'.
+  // No paga aportes ni genera contribuciones patronales (es exento).
+  // Cita legal: Art. 103 bis LCT — acuerdos paritarios.
+  const _claveSindParitaria = emp.cod_sindicato || 'FC';
+  const _tablaParitaria = (params.asignacionNoRemPorSindicato || {});
+  const _montoParitariaPlena = $m(_tablaParitaria[_claveSindParitaria]);
+  const mAsigNoRem = _montoParitariaPlena * proporcion * _factorPeriodo;
+
   // Los plus no-remunerativos del catálogo + conceptos exentos de liq. final
   // ENGROSAN los exentos:
   const totalExentos = mHsExtrasExentas + mBonoExento + mIndemniz + mOtrosExentos + mOtrosHNoRem
+                     + mAsigNoRem
                      + mVacNoGozadas + mIntegrMesDesp + mIndemAntig;
 
   // BASE REMUNERATIVA (sujeta a aportes y base imponible de ganancias)
@@ -1077,6 +1104,9 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
     mAjuste, mOtrosH, otrosH,
     // Conceptos exentos de ganancias (NO remunerativos)
     mHsExtrasExentas, mBonoExento, mIndemniz, mOtrosExentos,
+    // Asignación no remunerativa por paritaria (Art. 103 bis LCT)
+    mAsigNoRem,
+    asigNoRemParitaria: _montoParitariaPlena,  // monto pleno antes del prorrateo (para trazabilidad)
     // Totales finales (incluyen conceptos custom)
     totalExentos: totalExentosFinal,
     totalHaberesRem: totalHaberesRemFinal,
@@ -4035,12 +4065,14 @@ function buildConceptRows(item, params){
   // Se pagan al empleado pero NO tributan ni generan aportes.
   // Art. 82 LIG (horas extras exentas), Ley 27.743 (bonos productividad),
   // Art. 180 bis LCT (indemnizaciones), otros conceptos exentos.
+  // Art. 103 bis LCT (asignaciones no remunerativas por paritaria).
   // Siguen la convención argentina de codificación (serie 58xxx para no remunerativos,
   // pero usamos códigos específicos para claridad del concepto)
   pA('Horas Extras Exentas (Art.82 LIG)', 58100, $m(item.mHsExtrasExentas));
   pA('Bono Productividad Exento',         58200, $m(item.mBonoExento));
   pA('Indemnización Art.180 bis LCT',     58300, $m(item.mIndemniz));
   pA('Otros conceptos exentos',           58400, $m(item.mOtrosExentos));
+  pA('Asignación no remunerativa (Acuerdos paritarios)', 58500, $m(item.mAsigNoRem));
 
   // RETENCIONES
   // Línea informativa cuando los aportes fueron topeados por Art. 9 Ley 24.241

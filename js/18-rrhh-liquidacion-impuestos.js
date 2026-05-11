@@ -439,6 +439,13 @@ function cargarParamsForm(){
   set('par-f931topejub', p.f931TopeJub||0);
   set('par-f931topeos',  p.f931TopeOS||0);
   set('par-cbu',p.cbuEmpresa||''); set('par-banco',p.bancoEmpresa||'');
+  // Asignaciones no remunerativas por sindicato (Art. 103 bis LCT)
+  const _asig = p.asignacionNoRemPorSindicato || {};
+  set('par-asig-sec',      _asig.SEC      || 0);
+  set('par-asig-uom',      _asig.UOM      || 0);
+  set('par-asig-plastico', _asig.PLASTICO || 0);
+  set('par-asig-asimra',   _asig.ASIMRA   || 0);
+  set('par-asig-fc',       _asig.FC       || 0);
   // % topes estables
   set('par-gan-pct-honor',p.gan_topePctHonorariosMed);
   set('par-gan-pct-honor-gn',p.gan_topePctHonorariosMedGanNeta);
@@ -864,6 +871,14 @@ function guardarLiqParams(){
     f931TopeJub: gv('par-f931topejub') || actual.f931TopeJub || 0,
     f931TopeOS:  gv('par-f931topeos')  || actual.f931TopeOS  || 0,
     cbuEmpresa:gs('par-cbu'), bancoEmpresa:gs('par-banco'),
+    // Asignaciones no remunerativas por paritaria (Art. 103 bis LCT)
+    asignacionNoRemPorSindicato: {
+      SEC:      gv('par-asig-sec'),
+      UOM:      gv('par-asig-uom'),
+      PLASTICO: gv('par-asig-plastico'),
+      ASIMRA:   gv('par-asig-asimra'),
+      FC:       gv('par-asig-fc')
+    },
     gan_topePctHonorariosMed: gv('par-gan-pct-honor') || actual.gan_topePctHonorariosMed,
     gan_topePctHonorariosMedGanNeta: gv('par-gan-pct-honor-gn') || actual.gan_topePctHonorariosMedGanNeta,
     gan_topePctDonaciones: gv('par-gan-pct-donac') || actual.gan_topePctDonaciones,
