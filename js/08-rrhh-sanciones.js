@@ -283,9 +283,14 @@ function abrirFormSolicitudSancion(opts){
   const modo = opts.modo || (currentUser?.role === 'rrhh' ? 'rrhh' : 'gerente');
   const legPreSel = opts.leg || '';
 
+  // El CEO (Parera Martín) tiene los mismos privilegios que RRHH:
+  // puede solicitar sanciones para cualquier empleado.
+  const _userNom = (currentUser?.emp?.nom || '').toUpperCase();
+  const esCEO = _userNom.includes('PARERA, MARTIN') || _userNom.includes('PARERA MARTIN');
+
   // Determinar empleados disponibles para seleccionar
   let empleadosDisp;
-  if(modo === 'gerente'){
+  if(modo === 'gerente' && !esCEO){
     const gerNom = currentUser.emp.nom.toUpperCase().trim();
     const esPapa = gerNom.includes('PAPA, PABLO GABRIEL');
     empleadosDisp = getNomina().filter(e => {
@@ -296,7 +301,7 @@ function abrirFormSolicitudSancion(opts){
       return v.validador.toUpperCase() === gerNom;
     });
   } else {
-    // RR.HH. puede sancionar a cualquiera
+    // RR.HH. y CEO pueden sancionar a cualquiera
     empleadosDisp = getNomina().filter(e => !e._deBaja && !e.egreso);
   }
   empleadosDisp = empleadosDisp.sort((a,b)=>a.nom.localeCompare(b.nom));
@@ -345,7 +350,7 @@ function abrirFormSolicitudSancion(opts){
             <option value="">— Seleccionar —</option>
             ${empOpts}
           </select>
-          <div style="font-size:10px;color:var(--t3);margin-top:3px">${modo==='gerente' ? `Solo aparecen los ${empleadosDisp.length} empleados a tu cargo` : `Cualquier empleado activo del grupo (${empleadosDisp.length})`}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:3px">${modo==='gerente' && !esCEO ? `🔒 Solo aparecen los ${empleadosDisp.length} empleados que tenés a cargo directo. Para sancionar fuera de tu área, contactá a RR.HH. o al CEO.` : esCEO ? `Como CEO podés sancionar a cualquiera (${empleadosDisp.length} empleados)` : `Cualquier empleado activo del grupo (${empleadosDisp.length})`}</div>
         </div>
 
         <div>
@@ -422,6 +427,51 @@ function guardarSolicitudSancion(modo){
 
   const emp = empByLeg(leg);
   if(!emp){ alert('Empleado no encontrado.'); return; }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // VALIDACIÓN DE PERMISOS — backend
+  // ───────────────────────────────────────────────────────────────────────
+  // Defensa en profundidad: el dropdown ya filtra, pero si alguien manipula
+  // el DOM o llama directo a la función con un legajo arbitrario, lo bloqueamos.
+  //
+  // Reglas:
+  //   - RR.HH. (role === 'rrhh')          → puede sancionar a cualquiera
+  //   - CEO (Parera Martín)               → puede sancionar a cualquiera
+  //   - Papa, Pablo Gabriel (top del árbol) → puede sancionar a cualquiera del árbol
+  //   - Resto de los gerentes              → solo a empleados a cargo directo
+  // ═════════════════════════════════════════════════════════════════════
+  const userRole = currentUser?.role || '';
+  const userNom  = (currentUser?.emp?.nom || '').toUpperCase();
+  const esRRHH  = userRole === 'rrhh';
+  const esCEO   = userNom.includes('PARERA, MARTIN') || userNom.includes('PARERA MARTIN');
+  const esPapa  = userNom.includes('PAPA, PABLO GABRIEL') || userNom.includes('PAPA PABLO GABRIEL');
+
+  if(!esRRHH && !esCEO){
+    // Es un gerente regular o Papa — verificar que el empleado esté bajo su cargo
+    const v = (typeof getValidador === 'function') ? getValidador(emp) : null;
+    const validadorNom = (v?.validador || '').toUpperCase();
+    let autorizado = false;
+    if(esPapa){
+      // Papa puede sancionar a cualquiera que tenga su nombre en el árbol de validación
+      autorizado = validadorNom.includes('PAPA, PABLO GABRIEL');
+    } else {
+      // Gerente regular: solo subordinados directos
+      autorizado = (validadorNom === userNom.trim());
+    }
+    if(!autorizado){
+      alert('⚠ Solo podés solicitar sanciones para empleados que tengas a cargo.\n\nEste empleado no figura como tu subordinado directo. Si necesitás sancionar a alguien fuera de tu área, contactá a RR.HH. o al CEO.');
+      if(typeof logAuditX === 'function'){
+        logAuditX('sanciones', 'intento_no_autorizado', {
+          solicitante_leg: currentUser?.emp?.leg,
+          solicitante_nom: currentUser?.emp?.nom,
+          objetivo_leg: leg,
+          objetivo_nom: emp.nom,
+          validador_real: v?.validador || '(sin validador)'
+        });
+      }
+      return;
+    }
+  }
 
   let fechaNotif = '', fechaCumpl = '';
   if(modo === 'rrhh'){

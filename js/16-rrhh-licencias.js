@@ -215,7 +215,7 @@ async function renderLicAnualGerente(){
   }
   const fmtD = iso=>{ if(!iso) return '—'; const[y,m,d]=iso.split('-'); return`${d}/${m}/${y}`; };
   div.innerHTML = lista.map(l=>`
-    <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+    <div data-lic-leg="${l.leg||''}" data-lic-desde="${l.desde||''}" data-lic-hasta="${l.hasta||''}" data-lic-estado="${l.estado||''}" style="padding:14px 18px;border-bottom:1px solid var(--border)">
       <div style="display:flex;align-items:flex-start;gap:12px">
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
@@ -423,7 +423,7 @@ async function renderLicEspecialGerente(){
     const btnLabel = meta.flujo==='autorizacion' ? '✓ Autorizar' : '✓ Tomar conocimiento';
     const btnReject = meta.flujo==='autorizacion' ? '✕ Rechazar' : '';
     return `
-      <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+      <div data-lic-leg="${l.leg||''}" data-lic-desde="${l.desde||''}" data-lic-hasta="${l.hasta||''}" data-lic-tipo="${l.tipoLicencia||''}" data-lic-estado="${l.estado||''}" style="padding:14px 18px;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div style="flex:1;min-width:240px">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">

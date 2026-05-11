@@ -416,7 +416,7 @@ async function renderLicenciasGerente(){
   const fmtD = iso => { if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
 
   div.innerHTML = lista.map(l => `
-    <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+    <div data-lic-leg="${l.leg||''}" data-lic-desde="${l.fecha_desde||l.desde||''}" data-lic-hasta="${l.fecha_hasta||l.hasta||''}" data-lic-tipo="${l.tipo||''}" data-lic-estado="${l.estado||'informado'}" style="padding:14px 18px;border-bottom:1px solid var(--border)">
       <div style="display:flex;align-items:flex-start;gap:12px">
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
