@@ -532,24 +532,73 @@ function navRRHH(sub){
 function renderDelegacionSub(){
   const cont = document.getElementById('rrhh-delegacion-content');
   if(!cont) return;
-  const isOwner = currentUser?.emp?.nom?.toUpperCase().includes('PAPA, PABLO GABRIEL');
-  if(!isOwner){
-    cont.innerHTML=`<div class="card" style="padding:20px;color:var(--t3);text-align:center">Solo PAPA, PABLO GABRIEL puede gestionar la delegación.</div>`;
+
+  const userNom = (currentUser?.emp?.nom || '').toUpperCase();
+  const isOwner = userNom.includes('PAPA, PABLO GABRIEL') || userNom.includes('PAPA PABLO GABRIEL');
+  const isRRHH = currentUser?.role === 'rrhh';
+  const isCEO = userNom.includes('PARERA, MARTIN') || userNom.includes('PARERA MARTIN');
+
+  // Estado actual de la delegación (visible para todo RR.HH.)
+  const deleg = (typeof getDelegacion === 'function') ? getDelegacion() : null;
+  const delegInfoHtml = deleg && deleg.delegadoNom ? `
+    <div style="padding:10px 14px;background:rgba(234,179,8,.06);border:1px solid rgba(234,179,8,.25);border-radius:var(--r);font-size:12px;color:var(--t2);margin-bottom:14px">
+      <div style="font-weight:600;color:var(--yellow);margin-bottom:3px">⏱ Delegación activa</div>
+      <div>Delegado a: <strong style="color:var(--t1)">${deleg.delegadoNom}</strong></div>
+      <div style="font-size:11px;color:var(--t3);margin-top:3px">Vigencia: ${deleg.inicio || '—'} → ${deleg.fin || '—'}</div>
+    </div>
+  ` : `
+    <div style="padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);font-size:12px;color:var(--t3);margin-bottom:14px">
+      Actualmente no hay delegación activa. Las autorizaciones se procesan normalmente con el dueño del flujo.
+    </div>
+  `;
+
+  if(isOwner){
+    // Panel completo de gestión
+    cont.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px;max-width:560px">
+        <div class="card" style="padding:20px">
+          <div style="font-size:13px;color:var(--t1);font-weight:600;margin-bottom:4px">Delegación de autorización de RR.HH.</div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Durante el período que indiques, otra persona podrá aprobar solicitudes en tu lugar. Solo gerentes y staff de RR.HH. pueden recibir la delegación.</div>
+          <div id="delegacion-banner-sub" style="margin-bottom:16px"></div>
+          ${delegInfoHtml}
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="abrirDelegacion()" style="font-size:13px;padding:9px 16px">👤 Delegar autorización</button>
+            <button class="btn btn-ghost" onclick="revocarDelegacion()" style="font-size:13px;padding:9px 16px;color:var(--red);border-color:rgba(239,68,68,.3)" ${!deleg ? 'disabled' : ''}>✕ Revocar delegación</button>
+          </div>
+        </div>
+      </div>`;
+    actualizarBannerDelegacion();
     return;
   }
-  cont.innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:16px;max-width:560px">
-      <div class="card" style="padding:20px">
-        <div style="font-size:13px;color:var(--t1);font-weight:600;margin-bottom:4px">Delegación de autorización de RR.HH.</div>
-        <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Durante el período que indiques, otra persona podrá aprobar solicitudes en tu lugar. Solo gerentes y staff de RR.HH. pueden recibir la delegación.</div>
-        <div id="delegacion-banner-sub" style="margin-bottom:16px"></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="abrirDelegacion()" style="font-size:13px;padding:9px 16px">👤 Delegar autorización</button>
-          <button class="btn btn-ghost" onclick="revocarDelegacion()" style="font-size:13px;padding:9px 16px;color:var(--red);border-color:rgba(239,68,68,.3)">✕ Revocar delegación</button>
+
+  if(isCEO){
+    // El CEO ve la info pero no puede delegar (no es su flujo)
+    cont.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px;max-width:560px">
+        <div class="card" style="padding:20px">
+          <div style="font-size:13px;color:var(--t1);font-weight:600;margin-bottom:4px">Delegación de autorización de RR.HH.</div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:14px">El flujo de delegación de autorizaciones de RR.HH. lo gestiona el Gerente de RR.HH. (Papa, Pablo Gabriel). Acá podés ver el estado actual.</div>
+          ${delegInfoHtml}
         </div>
-      </div>
-    </div>`;
-  actualizarBannerDelegacion();
+      </div>`;
+    return;
+  }
+
+  if(isRRHH){
+    // Otros usuarios de RR.HH. ven el estado actual pero no pueden delegar
+    cont.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px;max-width:560px">
+        <div class="card" style="padding:20px">
+          <div style="font-size:13px;color:var(--t1);font-weight:600;margin-bottom:4px">Delegación de autorización de RR.HH.</div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Esta delegación la gestiona el Gerente de RR.HH. (Papa, Pablo Gabriel). Acá podés consultar el estado actual.</div>
+          ${delegInfoHtml}
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Caso raro: alguien sin rol RR.HH. accedió al sub-panel (por permisos delegados)
+  cont.innerHTML = `<div class="card" style="padding:20px;color:var(--t3);text-align:center">No tenés permisos para gestionar la delegación.</div>`;
 }
 
 function actualizarRRHHBadges(){
@@ -641,16 +690,32 @@ function saveDelegacion(d){ localStorage.setItem('lsg_delegacion', JSON.stringif
 function clearDelegacion(){ localStorage.removeItem('lsg_delegacion'); }
 
 function abrirDelegacion(){
-  document.getElementById('modal-delegacion').style.display = 'flex';
-  document.getElementById('del-search').value = '';
+  // Validar permisos antes de abrir el modal
+  const userNom = (currentUser?.emp?.nom || '').toUpperCase();
+  const isOwner = userNom.includes('PAPA, PABLO GABRIEL') || userNom.includes('PAPA PABLO GABRIEL');
+  if(!isOwner){
+    toast('⚠ Solo el Gerente de RR.HH. puede delegar autorizaciones', 'var(--red)');
+    return;
+  }
+  const modal = document.getElementById('modal-delegacion');
+  if(!modal){
+    console.error('Modal delegación no encontrado en DOM');
+    toast('⚠ Error al abrir el modal. Recargá la página.', 'var(--red)');
+    return;
+  }
+  modal.style.display = 'flex';
+  const searchEl = document.getElementById('del-search');
+  const inicioEl = document.getElementById('del-inicio');
+  const finEl    = document.getElementById('del-fin');
+  if(searchEl) searchEl.value = '';
   // Pre-fill: today → 30 days from now
   const hoy = new Date();
   const fin = new Date(); fin.setDate(fin.getDate() + 30);
   const fmt = d => d.toISOString().split('T')[0];
-  document.getElementById('del-inicio').value = fmt(hoy);
-  document.getElementById('del-fin').value = fmt(fin);
-  renderDelList();
-  setTimeout(()=>document.getElementById('del-search').focus(),100);
+  if(inicioEl) inicioEl.value = fmt(hoy);
+  if(finEl) finEl.value = fmt(fin);
+  if(typeof renderDelList === 'function') renderDelList();
+  setTimeout(()=>{ if(searchEl) searchEl.focus(); }, 100);
 }
 function cerrarDelegacion(){
   document.getElementById('modal-delegacion').style.display = 'none';
@@ -723,16 +788,23 @@ function confirmarDelegacion(e){
   });
   cerrarDelegacion();
   actualizarBannerDelegacion();
+  // Refrescar el panel para mostrar la nueva delegación
+  if(typeof renderDelegacionSub === 'function') renderDelegacionSub();
   toast(`✓ Autorización delegada a ${nombre} hasta el ${fmtDisplay(fin)}`, 'var(--green)');
 }
 
 function revocarDelegacion(){
   const d = getDelegacion();
-  if(!d) return;
-  const nombre = d.delegadoNom.split(',')[0].trim();
-  if(!confirm(`¿Revocar la delegación de ${d.delegadoNom}?`)) return;
+  if(!d){
+    toast('No hay delegación activa para revocar', 'var(--t3)');
+    return;
+  }
+  const nombre = (d.delegadoNom || '').split(',')[0].trim() || 'la persona delegada';
+  if(!confirm(`¿Revocar la delegación de ${d.delegadoNom || 'la persona delegada'}?`)) return;
   clearDelegacion();
   actualizarBannerDelegacion();
+  // Refrescar el panel para reflejar la revocación
+  if(typeof renderDelegacionSub === 'function') renderDelegacionSub();
   toast(`✓ Delegación de ${nombre} revocada`, 'var(--yellow)');
 }
 
