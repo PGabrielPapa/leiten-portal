@@ -1319,16 +1319,21 @@ async function abrirLiquidacion(id){
   _liqActiva=lista.find(l=>l.id===id);
   if(!_liqActiva){ toast('⚠ No se encontró la liquidación','var(--red)'); return; }
   await cargarNovedadesParaLiq(id);
-  // Si la liq nunca fue calculada (items vacíos) y está en borrador, la
-  // precalculamos automáticamente en background para que los recibos no
-  // salgan vacíos si el usuario va directo al tab Recibos.
-  if((!_liqActiva.items || !_liqActiva.items.length) && _liqActiva.estado === 'borrador'){
+  // Si la liq tiene items vacíos, los precalculamos para que los recibos no
+  // salgan vacíos si el usuario va directo al tab Recibos. Esto cubre tanto
+  // liquidaciones en borrador (nunca calculadas) como aprobadas/pagadas cuyo
+  // payload de items se haya corrompido o perdido al guardar.
+  if(!_liqActiva.items || !_liqActiva.items.length){
     try {
       if(typeof calcularYRenderPreview === 'function'){
+        console.log(`[abrirLiquidacion] Items vacíos en liq ${id} (estado=${_liqActiva.estado}), precalculando…`);
         await calcularYRenderPreview();
+        if(_liqActiva.items?.length){
+          console.log(`[abrirLiquidacion] Recálculo OK: ${_liqActiva.items.length} items`);
+        }
       }
     } catch(e){
-      console.warn('Precálculo automático falló (no crítico):', e);
+      console.warn('[abrirLiquidacion] Precálculo automático falló (no crítico):', e);
     }
   }
   liqTab('novedades');
@@ -3287,9 +3292,17 @@ async function calcularYRenderPreview(){
     items.push(item);
   }
 
-  // Guardar items en la liquidación
+  // Guardar items en la liquidación.
+  // SI la liq ya está aprobada/pagada/cerrada, NO la sobrescribimos en IDB:
+  // el recálculo es solo "en memoria" para poder imprimir recibos. Mantener
+  // los items guardados originales intactos protege la integridad de la
+  // liquidación firmada/cerrada (compliance).
   liq.items=items;
-  await updateLiquidacion(liq);
+  if(liq.estado === 'borrador' || !liq.estado){
+    await updateLiquidacion(liq);
+  } else {
+    console.log(`[calcularYRenderPreview] Liq ${liq.id} en estado "${liq.estado}" — recálculo en memoria, NO se persiste`);
+  }
 
   renderPreviewTabla(items);
 }
@@ -4339,22 +4352,35 @@ async function imprimirRecibo(leg){
     toast('⚠ No hay liquidación activa. Abrí una desde la lista de Períodos.','var(--yellow)');
     return;
   }
+  // Auto-recálculo si items vacíos. Antes restringíamos a borrador, pero una
+  // liquidación aprobada también puede tener items vacíos si se guardó mal
+  // en IDB o se rehidrató desde un backup. Permitimos recalcular en cualquier
+  // estado, pero con confirmación si NO es borrador.
   if(!liq.items || !liq.items.length){
-    // Auto-recálculo silencioso: si la liq se abrió sin pasar por Preview,
-    // los items están vacíos. Los calculamos al vuelo para que el recibo
-    // no salga en blanco.
-    toast('⏳ Calculando liquidación antes de imprimir…','var(--accent2)');
+    if(liq.estado !== 'borrador'){
+      const ok = confirm(
+        `⚠ Esta liquidación está en estado "${liq.estado.toUpperCase()}" pero los items están vacíos.\n\n` +
+        `Esto puede pasar si los datos se corrompieron al guardar.\n\n` +
+        `¿Querés intentar recalcular los items para imprimir el recibo?\n\n` +
+        `Nota: el recálculo usa la nómina y novedades actuales. Si la liquidación ya está aprobada/pagada, ` +
+        `los valores recalculados pueden no coincidir exactamente con lo que se aprobó originalmente.`
+      );
+      if(!ok) return;
+    } else {
+      toast('⏳ Calculando liquidación antes de imprimir…','var(--accent2)');
+    }
     try {
       if(typeof calcularYRenderPreview === 'function'){
         await calcularYRenderPreview();
       }
     } catch(e){
-      console.error('Error recalculando liq antes de imprimir:', e);
+      console.error('[imprimirRecibo] Error en recálculo:', e);
+      toast('⚠ Error al recalcular: ' + (e?.message || 'desconocido'),'var(--red)', 5000);
+      return;
     }
-    // Re-leer liq (calcularYRenderPreview pudo modificar _liqActiva)
     liq = _liqActiva;
     if(!liq?.items?.length){
-      toast('⚠ No se pudieron generar los items. Andá al tab Preview y recalculá manualmente.','var(--red)', 4500);
+      toast('⚠ Recálculo no produjo items. Verificá que haya empleados activos en la nómina de esta empresa.','var(--red)', 5500);
       return;
     }
   }
@@ -4363,12 +4389,29 @@ async function imprimirRecibo(leg){
     toast(`⚠ El empleado ${leg} no figura en esta liquidación. Recalculá desde Preview.`,'var(--red)', 4500);
     return;
   }
+
+  // ─── Construir filas con try/catch detallado ───────────────────────
   const params=getLiqParams();
   const empDB=getNomina().find(function(e){return e.leg===leg;})||{};
-  const rows=buildConceptRows(item,params);
+  let rows;
+  try {
+    rows=buildConceptRows(item,params);
+  } catch(e){
+    console.error('[imprimirRecibo] Error en buildConceptRows:', e, 'item:', item);
+    toast('⚠ Error armando conceptos: ' + (e?.message || 'desconocido'),'var(--red)', 5500);
+    return;
+  }
 
   if(!rows || !rows.length){
-    toast(`⚠ El recibo de ${item.nom} no tiene conceptos calculados. Verificá que tenga sueldo bruto cargado en la nómina.`,'var(--red)', 5000);
+    // Fallback: si el item existe pero buildConceptRows no devolvió nada,
+    // logueamos el item completo para diagnóstico y mostramos un mensaje útil.
+    console.warn('[imprimirRecibo] buildConceptRows devolvió 0 filas para item:', item);
+    const tieneBruto = $m(item.sueldoBasico) > 0 || $m(item.bruto) > 0 || $m(empDB.bruto) > 0;
+    if(!tieneBruto){
+      toast(`⚠ ${item.nom} no tiene sueldo bruto cargado en la nómina. No se puede generar el recibo.`,'var(--red)', 5500);
+    } else {
+      toast(`⚠ No se encontraron conceptos para ${item.nom}. Probá recalcular desde Preview.`,'var(--red)', 5500);
+    }
     return;
   }
 
@@ -4383,18 +4426,30 @@ async function imprimirRecibo(leg){
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   let pagesHtml='';
-  for(let p=0;p<totalPags;p++){
-    const pageRows=rows.slice(p*PAGE_SIZE,(p+1)*PAGE_SIZE);
-    const pagActual=p+1;
-    const esLast=pagActual===totalPags;
-    const orig=reciboUnaCopiaPag(item,liq,pageRows,params,empDB,'ORIGINAL',pagActual,totalPags,totH,totR,totA,neto);
-    const dupl=reciboUnaCopiaPag(item,liq,pageRows,params,empDB,'DUPLICADO',pagActual,totalPags,totH,totR,totA,neto);
-    pagesHtml+=`<div style="page-break-after:${esLast?'avoid':'always'}">
-      <div style="display:flex;gap:8px">
-        <div style="flex:1">${orig}</div>
-        <div style="flex:1">${dupl}</div>
-      </div>
-    </div>`;
+  try {
+    for(let p=0;p<totalPags;p++){
+      const pageRows=rows.slice(p*PAGE_SIZE,(p+1)*PAGE_SIZE);
+      const pagActual=p+1;
+      const esLast=pagActual===totalPags;
+      const orig=reciboUnaCopiaPag(item,liq,pageRows,params,empDB,'ORIGINAL',pagActual,totalPags,totH,totR,totA,neto);
+      const dupl=reciboUnaCopiaPag(item,liq,pageRows,params,empDB,'DUPLICADO',pagActual,totalPags,totH,totR,totA,neto);
+      pagesHtml+=`<div style="page-break-after:${esLast?'avoid':'always'}">
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">${orig}</div>
+          <div style="flex:1">${dupl}</div>
+        </div>
+      </div>`;
+    }
+  } catch(e){
+    console.error('[imprimirRecibo] Error armando HTML del recibo:', e, 'item:', item);
+    toast('⚠ Error armando el recibo: ' + (e?.message || 'desconocido'),'var(--red)', 5500);
+    return;
+  }
+
+  if(!pagesHtml || !pagesHtml.trim()){
+    console.warn('[imprimirRecibo] pagesHtml quedó vacío. rows:', rows, 'item:', item);
+    toast('⚠ El recibo quedó vacío después del armado. Revisá la consola del navegador (F12).','var(--red)', 5500);
+    return;
   }
 
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
