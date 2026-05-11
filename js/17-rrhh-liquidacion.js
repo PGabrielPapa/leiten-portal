@@ -3931,12 +3931,39 @@ function getEmpresaDatos(empresa){
   return def;
 }
 
-// Devuelve la firma del empleador cargada en ABM (si hay) para una empresa
+// Devuelve la firma del empleador para una empresa.
+// Prioridad: (1) firma específica cargada en ABM de la empresa
+//            (2) firma del Gerente de RR.HH. (catálogo global)
 function getEmpresaFirma(empresa){
   try {
     const abm = _findEmpresaABMByNombre(empresa);
-    return abm?.firmaDataUrl || null;
-  } catch(e){ return null; }
+    if(abm?.firmaDataUrl) return abm.firmaDataUrl;
+  } catch(e){ /* sigue al fallback */ }
+  // Fallback al catálogo global de firmas (data/firmas.js)
+  if(typeof getFirmaRRHH === 'function'){
+    const f = getFirmaRRHH(empresa);
+    if(f && f.imagen) return f.imagen;
+  }
+  return null;
+}
+
+// Devuelve también el nombre + cargo de quien firma (para mostrar bajo la firma)
+function getEmpresaFirmaInfo(empresa){
+  try {
+    const abm = _findEmpresaABMByNombre(empresa);
+    if(abm?.firmaDataUrl){
+      return {
+        imagen: abm.firmaDataUrl,
+        nombre: abm.firmaNombre || abm.nombre || '',
+        cargo: abm.firmaCargo || 'Empleador'
+      };
+    }
+  } catch(e){}
+  if(typeof getFirmaRRHH === 'function'){
+    const f = getFirmaRRHH(empresa);
+    if(f) return { imagen: f.imagen, nombre: f.nombre, cargo: f.cargo };
+  }
+  return null;
 }
 
 function periodoMM(liq){
@@ -4048,6 +4075,7 @@ function reciboUnaCopiaPag(item, liq, pageRows, params, empDB, tipo, pagActual, 
   const ed=getEmpresaDatos(item.empresa);
   const logoSrc=getLogoSrc(item.empresa);
   const firmaSrc=getEmpresaFirma(item.empresa);
+  const firmaInfo=(typeof getEmpresaFirmaInfo === 'function') ? getEmpresaFirmaInfo(item.empresa) : null;
   const esUltima=(pagActual===totalPags);
   const tipoDesc=({mensual:'HABERES MENSUALES',quincenal:'HABERES QUINCENALES',quincenal_1:'HABERES QUINCENALES (1ª QUINCENA)',quincenal_2:'HABERES QUINCENALES (2ª QUINCENA)',sac1:'SAC 1° SEMESTRE',sac2:'SAC 2° SEMESTRE',
     vacaciones:'VACACIONES',final:'LIQUIDACION FINAL',complementaria:'COMPLEMENTARIA'})[liq.tipo]||liq.tipo.toUpperCase();
@@ -4282,9 +4310,11 @@ function reciboUnaCopiaPag(item, liq, pageRows, params, empDB, tipo, pagActual, 
     </div>
     <div style="flex:1;text-align:center;position:relative">
       <div style="height:40px;border-bottom:1px solid #333;display:flex;align-items:flex-end;justify-content:center;overflow:hidden">
-        ${firmaSrc ? `<img src="${firmaSrc}" style="max-height:40px;max-width:80%;object-fit:contain;margin-bottom:-2px" alt="Firma">` : ''}
+        ${firmaSrc ? `<img src="${firmaSrc}" style="max-height:38px;max-width:80%;object-fit:contain;margin-bottom:-2px" alt="Firma">` : ''}
       </div>
-      <div style="padding-top:3px;font-size:8px">Firma del Empleador${firmaSrc?'':' <span style="font-size:7px;color:#bbb">(sin firma cargada)</span>'}</div>
+      <div style="padding-top:3px;font-size:8px">
+        ${firmaInfo && firmaInfo.nombre ? `<div style="font-weight:600">${firmaInfo.nombre}</div><div style="font-size:7px;color:#666">${firmaInfo.cargo || 'Empleador'}</div>` : `Firma del Empleador${firmaSrc?'':' <span style="font-size:7px;color:#bbb">(sin firma cargada)</span>'}`}
+      </div>
     </div>
   </div>
 </div>`;

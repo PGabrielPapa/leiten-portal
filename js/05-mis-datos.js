@@ -35,6 +35,7 @@ function renderMisDatos(){
       <button class="btn btn-ghost" onclick="toggleMiHistorial()" style="color:rgb(168,85,247);border-color:rgba(168,85,247,.3)">📜 Ver mi historial</button>
       <button class="btn btn-ghost" onclick="toggleMisLicenciasHist()" style="color:rgb(34,197,94);border-color:rgba(34,197,94,.3)">🏖 Ver mis licencias</button>
       <button class="btn btn-ghost" onclick="toggleMisEvaluaciones()" style="color:rgb(234,179,8);border-color:rgba(234,179,8,.3)">📝 Ver mis evaluaciones</button>
+      <button class="btn btn-ghost" onclick="abrirSolicitarCertificadoLaboral()" style="color:rgb(20,184,166);border-color:rgba(20,184,166,.3)">📄 Solicitar certificado laboral</button>
     </div>
     <div id="mis-cbus-wrap" style="display:none;margin-top:16px">
       <div class="card" style="padding:18px;max-width:760px">

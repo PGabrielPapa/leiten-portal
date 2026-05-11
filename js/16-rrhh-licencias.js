@@ -239,6 +239,7 @@ async function renderLicAnualGerente(){
             <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px;color:var(--green);border-color:rgba(34,197,94,.3)" onclick="aprobarLicAnualGerente(${l.id})">✓ Aprobar</button>
             <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px;color:var(--red);border-color:rgba(239,68,68,.3)" onclick="rechazarLicAnualGerente(${l.id})">✕ Rechazar</button>
           </div>`:''}
+          ${(l.estado==='aprobada' || l.estado==='aprobada_gerente') ? `<button class="btn btn-ghost" style="font-size:10px;padding:3px 9px;color:var(--accent2);border-color:rgba(61,127,255,.3)" onclick="imprimirComprobanteLicencia(${l.id}, 'anual')" title="Comprobante oficial firmado">📄 Comprobante</button>`:''}
         </div>
       </div>
     </div>`).join('');
@@ -444,6 +445,7 @@ async function renderLicEspecialGerente(){
               <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px;color:var(--green);border-color:rgba(34,197,94,.3)" onclick="aprobarLicEspGerente(${l.id})">${btnLabel}</button>
               ${btnReject?`<button class="btn btn-ghost" style="font-size:10px;padding:3px 9px;color:var(--red);border-color:rgba(239,68,68,.3)" onclick="rechazarLicEspGerente(${l.id})">${btnReject}</button>`:''}
             </div>`:''}
+            ${(l.estado==='aprobada'||l.estado==='aprobada_gerente') ? `<button class="btn btn-ghost" style="font-size:10px;padding:3px 9px;color:var(--accent2);border-color:rgba(61,127,255,.3)" onclick="imprimirComprobanteLicencia(${l.id}, 'especial')" title="Comprobante oficial firmado">📄 Comprobante</button>`:''}
           </div>
         </div>
       </div>`;
@@ -521,6 +523,7 @@ async function renderLicEspecialRRHH(){
               ${({pendiente:'⏳ Pend. Gerente',aprobada_gerente:'✓ Pend. RR.HH.',aprobada:'✅ Aprobada',rechazada:'✕ Rechazada'})[l.estado]||l.estado}
             </span>
             ${readyRRHH?`<button class="btn btn-primary" style="font-size:11px;padding:4px 12px" onclick="aprobarLicEspRRHH(${l.id})">${btnLabel}</button>`:''}
+            ${l.estado==='aprobada' ? `<button class="btn btn-ghost" style="font-size:10px;padding:3px 9px;color:var(--accent2);border-color:rgba(61,127,255,.3)" onclick="imprimirComprobanteLicencia(${l.id}, 'especial')" title="Comprobante oficial firmado">📄 Comprobante</button>`:''}
           </div>
         </div>
       </div>`;
@@ -609,6 +612,7 @@ async function renderLicAnualRRHH(){
             <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px;color:var(--green);border-color:rgba(34,197,94,.3)" onclick="aprobarLicAnualRRHH(${l.id})">✅ Aprobar</button>
             <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px;color:var(--red);border-color:rgba(239,68,68,.3)" onclick="rechazarLicAnualRRHH(${l.id})">✕ Rechazar</button>
           </div>`:''}
+          ${l.estado==='aprobada' ? `<button class="btn btn-ghost" style="font-size:10px;padding:3px 9px;color:var(--accent2);border-color:rgba(61,127,255,.3)" onclick="imprimirComprobanteLicencia(${l.id}, 'anual')" title="Comprobante oficial firmado">📄 Comprobante</button>`:''}
         </div>
       </div>
     </div>`).join('');

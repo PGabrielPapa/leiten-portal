@@ -764,6 +764,7 @@ function abrirDetalleSancion(id){
       </div>
 
       <div style="padding:14px 22px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
+        ${(s.estado==='procedente' || s.estado==='aplicada_directa') ? `<button class="btn btn-ghost" onclick="imprimirNotifSancion('${s.id}')" style="font-size:13px;padding:8px 14px;color:var(--accent2);border-color:rgba(61,127,255,.3)" title="Genera la notificación oficial firmada por RR.HH., lista para imprimir o guardar como PDF">📄 Descargar notificación</button>` : ''}
         ${s.estado==='solicitada' && currentUser?.role==='rrhh' ? `<button class="btn btn-primary" onclick="document.getElementById('modal-sancion-detalle').remove();abrirResolverSancion('${s.id}')" style="font-size:13px;padding:8px 18px">⚖️ Resolver</button>` : ''}
         <button class="btn btn-ghost" onclick="document.getElementById('modal-sancion-detalle').remove()" style="font-size:13px;padding:8px 14px">Cerrar</button>
       </div>
