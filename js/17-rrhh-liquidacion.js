@@ -1319,6 +1319,18 @@ async function abrirLiquidacion(id){
   _liqActiva=lista.find(l=>l.id===id);
   if(!_liqActiva){ toast('⚠ No se encontró la liquidación','var(--red)'); return; }
   await cargarNovedadesParaLiq(id);
+  // Si la liq nunca fue calculada (items vacíos) y está en borrador, la
+  // precalculamos automáticamente en background para que los recibos no
+  // salgan vacíos si el usuario va directo al tab Recibos.
+  if((!_liqActiva.items || !_liqActiva.items.length) && _liqActiva.estado === 'borrador'){
+    try {
+      if(typeof calcularYRenderPreview === 'function'){
+        await calcularYRenderPreview();
+      }
+    } catch(e){
+      console.warn('Precálculo automático falló (no crítico):', e);
+    }
+  }
   liqTab('novedades');
   _actualizarBotonesEstadoLiq();
 }
@@ -4321,12 +4333,44 @@ function reciboUnaCopiaPag(item, liq, pageRows, params, empDB, tipo, pagActual, 
 }
 
 // ── imprimirRecibo ────────────────────────────────────────────────
-function imprimirRecibo(leg){
-  const liq=_liqActiva; if(!liq||!liq.items) return;
-  const item=liq.items.find(function(x){return x.leg===leg;}); if(!item) return;
+async function imprimirRecibo(leg){
+  let liq=_liqActiva;
+  if(!liq){
+    toast('⚠ No hay liquidación activa. Abrí una desde la lista de Períodos.','var(--yellow)');
+    return;
+  }
+  if(!liq.items || !liq.items.length){
+    // Auto-recálculo silencioso: si la liq se abrió sin pasar por Preview,
+    // los items están vacíos. Los calculamos al vuelo para que el recibo
+    // no salga en blanco.
+    toast('⏳ Calculando liquidación antes de imprimir…','var(--accent2)');
+    try {
+      if(typeof calcularYRenderPreview === 'function'){
+        await calcularYRenderPreview();
+      }
+    } catch(e){
+      console.error('Error recalculando liq antes de imprimir:', e);
+    }
+    // Re-leer liq (calcularYRenderPreview pudo modificar _liqActiva)
+    liq = _liqActiva;
+    if(!liq?.items?.length){
+      toast('⚠ No se pudieron generar los items. Andá al tab Preview y recalculá manualmente.','var(--red)', 4500);
+      return;
+    }
+  }
+  const item=liq.items.find(function(x){return x.leg===leg;});
+  if(!item){
+    toast(`⚠ El empleado ${leg} no figura en esta liquidación. Recalculá desde Preview.`,'var(--red)', 4500);
+    return;
+  }
   const params=getLiqParams();
   const empDB=getNomina().find(function(e){return e.leg===leg;})||{};
   const rows=buildConceptRows(item,params);
+
+  if(!rows || !rows.length){
+    toast(`⚠ El recibo de ${item.nom} no tiene conceptos calculados. Verificá que tenga sueldo bruto cargado en la nómina.`,'var(--red)', 5000);
+    return;
+  }
 
   const totH=rows.reduce(function(s,r){return s+r.h;},0);
   const totR=rows.reduce(function(s,r){return s+r.r;},0);
@@ -4370,12 +4414,36 @@ function imprimirRecibo(leg){
   ${pagesHtml}
   </body></html>`;
 
-  const w=window.open('','_blank'); w.document.write(html); w.document.close();
+  const w=window.open('','_blank');
+  if(!w){
+    toast('⚠ El navegador bloqueó la ventana de impresión. Permitir popups para este sitio.','var(--red)', 4500);
+    return;
+  }
+  w.document.write(html); w.document.close();
 }
 
-function imprimirTodosRecibos(){
-  const liq=_liqActiva; if(!liq?.items?.length) return;
-  liq.items.forEach(i=>imprimirRecibo(i.leg));
+async function imprimirTodosRecibos(){
+  let liq=_liqActiva;
+  if(!liq){
+    toast('⚠ No hay liquidación activa','var(--yellow)');
+    return;
+  }
+  // Auto-recálculo si items vacíos
+  if(!liq.items?.length){
+    toast('⏳ Calculando liquidación antes de imprimir…','var(--accent2)');
+    try {
+      if(typeof calcularYRenderPreview === 'function') await calcularYRenderPreview();
+    } catch(e){ console.error('Error recalculando:', e); }
+    liq = _liqActiva;
+    if(!liq?.items?.length){
+      toast('⚠ No se pudieron generar los items. Andá al tab Preview y recalculá manualmente.','var(--red)', 4500);
+      return;
+    }
+  }
+  // Imprime uno por uno (cada uno abre su propia ventana)
+  for(const i of liq.items){
+    await imprimirRecibo(i.leg);
+  }
 }
 
 // ── Exportar Excel (planilla liquidación) ──────────────────────────
