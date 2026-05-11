@@ -234,20 +234,60 @@ async function renderAbmEmpresasLista(){
   await _refreshEmpresasABMCache();
   const custom = _empresasABMCache.slice();
 
+  // ─── Hidratación de logos y firmas desde catálogos globales ───────────
+  // Si una empresa builtin no tiene un override en ABM, igual mostramos su
+  // logo (de data/logos.js) y su firma (de data/firmas.js → getFirmaRRHH).
+  // Esto NO persiste nada: si RR.HH. quiere ajustarlo, edita y se crea el
+  // registro ABM propio.
+  function _extraerLogoDataUrl(empresaNombre){
+    if(typeof LOGOS === 'undefined' || !LOGOS[empresaNombre]) return null;
+    // LOGOS guarda HTML como `<img src="data:image/...;base64,..." ...>`
+    const m = String(LOGOS[empresaNombre]).match(/src=["'](data:[^"']+)["']/);
+    return m ? m[1] : null;
+  }
+  function _extraerFirmaDataUrl(empresaNombre){
+    if(typeof getFirmaRRHH !== 'function') return null;
+    const f = getFirmaRRHH(empresaNombre);
+    return f && f.imagen ? f.imagen : null;
+  }
+
   // Map por nombre normalizado para fusionar built-in + ABM (ABM prevalece)
   const byName = {};
-  // 1) Cargar todas las built-in primero
+  // 1) Cargar todas las built-in primero — ahora con logo y firma derivados
+  //    de los catálogos globales (visualización, no persistencia)
   for(const nombre of Object.keys(EMPRESA_DATOS_LIQ)){
     const d = EMPRESA_DATOS_LIQ[nombre];
     byName[nombre.trim().toUpperCase()] = {
       origen:'builtin',
-      rec:{ nombre, cuit:d.cuit, dir:d.dir, nro:d.nro, piso:d.piso, depto:d.depto, cp:d.cp, loc:d.loc, logoDataUrl:null, firmaDataUrl:null }
+      rec:{
+        nombre, cuit:d.cuit, dir:d.dir, nro:d.nro, piso:d.piso, depto:d.depto, cp:d.cp, loc:d.loc,
+        logoDataUrl: _extraerLogoDataUrl(nombre),
+        firmaDataUrl: _extraerFirmaDataUrl(nombre),
+        _logoFromCatalog: !!_extraerLogoDataUrl(nombre),
+        _firmaFromCatalog: !!_extraerFirmaDataUrl(nombre)
+      }
     };
   }
   // 2) Aplicar las personalizadas (override completo de la built-in con mismo nombre)
+  //    Si el registro ABM no tiene logo propio, sigue mostrando el del catálogo.
   for(const c of custom){
     const k = (c.nombre||'').trim().toUpperCase();
-    byName[k] = { origen:'abm', rec:c };
+    const builtin = byName[k];
+    if(builtin && (!c.logoDataUrl || !c.firmaDataUrl)){
+      // Hidratar campos faltantes con el catálogo para visualización
+      const hidratado = { ...c };
+      if(!hidratado.logoDataUrl){
+        hidratado.logoDataUrl = _extraerLogoDataUrl(c.nombre);
+        hidratado._logoFromCatalog = !!hidratado.logoDataUrl;
+      }
+      if(!hidratado.firmaDataUrl){
+        hidratado.firmaDataUrl = _extraerFirmaDataUrl(c.nombre);
+        hidratado._firmaFromCatalog = !!hidratado.firmaDataUrl;
+      }
+      byName[k] = { origen:'abm', rec: hidratado };
+    } else {
+      byName[k] = { origen:'abm', rec:c };
+    }
   }
 
   const filas = Object.values(byName).sort((a,b)=>(a.rec.nombre||'').localeCompare(b.rec.nombre||''));
@@ -287,7 +327,7 @@ async function renderAbmEmpresasLista(){
         cbuOrigenChip = `<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--t3);font-family:var(--font-mono)">— sin CBU origen</span>`;
       }
       const logoImg = tieneLogo
-        ? `<img src="${r.logoDataUrl}" style="max-width:70px;max-height:36px;border:1px solid var(--border);border-radius:4px;background:#fff;padding:2px">`
+        ? `<img src="${r.logoDataUrl}" style="max-width:70px;max-height:36px;border:1px solid var(--border);border-radius:4px;background:#fff;padding:2px"${r._logoFromCatalog?' title="Logo del catálogo del sistema (editable)"':''}>`
         : '<div style="width:70px;height:36px;border:1px dashed var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--t3);font-family:var(--font-mono)">SIN LOGO</div>';
       const domicilio = [r.dir, r.nro, r.piso?`Piso ${r.piso}`:null, r.depto?`Depto ${r.depto}`:null, r.loc, r.cp?`(${r.cp})`:null].filter(Boolean).join(' ');
 
@@ -316,9 +356,9 @@ async function renderAbmEmpresasLista(){
           <div style="font-size:10px;color:var(--t3);margin-top:1px">${domicilio||'<span style="color:var(--t3)">Sin domicilio</span>'}</div>
         </div>
         <div style="text-align:center">
-          <div style="font-size:10px;color:var(--t3);margin-bottom:3px;font-family:var(--font-mono)">FIRMA</div>
+          <div style="font-size:10px;color:var(--t3);margin-bottom:3px;font-family:var(--font-mono)">FIRMA${r._firmaFromCatalog?' <span style="font-size:8px;color:var(--accent2);text-transform:uppercase">(catálogo)</span>':''}</div>
           ${tieneFirma
-            ? `<img src="${r.firmaDataUrl}" style="max-width:110px;max-height:40px;background:#fff;border:1px solid var(--border);border-radius:4px;padding:2px">`
+            ? `<img src="${r.firmaDataUrl}" style="max-width:110px;max-height:40px;background:#fff;border:1px solid var(--border);border-radius:4px;padding:2px"${r._firmaFromCatalog?' title="Firma del catálogo del sistema (Gte. RRHH) — editable para personalizar"':''}>`
             : '<div style="font-size:10px;color:var(--t3);font-style:italic">Sin firma cargada</div>'
           }
         </div>
@@ -335,12 +375,24 @@ function abmEmpresaNueva(){
 // Al guardar se crea un registro ABM que override la built-in.
 function abmEmpresaEditarBuiltIn(nombre){
   const d = EMPRESA_DATOS_LIQ[nombre] || {};
+  // Precargar logo y firma desde catálogos globales (data/logos.js y data/firmas.js)
+  // así RR.HH. los puede ajustar partiendo de los defaults del sistema.
+  let logoData = null, firmaData = null;
+  if(typeof LOGOS !== 'undefined' && LOGOS[nombre]){
+    const m = String(LOGOS[nombre]).match(/src=["'](data:[^"']+)["']/);
+    if(m) logoData = m[1];
+  }
+  if(typeof getFirmaRRHH === 'function'){
+    const f = getFirmaRRHH(nombre);
+    if(f && f.imagen) firmaData = f.imagen;
+  }
   _abmEmpresaMostrarForm({
     nombre,
     cuit: d.cuit||'',
     dir: d.dir||'', nro: d.nro||'', piso: d.piso||'', depto: d.depto||'',
     loc: d.loc||'', cp: d.cp||'',
-    logoDataUrl: null, firmaDataUrl: null
+    logoDataUrl: logoData,
+    firmaDataUrl: firmaData
   });
 }
 
