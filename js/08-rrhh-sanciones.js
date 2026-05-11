@@ -99,7 +99,7 @@ function renderSancionesPanelGerente(){
           <div style="font-size:13px;font-weight:600;color:var(--t1)">Sanciones disciplinarias de tu equipo</div>
           <div style="font-size:11px;color:var(--t3);margin-top:2px">Visualizá el histórico, solicitá nuevas sanciones y consultá el resultado de RR.HH.</div>
         </div>
-        <button class="btn btn-primary" onclick="abrirFormSolicitudSancion()" style="font-size:12px;padding:7px 14px;background:rgb(239,68,68);border-color:rgb(239,68,68)">+ Solicitar sanción</button>
+        <button class="btn btn-primary" onclick="abrirFormSolicitudSancion()" style="font-size:12px;padding:7px 14px;background:rgb(239,68,68);border-color:rgb(239,68,68)">+ Enviar solicitud</button>
       </div>
     </div>
 
@@ -157,7 +157,7 @@ function renderSancionesPanelGerente(){
       <div class="card" style="padding:36px;text-align:center;color:var(--t3);font-size:13px">
         <div style="font-size:30px;margin-bottom:8px">⚖️</div>
         ${_gerSancTab==='mis-solicitudes' ?
-          '<div style="font-size:14px;color:var(--t2);margin-bottom:4px">Aún no solicitaste sanciones</div><div style="font-size:11px">Tocá <b>+ Solicitar sanción</b> si necesitás iniciar un proceso disciplinario.</div>' :
+          '<div style="font-size:14px;color:var(--t2);margin-bottom:4px">Aún no enviaste solicitudes</div><div style="font-size:11px">Tocá <b>+ Enviar solicitud</b> si necesitás iniciar un proceso disciplinario.</div>' :
           '<div style="font-size:14px;color:var(--t2);margin-bottom:4px">No hay sanciones registradas para tu equipo</div>'
         }
       </div>`;
@@ -330,8 +330,8 @@ function abrirFormSolicitudSancion(opts){
     `<option value="${t.v}">${t.label}</option>`
   ).join('');
 
-  const titulo = modo === 'rrhh' ? '+ Aplicar sanción directa' : '+ Solicitar sanción disciplinaria';
-  const submitLabel = modo === 'rrhh' ? '⚖️ Aplicar sanción' : '📤 Enviar solicitud a RR.HH.';
+  const titulo = modo === 'rrhh' ? '+ Aplicar sanción directa' : '+ Enviar solicitud de sanción';
+  const submitLabel = modo === 'rrhh' ? '⚖️ Aplicar sanción' : '📤 Enviar solicitud';
 
   modal.innerHTML = `
     <div class="card" style="padding:0;max-width:640px;width:100%;max-height:92vh;overflow-y:auto;border:1px solid var(--border)">
