@@ -565,7 +565,7 @@ function _hysTabTallesHTML(emp){
     </div>`;
 }
 
-function hysGuardarTalles(leg){
+async function hysGuardarTalles(leg){
   const gv = id => (document.getElementById(id)?.value || '').trim();
   const data = {
     calzado: gv('t-calzado'),
@@ -588,10 +588,11 @@ function hysGuardarTalles(leg){
   if(emp) _hysRenderTabBody(emp);
 }
 
-function hysBorrarTalles(leg){
+async function hysBorrarTalles(leg){
   const emp = empByLeg(leg);
   if(!emp) return;
-  if(!confirm(`¿Borrar todos los talles cargados para ${emp.nom}?\n\nEsta acción no se puede deshacer.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Borrar todos los talles cargados para ${emp.nom}?<br><br>Esta acción no se puede deshacer.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const all = getHysTalles();
   delete all[leg];
   setHysTalles(all);
@@ -789,7 +790,7 @@ function hysSugerirTalleEpp(selectEl){
   if(map[cod]) t.value = map[cod];
 }
 
-function hysGuardarEpp(leg, idEdit){
+async function hysGuardarEpp(leg, idEdit){
   const gv = id => (document.getElementById(id)?.value || '').trim();
   const elemento = gv('epp-elem');
   const fecha = gv('epp-fecha');
@@ -826,8 +827,9 @@ function hysGuardarEpp(leg, idEdit){
   if(emp) _hysRenderTabBody(emp);
 }
 
-function hysEliminarEpp(leg, id){
-  if(!confirm('¿Eliminar este registro de entrega?')) return;
+async function hysEliminarEpp(leg, id){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Eliminar este registro de entrega?'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const all = getHysEppEntregas().filter(x => x.id !== id);
   setHysEppEntregas(all);
   toast('✓ Registro eliminado','var(--red)');
@@ -1065,13 +1067,13 @@ function hysActualizarManualesVinculados(){
 }
 
 // Cierra el form de capacitación y abre la biblioteca de manuales
-function hysAbrirManualesYCerrarFormCap(){
+async function hysAbrirManualesYCerrarFormCap(){
   const m = document.getElementById('modal-hys-cap-form');
   if(m) m.remove();
   if(typeof hysAbrirManuales==='function') hysAbrirManuales();
 }
 
-function hysGuardarCap(leg, idEdit){
+async function hysGuardarCap(leg, idEdit){
   const gv = id => (document.getElementById(id)?.value || '').trim();
   const tipo = gv('cap-tipo');
   const fecha = gv('cap-fecha');
@@ -1111,8 +1113,9 @@ function hysGuardarCap(leg, idEdit){
   if(emp) _hysRenderTabBody(emp);
 }
 
-function hysEliminarCap(leg, id){
-  if(!confirm('¿Eliminar este registro de capacitación?')) return;
+async function hysEliminarCap(leg, id){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Eliminar este registro de capacitación?'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const all = getHysCapacitaciones().filter(x => x.id !== id);
   setHysCapacitaciones(all);
   toast('✓ Capacitación eliminada','var(--red)');
@@ -1614,7 +1617,7 @@ function hysCatTipoAbrirForm(idx){
   setTimeout(()=>{ const el=document.getElementById(editing?'ct-nombre':'ct-codigo'); if(el) el.focus(); },50);
 }
 
-function hysCatTipoGuardar(idx){
+async function hysCatTipoGuardar(idx){
   const codigo = (document.getElementById('ct-codigo').value||'').trim().toUpperCase();
   const nombre = (document.getElementById('ct-nombre').value||'').trim();
   const vig = parseInt(document.getElementById('ct-vigencia').value,10);
@@ -1635,7 +1638,7 @@ function hysCatTipoGuardar(idx){
   toast('✓ Tipo '+(idx==null?'agregado':'actualizado'),'var(--green)');
 }
 
-function hysCatTipoEliminar(idx){
+async function hysCatTipoEliminar(idx){
   const tipos = getHysCapacitacionesTipos();
   const t = tipos[idx];
   if(!t) return;
@@ -1644,15 +1647,17 @@ function hysCatTipoEliminar(idx){
   const msg = enUso > 0
     ? `¿Eliminar el tipo "${t.codigo} — ${t.nombre}"?\n\n⚠ Hay ${enUso} capacitación${enUso!==1?'es':''} registrada${enUso!==1?'s':''} con este tipo. Las capacitaciones quedarán pero sin matchear con el catálogo.\n\n¿Continuar?`
     : `¿Eliminar el tipo "${t.codigo} — ${t.nombre}"?`;
-  if(!confirm(msg)) return;
+  const _cfm13 = await showConfirm({titulo:"Confirmar acción",mensaje:msg,labelOk:"Confirmar",peligroso:true});
+  if(!_cfm13) return;
   tipos.splice(idx,1);
   _hysSet(HYS_KEYS.TIPOS_CAP, tipos);
   _hysRenderCatBody();
   toast('✓ Tipo eliminado','var(--red)');
 }
 
-function hysCatRestaurarTipos(){
-  if(!confirm('¿Restaurar el catálogo a los 15 tipos por defecto LRT?\n\nSe perderán los tipos personalizados.')) return;
+async function hysCatRestaurarTipos(){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Restaurar el catálogo a los 15 tipos por defecto LRT?<br><br>Se perderán los tipos personalizados.'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   localStorage.removeItem(HYS_KEYS.TIPOS_CAP);
   _hysRenderCatBody();
   toast('✓ Catálogo restaurado','var(--green)');
@@ -1704,7 +1709,7 @@ function hysCatEppAbrirForm(idx){
   setTimeout(()=>{ const el=document.getElementById(editing?'ce-nombre':'ce-codigo'); if(el) el.focus(); },50);
 }
 
-function hysCatEppGuardar(idx){
+async function hysCatEppGuardar(idx){
   const codigo = (document.getElementById('ce-codigo').value||'').trim().toUpperCase();
   const nombre = (document.getElementById('ce-nombre').value||'').trim();
   const categoria = document.getElementById('ce-cat').value;
@@ -1724,7 +1729,7 @@ function hysCatEppGuardar(idx){
   toast('✓ Elemento '+(idx==null?'agregado':'actualizado'),'var(--green)');
 }
 
-function hysCatEppEliminar(idx){
+async function hysCatEppEliminar(idx){
   const cat = getHysEppCatalogo();
   const e = cat[idx];
   if(!e) return;
@@ -1732,15 +1737,17 @@ function hysCatEppEliminar(idx){
   const msg = enUso > 0
     ? `¿Eliminar el elemento "${e.codigo} — ${e.nombre}"?\n\n⚠ Hay ${enUso} entrega${enUso!==1?'s':''} registrada${enUso!==1?'s':''} con este elemento.\n\n¿Continuar?`
     : `¿Eliminar el elemento "${e.codigo} — ${e.nombre}"?`;
-  if(!confirm(msg)) return;
+  const _cfm13 = await showConfirm({titulo:"Confirmar acción",mensaje:msg,labelOk:"Confirmar",peligroso:true});
+  if(!_cfm13) return;
   cat.splice(idx,1);
   _hysSet(HYS_KEYS.CATALOGO_EPP, cat);
   _hysRenderCatBody();
   toast('✓ Elemento eliminado','var(--red)');
 }
 
-function hysCatRestaurarEpp(){
-  if(!confirm('¿Restaurar el catálogo a los 20 elementos por defecto?\n\nSe perderán los elementos personalizados.')) return;
+async function hysCatRestaurarEpp(){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Restaurar el catálogo a los 20 elementos por defecto?<br><br>Se perderán los elementos personalizados.'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   localStorage.removeItem(HYS_KEYS.CATALOGO_EPP);
   _hysRenderCatBody();
   toast('✓ Catálogo restaurado','var(--green)');
@@ -2227,7 +2234,7 @@ const HYS_MANUAL_CATEGORIAS = [
 ];
 
 // ── Helpers IndexedDB ──
-function _hysOpenDB(){
+async function _hysOpenDB(){
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(HYS_MANUALES_DB, 1);
     req.onupgradeneeded = ev => {
@@ -2557,7 +2564,7 @@ async function hysDescargarManual(id){
   }
 }
 
-function hysEditarManualMeta(id){
+async function hysEditarManualMeta(id){
   const meta = getHysManualesMeta().find(m => m.id === id);
   if(!meta){ toast('⚠ Manual no encontrado','var(--red)'); return; }
   _hysAbrirFormMetaManual({ meta, isNew: false });
@@ -2566,7 +2573,8 @@ function hysEditarManualMeta(id){
 async function hysEliminarManual(id){
   const meta = getHysManualesMeta().find(m => m.id === id);
   if(!meta) return;
-  if(!confirm(`¿Eliminar el manual "${meta.titulo||meta.fileName}"?\n\nEsta acción no se puede deshacer.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar el manual "${meta.titulo||meta.fileName}"?<br><br>Esta acción no se puede deshacer.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   try {
     await _hysEliminarManualBlob(id);
     const all = getHysManualesMeta().filter(m => m.id !== id);

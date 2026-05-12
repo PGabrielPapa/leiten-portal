@@ -775,11 +775,12 @@ function abrirDetalleSancion(id){
   document.body.appendChild(modal);
 }
 
-function eliminarSancion(id){
+async function eliminarSancion(id){
   const s = getSanciones().find(x => x.id === id);
   if(!s) return;
   const emp = empByLeg(s.leg);
-  if(!confirm(`¿Eliminar la sanción de ${emp?.nom || s.leg}?\n\nEsta acción no se puede deshacer.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar la sanción de ${emp?.nom || s.leg}?<br><br>Esta acción no se puede deshacer.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const all = getSanciones().filter(x => x.id !== id);
   setSanciones(all);
   toast('✓ Sanción eliminada', 'var(--red)');

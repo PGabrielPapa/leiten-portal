@@ -26,7 +26,7 @@ const REGLAMENTO_VACACIONES = {
  * @param {number} anio - Año de referencia (cálculo al 31/12 de ese año)
  * @returns {number} días corridos de vacaciones
  */
-function calcularDiasVacaciones(fechaIngreso, anio){
+async function calcularDiasVacaciones(fechaIngreso, anio){
   if(!fechaIngreso) return 14;
   let partes;
   if(fechaIngreso.includes('-')){ partes = fechaIngreso.split('-'); }
@@ -392,7 +392,7 @@ async function subirLicencia(){
   reader.readAsDataURL(file);
 }
 
-function nuevaLicencia(){
+async function nuevaLicencia(){
   document.getElementById('lic-form-card').style.display='block';
   document.getElementById('lic-confirmacion').style.display='none';
   document.getElementById('lic-tipo').value='';
@@ -453,7 +453,7 @@ function rrhhLicTab(tab){
   if(tab==='emp')  rrhhLicPoblarEmpleados();
 }
 
-function rrhhLicPoblarEmpleados(){
+async function rrhhLicPoblarEmpleados(){
   const sel = document.getElementById('rrhh-lic-emp-sel');
   if(!sel) return;
   const q = (document.getElementById('rrhh-lic-emp-search')?.value||'').toLowerCase();
@@ -471,11 +471,11 @@ function rrhhLicPoblarEmpleados(){
   if(cont) cont.innerHTML = '<div style="padding:40px;color:var(--t3);font-size:12px;text-align:center;font-style:italic">Seleccioná un empleado para ver su historial de licencias</div>';
 }
 
-function rrhhLicFiltrarEmpleados(){
+async function rrhhLicFiltrarEmpleados(){
   rrhhLicPoblarEmpleados();
 }
 
-function rrhhLicCargarEmpleado(){
+async function rrhhLicCargarEmpleado(){
   const sel = document.getElementById('rrhh-lic-emp-sel');
   const leg = sel?.value;
   if(!leg){
@@ -552,7 +552,8 @@ async function desmarcarInformeLicencia(id){
   const todos = await getInformesLicencias();
   const l = todos.find(x=>x.id===id);
   if(!l) return;
-  if(!confirm('¿Revertir "Tomado conocimiento"? La licencia dejará de impactar en la liquidación.')) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Revertir "Tomado conocimiento"? La licencia dejará de impactar en la liquidación.'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   l.tomada_rrhh = false;
   delete l.tomadaEl; delete l.tomadaHora;
   await updateInformeLicencia(l);
@@ -626,7 +627,7 @@ async function cambiarEstadoLicencia(id, estado){
 }
 
 // ─── LICENCIAS: TABS ───
-function licTab(tab){
+async function licTab(tab){
   ['comprobante','informar'].forEach(t=>{
     const p=document.getElementById('lic-pane-'+t);
     if(p) p.style.display=t===tab?'block':'none';
@@ -677,7 +678,7 @@ async function updateInformeLicencia(rec){
   });
 }
 
-function calcularDiasInforme(){
+async function calcularDiasInforme(){
   const desde=document.getElementById('inf-lic-desde').value;
   const hasta=document.getElementById('inf-lic-hasta').value;
   const tipo=document.getElementById('inf-lic-tipo').value;
@@ -728,7 +729,7 @@ async function informarLicencia(){
   renderMisInformes();
 }
 
-function nuevoInformeLicencia(){
+async function nuevoInformeLicencia(){
   document.getElementById('inf-lic-form-card').style.display='block';
   document.getElementById('inf-lic-confirmacion').style.display='none';
   document.getElementById('inf-lic-tipo').value='';

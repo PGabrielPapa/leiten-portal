@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 // Escala progresiva Art. 94 LIG
-function calcImpuestoEscala(base, params){
+async function calcImpuestoEscala(base, params){
   const tramos = params.escalaGanancias || [];
   if(base <= 0) return {impuesto:0, alicuota:0, tramo:null};
   for(const t of tramos){
@@ -122,7 +122,7 @@ function aplicarTopesArt85(deducciones, ganNeta, params){
 }
 
 // Datos empresa
-function _edEmp(empresa){
+async function _edEmp(empresa){
   return EMPRESA_DATOS_LIQ[empresa] || {cuit:'',dir:'',nro:'',piso:'',depto:'',cp:'',loc:''};
 }
 
@@ -400,14 +400,14 @@ async function exportarGanancias(){
   const paramsData=${JSON.stringify(params)};
   const novsData=${JSON.stringify(novsMap)};
   function $m(n){return isNaN(n)||n===null?0:parseFloat(n)||0;}
-  function filterEmps(q){
+  async function filterEmps(q){
     const ql = (q||'').toLowerCase();
     document.querySelectorAll('#list .btn').forEach(b=>{
       const match = !ql || (b.dataset.leg+' '+b.dataset.nom).toLowerCase().includes(ql);
       b.style.display = match ? 'block' : 'none';
     });
   }
-  function abrirPlanilla(leg){
+  async function abrirPlanilla(leg){
     window.opener.abrirPlanillaGanancias(leg);
   }
   <\\/script></body></html>`;
@@ -534,7 +534,7 @@ function renderEscalaEditor(escala){
     </tbody></table>`;
 }
 
-function leerEscalaFromEditor(){
+async function leerEscalaFromEditor(){
   const desdes = document.querySelectorAll('.gan-esc-desde');
   const hastas = document.querySelectorAll('.gan-esc-hasta');
   const fijos  = document.querySelectorAll('.gan-esc-fijo');
@@ -553,7 +553,7 @@ function leerEscalaFromEditor(){
   return escala;
 }
 
-function agregarNuevoPeriodoGan(){
+async function agregarNuevoPeriodoGan(){
   const clave = prompt('Ingresá la clave del semestre (formato "YYYY-S1" o "YYYY-S2"):','2026-S2');
   if(!clave || !/^\d{4}-S[12]$/.test(clave)){ toast('⚠ Formato inválido (usar YYYY-S1 o YYYY-S2)','var(--yellow)'); return; }
   const periodos = getGanParamsPorSemestre();
@@ -579,9 +579,10 @@ function agregarNuevoPeriodoGan(){
   cargarGanPeriodoForm();
 }
 
-function restablecerPeriodoGan(){
+async function restablecerPeriodoGan(){
   if(!_ganPeriodoEditando) return;
-  if(!confirm(`¿Restaurar los valores default para ${_ganPeriodoEditando}? Se perderán las ediciones locales.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Restaurar los valores default para ${_ganPeriodoEditando}? Se perderán las ediciones locales.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const periodos = getGanParamsPorSemestre();
   const defaults = getDefaultGanParamsPorSemestre();
   if(defaults[_ganPeriodoEditando]){
@@ -616,7 +617,7 @@ function poblarSelectorAportes(){
   cargarAportesMesForm();
 }
 
-function cargarAportesMesForm(){
+async function cargarAportesMesForm(){
   const sel = document.getElementById('aportes-mes-sel');
   if(!sel) return;
   _aportesMesEditando = sel.value;
@@ -635,7 +636,7 @@ function cargarAportesMesForm(){
   }
 }
 
-function agregarNuevoMesAportes(){
+async function agregarNuevoMesAportes(){
   const clave = prompt('Ingresá la clave del mes (formato "YYYY-MM"):','2026-07');
   if(!clave || !/^\d{4}-(0[1-9]|1[0-2])$/.test(clave)){ toast('⚠ Formato inválido (usar YYYY-MM)','var(--yellow)'); return; }
   const todos = getAportesTopesPorMes();
@@ -650,9 +651,10 @@ function agregarNuevoMesAportes(){
   cargarAportesMesForm();
 }
 
-function restablecerMesAportes(){
+async function restablecerMesAportes(){
   if(!_aportesMesEditando) return;
-  if(!confirm(`¿Restaurar los topes default para ${_aportesMesEditando}?`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Restaurar los topes default para ${_aportesMesEditando}?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const todos = getAportesTopesPorMes();
   const defaults = getDefaultAportesTopesPorMes();
   if(defaults[_aportesMesEditando]){

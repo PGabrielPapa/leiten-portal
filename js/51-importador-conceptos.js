@@ -466,10 +466,8 @@ async function _ejecutarImportConceptos(){
     return;
   }
 
-  const ok = confirm(
-    `Vas a importar ${filasOK.length} concepto${filasOK.length!==1?'s':''} en modo "${modo.toUpperCase()}".\n\n` +
-    `¿Confirmás la operación? Esta acción modificará las liquidaciones en borrador correspondientes.`
-  );
+  const ok = await showConfirm({titulo:"Confirmar importación",mensaje:`Vas a importar ${filasOK.length} concepto${filasOK.length!==1?'s':''} en modo "${modo.toUpperCase()}".\n\n` +
+    `¿Confirmás la operación? Esta acción modificará las liquidaciones en borrador correspondientes.`,labelOk:"Importar",peligroso:false});
   if(!ok) return;
 
   // Cargar todas las liquidaciones únicas que vamos a modificar

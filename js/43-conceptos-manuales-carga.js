@@ -15,13 +15,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Helpers ───────────────────────────────────────────────────────────
-function _ccGetManuales(nov){
+async function _ccGetManuales(nov){
   if(!nov) return [];
   if(!Array.isArray(nov.conceptosCustomManuales)) nov.conceptosCustomManuales = [];
   return nov.conceptosCustomManuales;
 }
 
-function _ccSetManual(nov, codigo, monto){
+async function _ccSetManual(nov, codigo, monto){
   if(!nov) return;
   if(!Array.isArray(nov.conceptosCustomManuales)) nov.conceptosCustomManuales = [];
   const i = nov.conceptosCustomManuales.findIndex(m => m.codigo === codigo);
@@ -134,8 +134,9 @@ async function _ccGuardarManualesEmpleado(leg){
   toast(`✓ Conceptos manuales guardados para ${leg}`, 'var(--green)');
 }
 
-function _ccBorrarManualEmpleado(leg, codigo){
-  if(!confirm(`¿Quitar el concepto ${codigo} de este empleado?`)) return;
+async function _ccBorrarManualEmpleado(leg, codigo){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Quitar el concepto ${codigo} de este empleado?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const inp = document.querySelector(`#cc-manual-${codigo}`);
   if(inp) inp.value = '';
   // También quitar del estado en memoria
@@ -331,7 +332,7 @@ async function _ccProcesarImport(){
   }
 }
 
-function _ccParsearCSV(txt){
+async function _ccParsearCSV(txt){
   const lineas = txt.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   const sep = (lineas[0] && (lineas[0].split(';').length > lineas[0].split(',').length)) ? ';' : ',';
   return lineas.map(l => {

@@ -323,12 +323,12 @@ function _admAbrirModal(dni){
   document.body.appendChild(container);
 }
 
-function _admCerrarModal(){
+async function _admCerrarModal(){
   const c = document.getElementById('adm-modal-container');
   if(c) c.remove();
 }
 
-function _admCambiarNivel(dni, nivel){
+async function _admCambiarNivel(dni, nivel){
   const emp = getNomina().find(e => e.dni === dni);
   if(!emp) return;
   const r = setUserLevel(emp, nivel);
@@ -345,10 +345,11 @@ function _admCambiarNivel(dni, nivel){
   _admRenderLista();
 }
 
-function _admBlanquear(dni){
+async function _admBlanquear(dni){
   const emp = getNomina().find(e => e.dni === dni);
   if(!emp) return;
-  if(!confirm(`¿Blanquear contraseña de ${emp.nom}?\n\nLa nueva contraseña será su DNI (${dni}). Se le pedirá cambiarla al ingresar.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Blanquear contraseña de ${emp.nom}?<br><br>La nueva contraseña será su DNI (${dni}). Se le pedirá cambiarla al ingresar.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const r = blanquearPassword(emp);
   if(!r.ok){ _admToast(r.error, 'red'); return; }
   _admToast('Contraseña blanqueada al DNI', 'green');
@@ -356,11 +357,12 @@ function _admBlanquear(dni){
   _admRenderLista();
 }
 
-function _admToggleActivo(dni, disable){
+async function _admToggleActivo(dni, disable){
   const emp = getNomina().find(e => e.dni === dni);
   if(!emp) return;
   const accion = disable ? 'desactivar' : 'reactivar';
-  if(!confirm(`¿${accion.charAt(0).toUpperCase()+accion.slice(1)} a ${emp.nom}?`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿${accion.charAt(0).toUpperCase()+accion.slice(1)} a ${emp.nom}?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const r = setUserDisabled(emp, disable);
   if(!r.ok){ _admToast(r.error, 'red'); return; }
   _admToast(`Usuario ${disable?'desactivado':'reactivado'}`, disable?'red':'green');

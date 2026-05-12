@@ -481,12 +481,12 @@ function abrirCerrarVinculo(id, legParam){
   document.body.appendChild(div.firstElementChild);
 }
 
-function cerrarModalCerrarVinculo(){
+async function cerrarModalCerrarVinculo(){
   const m = document.getElementById('modal-cerrar-vinculo');
   if(m) m.remove();
 }
 
-function confirmarCerrarVinculo(leg, id){
+async function confirmarCerrarVinculo(leg, id){
   const fecha = document.getElementById('cerrar-vinc-fecha')?.value;
   const motivo = document.getElementById('cerrar-vinc-motivo')?.value;
   if(!fecha){ toast('⚠ Indicá la fecha de cierre','var(--yellow)'); return; }
@@ -502,10 +502,11 @@ function confirmarCerrarVinculo(leg, id){
 }
 
 // Reactiva un vínculo cerrado (para usar desde la UI del empleado).
-function reactivarMiVinculo(id){
+async function reactivarMiVinculo(id){
   const leg = currentUser?.emp?.leg;
   if(!leg) return;
-  if(!confirm('¿Reactivar este vínculo? Volverá a estar vigente desde hoy.')) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Reactivar este vínculo? Volverá a estar vigente desde hoy.'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const r = reactivarVinculoFamiliar(leg, id);
   if(!r.ok){ toast('⚠ ' + r.error,'var(--red)'); return; }
   toast('✓ Vínculo reactivado','var(--green)');
@@ -513,9 +514,10 @@ function reactivarMiVinculo(id){
 }
 
 // Versión RRHH (recibe el legajo del empleado en lugar de tomarlo del currentUser)
-function reactivarFamiliarRRHH(id, leg){
+async function reactivarFamiliarRRHH(id, leg){
   if(!leg) return;
-  if(!confirm('¿Reactivar este vínculo? Volverá a estar vigente desde hoy.')) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Reactivar este vínculo? Volverá a estar vigente desde hoy.'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const r = reactivarVinculoFamiliar(leg, id);
   if(!r.ok){ toast('⚠ ' + r.error,'var(--red)'); return; }
   toast('✓ Vínculo reactivado','var(--green)');
@@ -664,7 +666,7 @@ function abrirFormFamiliar(idEdit, legParam){
 }
 
 // Mostrar/ocultar el campo "fecha desde" según tipo seleccionado
-function _famActualizarFechaVinculo(){
+async function _famActualizarFechaVinculo(){
   const tipo = document.getElementById('fam-tipo')?.value;
   const wrap = document.getElementById('fam-fecha-vinculo-wrap');
   const label = document.getElementById('fam-fecha-vinculo-label');
@@ -680,12 +682,12 @@ function _famActualizarFechaVinculo(){
   }
 }
 
-function cerrarFormFamiliar(){
+async function cerrarFormFamiliar(){
   const m = document.getElementById('modal-familiar');
   if(m) m.remove();
 }
 
-function guardarFamiliar(leg, idEdit){
+async function guardarFamiliar(leg, idEdit){
   const gv = id => (document.getElementById(id)?.value || '').trim();
   const tipo = gv('fam-tipo');
   const apellido = gv('fam-apellido');
@@ -712,7 +714,8 @@ function guardarFamiliar(leg, idEdit){
     const dniDeCuil = cuilNum.slice(2, 10).replace(/^0+/,'');
     const dniNum = dni.replace(/^0+/,'');
     if(dniDeCuil !== dniNum){
-      if(!confirm(`Aviso: el DNI cargado (${dni}) no coincide con el del CUIL (${dniDeCuil}).\n\n¿Querés guardarlo igual?`)) return;
+      const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`Aviso: el DNI cargado (${dni}) no coincide con el del CUIL (${dniDeCuil}).<br><br>¿Querés guardarlo igual?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
     }
   }
 
@@ -808,14 +811,15 @@ function guardarFamiliar(leg, idEdit){
   if(detalle){ const legAttr = detalle.dataset.leg; if(legAttr) abrirDetalleFamiliaresEmp(legAttr); }
 }
 
-function eliminarFamiliar(id, legParam){
+async function eliminarFamiliar(id, legParam){
   const leg = legParam || currentUser?.emp?.leg;
   if(!leg) return;
   const lista = getFamiliaresEmp(leg);
   const f = lista.find(x => x.id === id);
   if(!f) return;
   const tInfo = _famTipoInfo(f.tipo);
-  if(!confirm(`¿Eliminar a ${f.apellido}, ${f.nombre} (${tInfo.label})?\n\nEsta acción no se puede deshacer.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar a ${f.apellido}, ${f.nombre} (${tInfo.label})?<br><br>Esta acción no se puede deshacer.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const nueva = lista.filter(x => x.id !== id);
   saveFamiliaresEmp(leg, nueva);
   toast('✓ Familiar eliminado', 'var(--red)');

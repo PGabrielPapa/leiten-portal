@@ -104,7 +104,7 @@ function poblarSelectoresValidador(excluirLeg){
 }
 
 // Al cambiar el validador, sugerir el área basado en la detección del validador elegido
-function abmSugerirArea(prefix){
+async function abmSugerirArea(prefix){
   const validador = gV('abm-'+prefix+'-validador');
   const areaEl = document.getElementById('abm-'+prefix+'-area');
   if(!areaEl) return;
@@ -210,7 +210,7 @@ async function _refreshEmpresasABMCache(){
   return _empresasABMCache;
 }
 // Busca por nombre (coincidencia exacta normalizada) — SEGURO si el cache no existe
-function _findEmpresaABMByNombre(nombre){
+async function _findEmpresaABMByNombre(nombre){
   try {
     if(!nombre || typeof _empresasABMCache === 'undefined' || !_empresasABMCache || !_empresasABMCache.length) return null;
     const k = nombre.trim().toUpperCase();
@@ -222,7 +222,7 @@ function _findEmpresaABMByNombre(nombre){
 
 // Alias público para módulos externos (F.931, Libro Sueldo Digital, etc.)
 // que necesitan resolver el CUIT a partir del nombre de empresa de un item.
-function getEmpresaByNom(nombre){
+async function getEmpresaByNom(nombre){
   return _findEmpresaABMByNombre(nombre);
 }
 
@@ -367,13 +367,13 @@ async function renderAbmEmpresasLista(){
     }).join('') + '</div>';
 }
 
-function abmEmpresaNueva(){
+async function abmEmpresaNueva(){
   _abmEmpresaMostrarForm(null);
 }
 
 // Editar una empresa del grupo built-in (precarga sus datos default en el form).
 // Al guardar se crea un registro ABM que override la built-in.
-function abmEmpresaEditarBuiltIn(nombre){
+async function abmEmpresaEditarBuiltIn(nombre){
   const d = EMPRESA_DATOS_LIQ[nombre] || {};
   // Precargar logo y firma desde catálogos globales (data/logos.js y data/firmas.js)
   // así RR.HH. los puede ajustar partiendo de los defaults del sistema.
@@ -397,14 +397,15 @@ function abmEmpresaEditarBuiltIn(nombre){
 }
 
 // Alias retrocompatible (por si queda algún onclick viejo)
-function abmEmpresaPersonalizar(nombre){
+async function abmEmpresaPersonalizar(nombre){
   abmEmpresaEditarBuiltIn(nombre);
 }
 
 // Revertir una empresa del grupo a sus datos default (elimina el registro ABM personalizado)
 async function abmEmpresaRevertir(id, nombre){
   if(currentUser?.role !== 'rrhh'){ toast('⚠ Solo RR.HH. puede modificar empresas','var(--red)'); return; }
-  if(!confirm(`¿Revertir "${nombre}" a los datos por defecto del sistema?\n\nSe eliminarán el logo, firma y el resto de los datos personalizados. La empresa seguirá existiendo con los datos originales del grupo.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Revertir "${nombre}" a los datos por defecto del sistema?<br><br>Se eliminarán el logo, firma y el resto de los datos personalizados. La empresa seguirá existiendo con los datos originales del grupo.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   try {
     await deleteEmpresaABM(id);
     await _refreshEmpresasABMCache();
@@ -914,11 +915,12 @@ function guardarCentroOp(idxEdit){
   toast(`✓ Centro ${typeof idxEdit==='number'?'actualizado':'agregado'} (guardá para confirmar)`,'var(--green)');
 }
 
-function eliminarCentroOp(idx){
+async function eliminarCentroOp(idx){
   const centros = _getCentrosFromHidden();
   const c = centros[idx];
   if(!c) return;
-  if(!confirm(`¿Eliminar el centro "${c.nombre}"?\n\nEste cambio se aplicará al guardar la empresa.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar el centro "${c.nombre}"?<br><br>Este cambio se aplicará al guardar la empresa.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   centros.splice(idx, 1);
   _setCentrosToHidden(centros);
   _renderCentrosOpLista();
@@ -946,7 +948,7 @@ async function importarCentrosDesdeLocaciones(){
              '  • OK = Reemplazar centros existentes con el seed\n' +
              '  • Cancelar = Solo cargar en empresas sin centros (preserva las que ya tienen)';
 
-  const reemplazar = confirm(resumen);
+  const reemplazar = await showConfirm({titulo:"Confirmar reemplazo",mensaje:resumen,labelOk:"Reemplazar",peligroso:false});
 
   let aplicadas = 0, omitidas = 0, creadas = 0;
   const ahora = new Date().toISOString();
@@ -1075,7 +1077,8 @@ async function abmEmpresaEliminar(id){
   const lista = await getEmpresasABM();
   const rec = lista.find(x=>x.id===id);
   if(!rec){ toast('⚠ Empresa no encontrada','var(--red)'); return; }
-  if(!confirm(`¿Eliminar la personalización de "${rec.nombre}"?\n\nNo se eliminará la empresa del sistema (seguirá usando los datos por defecto), pero se perderán el logo, la firma y el resto de los datos personalizados.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar la personalización de "${rec.nombre}"?<br><br>No se eliminará la empresa del sistema (seguirá usando los datos por defecto), pero se perderán el logo, la firma y el resto de los datos personalizados.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   await deleteEmpresaABM(id);
   await _refreshEmpresasABMCache();
   toast('Empresa eliminada','var(--t3)');
@@ -1223,7 +1226,7 @@ async function abmEditarEmpleado(leg){
 }
 
 // Muestra licencias del empleado actualmente editado en ABM
-function renderAbmLicenciasEmpleado(){
+async function renderAbmLicenciasEmpleado(){
   const leg = document.getElementById('abm-e-leg-orig')?.value;
   if(!leg) return;
   renderHistorialLicenciasUI('abm-lic-content', leg, { anio: new Date().getFullYear() });
@@ -1281,7 +1284,7 @@ async function renderHistorialEmpleadoABM(leg){
 // ═══════════════════════════════════════════════════════════════
 
 // Parsea la fecha de ingreso en cualquier formato y devuelve YYYY-MM-DD
-function _parseIngresoISO(ing){
+async function _parseIngresoISO(ing){
   if(!ing) return null;
   if(/^\d{4}-\d{2}-\d{2}/.test(ing)) return ing.slice(0,10);
   if(ing.includes('/')){
@@ -1295,7 +1298,7 @@ function _parseIngresoISO(ing){
 }
 
 // Extrae el valor actual de un empleado para un campo (soportando compound)
-function _valorActualEmpleado(emp, c){
+async function _valorActualEmpleado(emp, c){
   if(c.compound){
     const v = {};
     if(c.key === 'domicilio'){

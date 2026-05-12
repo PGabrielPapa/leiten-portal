@@ -629,9 +629,10 @@ function previewImportCBU(){
   if(btnOk) btnOk.style.display = validos.length ? 'inline-block' : 'none';
 }
 
-function confirmarImportCBU(){
+async function confirmarImportCBU(){
   if(!_cbuImportPendientes.length){ toast('⚠ Pre-visualizá primero','var(--yellow)'); return; }
-  if(!confirm(`¿Importar ${_cbuImportPendientes.length} CBUs?\n\nLos legajos que ya tenían CBU(s) verán reemplazado el snapshot por un único CBU al 100%.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Importar ${_cbuImportPendientes.length} CBUs?<br><br>Los legajos que ya tenían CBU(s) verán reemplazado el snapshot por un único CBU al 100%.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
 
   let ok = 0;
   _cbuImportPendientes.forEach(v => {

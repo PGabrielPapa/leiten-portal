@@ -915,7 +915,7 @@ function renderDelList(){
   };
 }
 
-function confirmarDelegacion(e){
+async function confirmarDelegacion(e){
   const inicio = document.getElementById('del-inicio').value;
   const fin    = document.getElementById('del-fin').value;
   if(!inicio || !fin){
@@ -926,7 +926,8 @@ function confirmarDelegacion(e){
   }
   const fmtDisplay = iso => { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
   const nombre = e.nom.split(',')[0].trim();
-  if(!confirm(`¿Delegar tus autorizaciones a ${e.nom}?\n\nPeríodo: ${fmtDisplay(inicio)} al ${fmtDisplay(fin)}\n\n${nombre} podrá aprobar en tu lugar durante ese período.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Delegar tus autorizaciones a ${e.nom}?<br><br>Período: ${fmtDisplay(inicio)} al ${fmtDisplay(fin)}<br><br>${nombre} podrá aprobar en tu lugar durante ese período.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   saveDelegacion({
     deleganteDni: currentUser.emp.dni,
     deleganteNom: currentUser.emp.nom,
@@ -954,14 +955,15 @@ function confirmarDelegacion(e){
   toast(`✓ Autorización delegada a ${nombre} hasta el ${fmtDisplay(fin)}`, 'var(--green)');
 }
 
-function revocarDelegacion(){
+async function revocarDelegacion(){
   const d = getMiDelegacionEmitida();
   if(!d){
     toast('No tenés delegación activa para revocar', 'var(--t3)');
     return;
   }
   const nombre = (d.delegadoNom || '').split(',')[0].trim() || 'la persona delegada';
-  if(!confirm(`¿Revocar tu delegación a ${d.delegadoNom || 'la persona delegada'}?`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Revocar tu delegación a ${d.delegadoNom || 'la persona delegada'}?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   clearDelegacion();
   if(typeof logAuditX === 'function'){
     logAuditX('delegacion', 'revocar', {

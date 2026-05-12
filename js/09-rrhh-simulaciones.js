@@ -1210,18 +1210,20 @@ function renderSimComparativa(){
   `;
 }
 
-function eliminarEscenario(id){
-  if(!confirm('¿Eliminar este escenario guardado?')) return;
+async function eliminarEscenario(id){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Eliminar este escenario guardado?'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const arr = getSimulaciones().filter(s => s.id !== id);
   saveSimulaciones(arr);
   renderSimComparativa();
   toast('✓ Escenario eliminado', 'var(--yellow)');
 }
 
-function limpiarTodosEscenarios(){
+async function limpiarTodosEscenarios(){
   const arr = getSimulaciones();
   if(!arr.length) return;
-  if(!confirm(`¿Eliminar los ${arr.length} escenarios guardados? Esta acción no se puede deshacer.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar los ${arr.length} escenarios guardados? Esta acción no se puede deshacer.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   saveSimulaciones([]);
   renderSimComparativa();
   toast('✓ Todos los escenarios eliminados', 'var(--yellow)');

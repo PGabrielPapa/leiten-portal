@@ -254,12 +254,12 @@ function abrirFormSindicato(codigoEdit){
   setTimeout(()=>{ const el=document.getElementById(esEdicion?'sind-nombre':'sind-codigo'); if(el) el.focus(); }, 50);
 }
 
-function cerrarFormSindicato(){
+async function cerrarFormSindicato(){
   const m = document.getElementById('modal-sindicato');
   if(m) m.remove();
 }
 
-function guardarSindicato(codigoOriginal){
+async function guardarSindicato(codigoOriginal){
   const codigo = (document.getElementById('sind-codigo').value || '').trim().toUpperCase();
   const nombre = (document.getElementById('sind-nombre').value || '').trim();
   const pctEmp = parseFloat(document.getElementById('sind-pct-emp').value);
@@ -294,7 +294,7 @@ function guardarSindicato(codigoOriginal){
   toast(`✓ Sindicato ${codigo} ${codigoOriginal?'actualizado':'agregado'}`, 'var(--green)');
 }
 
-function eliminarSindicato(codigo){
+async function eliminarSindicato(codigo){
   const lista = getSindicatos();
   const s = lista.find(x => x.codigo === codigo);
   if(!s) return;
@@ -311,15 +311,17 @@ function eliminarSindicato(codigo){
     ? `¿Eliminar el sindicato "${s.codigo} — ${s.nombre}"?\n\n⚠ ATENCIÓN: ${enUso} empleado${enUso!==1?'s':''} tienen este sindicato asignado.\nAl eliminarlo, esos empleados quedarán SIN sindicato (sin antigüedad ni descuentos sindicales).\n\n¿Continuar?`
     : `¿Eliminar el sindicato "${s.codigo} — ${s.nombre}"?\n\nNo hay empleados asignados a este sindicato.`;
 
-  if(!confirm(msg)) return;
+  const _cfm12 = await showConfirm({titulo:"Confirmar acción",mensaje:msg,labelOk:"Confirmar",peligroso:true});
+  if(!_cfm12) return;
 
   saveSindicatos(lista.filter(x => x.codigo !== codigo));
   renderSindicatosPanel();
   toast(`✓ Sindicato ${codigo} eliminado`, 'var(--red)');
 }
 
-function restablecerSindicatosDefault(){
-  if(!confirm('¿Restablecer el catálogo a los 6 sindicatos por defecto (COMERCIO, UOM, ASIMRA, UOYEP, UOCRA, UECARA)?\n\nSe perderán los sindicatos personalizados que hayas agregado.')) return;
+async function restablecerSindicatosDefault(){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Restablecer el catálogo a los 6 sindicatos por defecto (COMERCIO, UOM, ASIMRA, UOYEP, UOCRA, UECARA)?<br><br>Se perderán los sindicatos personalizados que hayas agregado.'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   localStorage.removeItem(SINDICATOS_STORAGE_KEY);
   renderSindicatosPanel();
   toast('✓ Catálogo restaurado', 'var(--green)');

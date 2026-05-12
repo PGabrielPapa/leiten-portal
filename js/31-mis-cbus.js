@@ -320,7 +320,7 @@ function guardarCBU(leg, nomEnc, cbuIdEditando, actor, contId){
 }
 
 // ─── Quitar ───────────────────────────────────────────────────────────────
-function quitarCBUDeLegajo(leg, nomEnc, cbuId, actor, contId){
+async function quitarCBUDeLegajo(leg, nomEnc, cbuId, actor, contId){
   const nom = decodeURIComponent(nomEnc || '');
   const activos = getCBUsActivos(leg);
   const c = activos.find(x => x.id === cbuId);
@@ -331,14 +331,16 @@ function quitarCBUDeLegajo(leg, nomEnc, cbuId, actor, contId){
     const msg = actor==='EMPLEADO'
       ? '¿Quitar tu única cuenta de acreditación?\n\nQuedarás sin cuenta para el cobro de haberes hasta que cargues una nueva.'
       : `¿Quitar la única cuenta de ${nom}?\n\nEl empleado quedará sin cuenta para el cobro hasta que se cargue una nueva.`;
-    if(!confirm(msg)) return;
+    const _cfm31 = await showConfirm({titulo:"Confirmar acción",mensaje:msg,labelOk:"Confirmar",peligroso:true});
+    if(!_cfm31) return;
   } else {
     const sumaRest = restantes.reduce((s,x) => s + Number(x.porcentaje || 0), 0);
     if(Math.abs(sumaRest - 100) > 0.01){
       toast(`⚠ Si se quita esta cuenta, las restantes suman ${sumaRest.toFixed(2)}%. Ajustá los porcentajes primero.`,'var(--yellow)', 5500);
       return;
     }
-    if(!confirm(`¿Quitar la cuenta ${c.banco} (${Number(c.porcentaje).toFixed(2)}%)?`)) return;
+    const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Quitar la cuenta ${c.banco} (${Number(c.porcentaje).toFixed(2)}%)?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   }
 
   const r = reemplazarSnapshotCBUs(leg, restantes, actor);

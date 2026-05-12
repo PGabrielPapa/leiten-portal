@@ -204,8 +204,9 @@ function doLogin(emp){
   }
 }
 
-function doLogout(){
-  if(!confirm('¿Cerrar sesión?')) return;
+async function doLogout(){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Cerrar sesión?'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   // ── Auditoría: logout (registramos antes de limpiar currentUser) ──
   if(typeof auditAuth === 'function' && currentUser?.emp){
     auditAuth('logout', currentUser.emp);

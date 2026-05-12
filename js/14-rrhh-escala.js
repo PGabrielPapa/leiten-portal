@@ -401,7 +401,8 @@ async function guardarAjusteCatTramo(leg){
   // Validar que la combinación exista en la escala
   const montoValida = getMontoEscala(nuevoCat, nuevoTramo);
   if(montoValida === null){
-    if(!confirm(`La combinación ${nuevoCat} / ${nuevoTramo} no existe en la escala vigente.\n\n¿Guardar igual?\n(Podés crear la combinación en la escala después.)`)) return;
+    const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`La combinación ${nuevoCat} / ${nuevoTramo} no existe en la escala vigente.<br><br>¿Guardar igual?<br>(Podés crear la combinación en la escala después.)`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   }
 
   // Obtener empleado actual de la nómina (con overrides previos aplicados)
@@ -552,7 +553,7 @@ function _renderEscalaPaneHistorico(versiones){
   pane.innerHTML = html;
 }
 
-function toggleVersionDetalle(id){
+async function toggleVersionDetalle(id){
   const det = document.getElementById('det-'+id);
   const btn = document.getElementById('btn-det-'+id);
   if(!det) return;
@@ -561,10 +562,11 @@ function toggleVersionDetalle(id){
   if(btn) btn.textContent = showing ? 'Ver detalle' : 'Ocultar detalle';
 }
 
-function confirmarEliminarVersion(id){
+async function confirmarEliminarVersion(id){
   const v = getEscalaVersiones().find(x=>x.id===id);
   if(!v) return;
-  if(!confirm(`¿Eliminar la versión "${v.mesLabel}" (${_fechaBonita(v.vigencia)})?\n\nEsta acción no se puede deshacer.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar la versión "${v.mesLabel}" (${_fechaBonita(v.vigencia)})?<br><br>Esta acción no se puede deshacer.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const ok = eliminarEscalaVersion(id);
   if(ok){ renderEscalaSalarial(); escalaTab('hist'); }
 }
@@ -684,7 +686,7 @@ function previsualizarIncremento(){
     </div>`;
 }
 
-function confirmarIncremento(){
+async function confirmarIncremento(){
   const pctEl = document.getElementById('inc-pct');
   const vigEl = document.getElementById('inc-vigencia');
   const alcEl = document.getElementById('inc-alcance');
@@ -702,12 +704,14 @@ function confirmarIncremento(){
   const existentes = getEscalaVersiones();
   const duplicada = existentes.find(v => v.vigencia === vig && v.origen !== 'inicial');
   if(duplicada){
-    if(!confirm(`Ya existe una versión con vigencia ${_fechaBonita(vig)} ("${duplicada.mesLabel}").\n\n¿Querés crear otra versión igual?`)) return;
+    const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`Ya existe una versión con vigencia ${_fechaBonita(vig)} ("${duplicada.mesLabel}").<br><br>¿Querés crear otra versión igual?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   }
 
   const activa = getEscalaActiva();
   if(vig < activa.vigencia){
-    if(!confirm(`La fecha ${_fechaBonita(vig)} es anterior a la versión actualmente activa (${_fechaBonita(activa.vigencia)}).\n\nSe creará igual pero la "activa" seguirá siendo la más reciente.\n\n¿Continuar?`)) return;
+    const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`La fecha ${_fechaBonita(vig)} es anterior a la versión actualmente activa (${_fechaBonita(activa.vigencia)}).<br><br>Se creará igual pero la "activa" seguirá siendo la más reciente.<br><br>¿Continuar?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   }
 
   aplicarIncrementoEscala(pct, vig, alc, com);
@@ -826,7 +830,7 @@ async function renderEvaluacionesRRHH(){
   await actualizarBadgesEvalRRHH();
 }
 
-function _tipoLabel(tipo, anio){
+async function _tipoLabel(tipo, anio){
   if(tipo === 'anual') return `📅 Anual ${anio||''}`.trim();
   if(tipo.startsWith('prueba_')) return `🔔 Prueba ${tipo.split('_')[1]} días`;
   return tipo;
@@ -883,7 +887,8 @@ async function renderEvalPendientesRRHH(){
 
 async function registrarEvalRRHH(evId){
   if(currentUser?.role !== 'rrhh'){ toast('⚠ Solo RR.HH. puede registrar evaluaciones','var(--red)'); return; }
-  if(!confirm('¿Registrar esta evaluación en el legajo digital del empleado?\n\nUna vez registrada, queda archivada en forma definitiva y el empleado podrá consultarla desde "Mis Datos".')) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Registrar esta evaluación en el legajo digital del empleado?<br><br>Una vez registrada, queda archivada en forma definitiva y el empleado podrá consultarla desde "Mis Datos".'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const evals = await getEvaluaciones();
   const ev = evals.find(e=>e.id===evId);
   if(!ev){ toast('⚠ Evaluación no encontrada','var(--red)'); return; }

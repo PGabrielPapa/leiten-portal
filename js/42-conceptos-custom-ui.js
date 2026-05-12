@@ -558,7 +558,8 @@ async function aprobarConceptoCustom(id){
   if(!_ccEsAdmin()){ toast('⚠ Solo Admin','var(--red)'); return; }
   const c = await getConceptoCustom(id);
   if(!c) return;
-  if(!confirm(`¿Aprobar el concepto "${c.nombre}" (${c.codigo})?\n\nUna vez aprobado, entrará en vigencia para las próximas liquidaciones y se invalidarán los borradores actuales para recálculo.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Aprobar el concepto "${c.nombre}" (${c.codigo})?<br><br>Una vez aprobado, entrará en vigencia para las próximas liquidaciones y se invalidarán los borradores actuales para recálculo.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   c.estado = 'activo';
   c._cambioCriticoPendiente = false;
   c.aprobadoEl = new Date().toISOString();
@@ -590,10 +591,12 @@ async function toggleConceptoCustom(id){
   const c = await getConceptoCustom(id);
   if(!c) return;
   if(c.estado === 'activo'){
-    if(!confirm(`¿Desactivar el concepto "${c.nombre}"?\n\nDeja de aplicarse en futuras liquidaciones (no se borra ni recalcula las pasadas).`)) return;
+    const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Desactivar el concepto "${c.nombre}"?<br><br>Deja de aplicarse en futuras liquidaciones (no se borra ni recalcula las pasadas).`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
     c.estado = 'inactivo';
   } else if(c.estado === 'inactivo'){
-    if(!confirm(`¿Reactivar el concepto "${c.nombre}"?`)) return;
+    const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Reactivar el concepto "${c.nombre}"?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
     c.estado = 'activo';
   } else {
     return;
@@ -610,7 +613,8 @@ async function eliminarConceptoCustom(id){
   if(!_ccEsAdmin()){ toast('⚠ Solo Admin','var(--red)'); return; }
   const c = await getConceptoCustom(id);
   if(!c) return;
-  if(!confirm(`¿Eliminar DEFINITIVAMENTE el concepto "${c.nombre}" (${c.codigo})?\n\nNo afecta liquidaciones ya cerradas pero sí las que estén en borrador.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar DEFINITIVAMENTE el concepto "${c.nombre}" (${c.codigo})?<br><br>No afecta liquidaciones ya cerradas pero sí las que estén en borrador.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   await deleteConceptoCustom(id);
   await invalidarBorradoresPorCambioConcepto(`Eliminación de ${c.codigo}`);
   if(typeof logAuditX === 'function') logAuditX('conceptos_custom','eliminar',{codigo:c.codigo, por:currentUser?.emp?.nom});

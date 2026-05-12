@@ -115,14 +115,15 @@ function _renderPanelCBUNovedades(){
   cont.innerHTML = headerActions + filas;
 }
 
-function _cbuNovMarcarLeida(id){
+async function _cbuNovMarcarLeida(id){
   marcarCBUNovedadLeida(id);
   _renderPanelCBUNovedades();
   _refrescarBadgeCBUNovedades();
 }
 
-function _cbuNovMarcarTodasLeidas(){
-  if(!confirm('¿Marcar todas las novedades como leídas?')) return;
+async function _cbuNovMarcarTodasLeidas(){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Marcar todas las novedades como leídas?'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   marcarTodasCBUNovedadesLeidas();
   _renderPanelCBUNovedades();
   _refrescarBadgeCBUNovedades();

@@ -863,7 +863,7 @@ function _repDeseleccionarGrupo(nombreGrupo){
   _repRender();
 }
 
-function _repFiltrarCampos(q){
+async function _repFiltrarCampos(q){
   const cont = document.getElementById('rep-campos-grupos');
   if(!cont) return;
   const query = q.toLowerCase().trim();
@@ -877,20 +877,20 @@ function _repFiltrarCampos(q){
   }
 }
 
-function _repToggleCampo(key){
+async function _repToggleCampo(key){
   const i = _repEstado.campos.indexOf(key);
   if(i >= 0) _repEstado.campos.splice(i, 1);
   else _repEstado.campos.push(key);
   _repRender();
 }
 
-function _repSeleccionarTodos(){
+async function _repSeleccionarTodos(){
   const ds = REPORTES_DATASETS[_repEstado.datasetKey];
   _repEstado.campos = Object.keys(ds.campos);
   _repRender();
 }
 
-function _repDeseleccionarTodos(){
+async function _repDeseleccionarTodos(){
   _repEstado.campos = [];
   _repRender();
 }
@@ -1131,16 +1131,16 @@ function _repAplicarFiltros(){
 // ═══════════════════════════════════════════════════════════════════════════
 const _REP_LS = 'lsg_reportes_guardados';
 
-function _repGetGuardados(){
+async function _repGetGuardados(){
   try { return JSON.parse(localStorage.getItem(_REP_LS) || '[]'); }
   catch(_){ return []; }
 }
 
-function _repSaveGuardados(arr){
+async function _repSaveGuardados(arr){
   localStorage.setItem(_REP_LS, JSON.stringify(arr));
 }
 
-function _repGuardarReporte(){
+async function _repGuardarReporte(){
   const nombre = prompt('Nombre del reporte:');
   if(!nombre) return;
   const guardados = _repGetGuardados();
@@ -1158,7 +1158,7 @@ function _repGuardarReporte(){
   toast(`✓ Reporte "${nombre}" guardado`, 'var(--green)');
 }
 
-function _repCargarGuardado(idx){
+async function _repCargarGuardado(idx){
   const guardados = _repGetGuardados();
   const r = guardados[idx];
   if(!r) return;
@@ -1175,10 +1175,11 @@ function _repCargarGuardado(idx){
   _repRender();
 }
 
-function _repBorrarGuardado(idx){
+async function _repBorrarGuardado(idx){
   const guardados = _repGetGuardados();
   if(!guardados[idx]) return;
-  if(!confirm(`¿Borrar el reporte "${guardados[idx].nombre}"?`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Borrar el reporte "${guardados[idx].nombre}"?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   guardados.splice(idx, 1);
   _repSaveGuardados(guardados);
   _repRender();

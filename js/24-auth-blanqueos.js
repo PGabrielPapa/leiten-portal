@@ -74,7 +74,7 @@ function mostrarSolicitudEnviada(emp, yaExistia){
     <button class="login-back" onclick="backToStep1()" style="margin-top:0">← Volver</button>`;
 }
 
-function actualizarCntBlanqueo(){
+async function actualizarCntBlanqueo(){
   const lista = getSolicitudesBlanqueo();
   const pendientes = lista.filter(s=>s.estado==='pendiente');
   const cnt = document.getElementById('cnt-blanqueo');
@@ -89,7 +89,7 @@ function actualizarCntBlanqueo(){
   actualizarDotRRHH();
 }
 
-function actualizarDotRRHH(){
+async function actualizarDotRRHH(){
   const lista = getSolicitudesBlanqueo();
   const dot = document.getElementById('dot-rrhh');
   if(dot && lista.some(s=>s.estado==='pendiente')){
@@ -101,7 +101,7 @@ function actualizarDotRRHH(){
   }
 }
 
-function renderSolicitudesBlanqueo(){
+async function renderSolicitudesBlanqueo(){
   const lista = getSolicitudesBlanqueo();
   const div = document.getElementById('list-solicitudes-blanqueo');
   if(!div) return;
@@ -122,8 +122,9 @@ function renderSolicitudesBlanqueo(){
     </div>`).join('');
 }
 
-function blanquearDesdeSolicitud(dni, nom){
-  if(!confirm(`¿Blanquear la contraseña de ${nom}?\n\nEl empleado podrá crear una nueva contraseña al próximo ingreso.`)) return;
+async function blanquearDesdeSolicitud(dni, nom){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Blanquear la contraseña de ${nom}?<br><br>El empleado podrá crear una nueva contraseña al próximo ingreso.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   // Blanquear contraseña
   const pwds = getPasswords();
   delete pwds[dni];
@@ -209,7 +210,7 @@ function exportarTXT(){
 }
 
 // ─── GESTIÓN DE CONTRASEÑAS (RR.HH.) ───
-function renderPwdTable(){
+async function renderPwdTable(){
   const q = (document.getElementById('pwd-search')?.value || '').toLowerCase();
   const pwds = getPasswords();
   const wrap = document.getElementById('pwd-table-wrap');
@@ -241,8 +242,9 @@ function renderPwdTable(){
   }).join('');
 }
 
-function blanquearPasswordPorDni(dni, nom){
-  if(!confirm(`¿Blanquear la contraseña de ${nom}?\n\nEl empleado deberá crear una nueva contraseña en su próximo ingreso.`)) return;
+async function blanquearPasswordPorDni(dni, nom){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Blanquear la contraseña de ${nom}?<br><br>El empleado deberá crear una nueva contraseña en su próximo ingreso.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const pwds = getPasswords();
   delete pwds[dni];
   localStorage.setItem('lsg_passwords', JSON.stringify(pwds));

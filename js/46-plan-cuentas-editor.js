@@ -135,7 +135,7 @@ function abrirEditorPlanCuentas(){
   document.body.appendChild(overlay);
 }
 
-function _pcTab(tab){
+async function _pcTab(tab){
   ['gastos','pasivos','activos'].forEach(t => {
     const btn = document.getElementById(`tab-pc-${t}`);
     const pane = document.getElementById(`pc-pane-${t}`);
@@ -148,7 +148,7 @@ function _pcTab(tab){
   });
 }
 
-function _pcGuardarPlan(){
+async function _pcGuardarPlan(){
   const overlay = document.getElementById('modal-plan-cuentas');
   if(!overlay) return;
   const plan = (typeof getPlanCuentas === 'function') ? getPlanCuentas() : {};
@@ -171,8 +171,9 @@ function _pcGuardarPlan(){
   }
 }
 
-function _pcResetearDefaults(){
-  if(!confirm('¿Restaurar el plan de cuentas a los valores por defecto?\n\nSe perderán los cambios personalizados.')) return;
+async function _pcResetearDefaults(){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Restaurar el plan de cuentas a los valores por defecto?<br><br>Se perderán los cambios personalizados.'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   try {
     localStorage.removeItem('lsg_asiento_plan_cuentas');
     toast('✓ Plan de cuentas restaurado a defaults','var(--green)');

@@ -17,7 +17,6 @@ async function inicializarCumpleanos(){
     store.put({leg:c.leg, fecha:c.fecha, nom:emp?.nom||'', emp:emp?.emp||''});
   }
   await new Promise((res,rej)=>{ tx.oncomplete=res; tx.onerror=e=>rej(e.target.error); });
-  console.log(`✓ ${CUMPLE_DATA.length} cumpleaños inicializados`);
 }
 
 // ─── RECIBOS DE HABERES ───
@@ -177,7 +176,7 @@ async function setCumpleanos(leg, fecha){ // fecha = 'DD/MM'
     req.onerror   = e=>rej(e.target.error);
   });
 }
-function periodoLabel(ym){ // "2025-04" → "Abril 2025"
+async function periodoLabel(ym){ // "2025-04" → "Abril 2025"
   if(!ym) return '';
   const [y,m] = ym.split('-');
   const meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -285,7 +284,7 @@ function mostrarReciboEnModal(rec, url){
   document.getElementById('modal-recibo').style.display='flex';
 }
 
-function cerrarRecibo(){
+async function cerrarRecibo(){
   document.getElementById('modal-recibo').style.display='none';
   // Restaurar el iframe original por si se reemplazó con object
   const container = document.querySelector('#modal-recibo iframe, #modal-recibo object');
@@ -296,7 +295,7 @@ function cerrarRecibo(){
   }
 }
 
-function downloadReciboActual(){
+async function downloadReciboActual(){
   if(!_reciboActual) return;
   const blob = b64toBlob(_reciboActual.data, 'application/pdf');
   const url = URL.createObjectURL(blob);
@@ -308,7 +307,7 @@ function downloadReciboActual(){
   toast('✓ Recibo descargado', 'var(--green)');
 }
 
-function b64toBlob(b64, mime){
+async function b64toBlob(b64, mime){
   const bytes = atob(b64);
   const ab = new Uint8Array(bytes.length);
   for(let i=0;i<bytes.length;i++) ab[i]=bytes.charCodeAt(i);
@@ -554,7 +553,7 @@ function actualizarContadorAsignados(){
   document.getElementById('proc-assigned-count').textContent=`${n} de ${_pdfNumPages} páginas asignadas`;
 }
 
-function renderBulkSearch(){
+async function renderBulkSearch(){
   const q=document.getElementById('bulk-emp-search').value.toLowerCase();
   const res=document.getElementById('bulk-search-results');
   if(!q){res.style.display='none';return;}
@@ -568,7 +567,7 @@ function renderBulkSearch(){
     </div>`).join('');
 }
 
-function asignarTodas(leg){
+async function asignarTodas(leg){
   const emp=empByLeg(leg); if(!emp)return;
   _asignaciones.forEach(a=>{if(!a.emp) a.emp=emp;});
   document.getElementById('bulk-emp-search').value='';
@@ -649,7 +648,7 @@ async function confirmarAsignacion(){
   btn.disabled=false; btn.textContent='✓ Guardar recibos asignados';
 }
 
-function cerrarModalProceso(){
+async function cerrarModalProceso(){
   document.getElementById('modal-proceso').style.display='none';
 }
 
@@ -657,7 +656,7 @@ function cerrarModalProceso(){
 // ── Búsqueda de empleado para borrado ──
 const _delEmpSel = {rec: null, gan: null};
 
-function renderDelEmpSearch(tipo){
+async function renderDelEmpSearch(tipo){
   const q = document.getElementById(`del-emp-search-${tipo}`).value.toLowerCase();
   const res = document.getElementById(`del-emp-results-${tipo}`);
   _delEmpSel[tipo] = null;
@@ -672,7 +671,7 @@ function renderDelEmpSearch(tipo){
     </div>`).join('');
 }
 
-function selDelEmp(tipo, leg){
+async function selDelEmp(tipo, leg){
   const emp = empByLeg(leg); if(!emp) return;
   _delEmpSel[tipo] = emp;
   document.getElementById(`del-emp-search-${tipo}`).value = emp.nom;
@@ -688,7 +687,8 @@ async function eliminarReciboEmpPeriodo(){
   const key = `${emp.leg}_${periodo}`;
   const recibos = await getRecibos();
   if(!recibos[key]){ toast(`No hay recibo de ${emp.nom.split(',')[0].trim()} para ${periodoLabel(periodo)}`,'var(--t3)'); return; }
-  if(!confirm(`¿Eliminar el recibo de ${emp.nom} (${periodoLabel(periodo)})?`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar el recibo de ${emp.nom} (${periodoLabel(periodo)})?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   await deleteRecibo(key);
   toast('✓ Recibo eliminado','var(--yellow)');
   _delEmpSel.rec=null;
@@ -712,7 +712,8 @@ async function eliminarPeriodo(periodo){
     toast(`No hay recibos guardados para ${periodoLabel(periodo)}`, 'var(--t3)');
     return;
   }
-  if(!confirm(`¿Eliminar TODOS los recibos de ${periodoLabel(periodo)}?\n\n${keys.length} recibo(s) serán borrados permanentemente.`)) return;
+  const _ok06 = await showConfirm({titulo:'Eliminar recibos', mensaje:`¿Eliminar <b>TODOS</b> los recibos de <b>${periodoLabel(periodo)}</b>?<br><br><span style="color:var(--red)">${keys.length} recibo(s) serán borrados permanentemente.</span>`, labelOk:'Eliminar', peligroso:true});
+    if(!_ok06) return;
 
   // Borrar de a uno para manejar errores gracefully
   try {
@@ -725,7 +726,7 @@ async function eliminarPeriodo(periodo){
   actualizarCntRecibos();
 }
 
-function eliminarPeriodoCompleto(){
+async function eliminarPeriodoCompleto(){
   const periodo = document.getElementById('del-periodo-input').value;
   if(!periodo){ toast('⚠ Seleccioná un período primero','var(--yellow)'); return; }
   eliminarPeriodo(periodo);
@@ -796,7 +797,7 @@ async function renderCumpleTable(){
     }).join('');
 }
 
-function formatCumpleInput(input){
+async function formatCumpleInput(input){
   let v = input.value.replace(/\D/g,'');
   if(v.length>2) v = v.substring(0,2)+'/'+v.substring(2,4);
   input.value = v;
@@ -982,7 +983,7 @@ function verGanancia(key){
   });
 }
 
-function downloadGanancia(key){
+async function downloadGanancia(key){
   getGanancias().then(todos=>{
     const rec = todos[key];
     if(!rec) return;
@@ -997,8 +998,8 @@ function downloadGanancia(key){
 
 // ── RR.HH.: buscar empleado para ganancias ──
 let _ganEmpSeleccionado = null;
-function renderGanEmpSearch(){}   // no longer used
-function seleccionarGanEmp(leg){} // no longer used
+async function renderGanEmpSearch(){}   // no longer used
+async function seleccionarGanEmp(leg){} // no longer used
 async function subirGanancias(){}  // no longer used
 
 // ── Bulk PDF processing for ganancias ──
@@ -1007,7 +1008,7 @@ let _ganPeriodo = '';
 let _ganNumPages = 0;
 let _ganAsignaciones = [];
 
-function setGanProgress(txt, pct){
+async function setGanProgress(txt, pct){
   document.getElementById('gan-progress').style.display='block';
   document.getElementById('gan-progress-txt').textContent=txt;
   document.getElementById('gan-progress-bar').style.width=pct+'%';
@@ -1141,16 +1142,16 @@ function asignarGanPagina(pageIdx,leg){
   renderGanLista();
 }
 
-function limpiarGanPagina(i){
+async function limpiarGanPagina(i){
   _ganAsignaciones[i].emp=null; renderGanLista();
 }
 
-function actualizarCntGan(){
+async function actualizarCntGan(){
   const n=_ganAsignaciones.filter(a=>a.emp).length;
   document.getElementById('gan-assigned-count').textContent=`${n} de ${_ganNumPages} páginas asignadas`;
 }
 
-function renderGanBulkSearch(){
+async function renderGanBulkSearch(){
   const q=document.getElementById('gan-bulk-search').value.toLowerCase();
   const res=document.getElementById('gan-bulk-results');
   if(!q){res.style.display='none';return;}
@@ -1164,7 +1165,7 @@ function renderGanBulkSearch(){
     </div>`).join('');
 }
 
-function asignarGanTodas(leg){
+async function asignarGanTodas(leg){
   const emp=empByLeg(leg); if(!emp)return;
   _ganAsignaciones.forEach(a=>{if(!a.emp) a.emp=emp;});
   document.getElementById('gan-bulk-search').value='';
@@ -1210,7 +1211,7 @@ async function confirmarAsignacionGan(){
   btn.disabled=false; btn.textContent='✓ Guardar asignados';
 }
 
-function cerrarModalGan(){
+async function cerrarModalGan(){
   document.getElementById('modal-proceso-gan').style.display='none';
 }
 
@@ -1221,7 +1222,8 @@ async function eliminarGanPeriodo(){
   const todos = await getGanancias();
   const keys = Object.keys(todos).filter(k=>todos[k].periodo===periodo);
   if(!keys.length){ toast(`No hay documentos para ${periodoLabel(periodo)}`,'var(--t3)'); return; }
-  if(!confirm(`¿Eliminar TODOS los documentos de ganancias de ${periodoLabel(periodo)}?\n\n${keys.length} documento(s) serán borrados.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar TODOS los documentos de ganancias de ${periodoLabel(periodo)}?<br><br>${keys.length} documento(s) serán borrados.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   for(const k of keys) await deleteGanancia(k);
   toast(`✓ ${keys.length} documento(s) de ${periodoLabel(periodo)} eliminados`,'var(--yellow)');
   document.getElementById('del-gan-periodo').value='';
@@ -1236,7 +1238,8 @@ async function eliminarGananciaEmpPeriodo(){
   const key = `${emp.leg}_${periodo}`;
   const todos = await getGanancias();
   if(!todos[key]){ toast(`No hay documento de ${emp.nom.split(',')[0].trim()} para ${periodoLabel(periodo)}`,'var(--t3)'); return; }
-  if(!confirm(`¿Eliminar el documento de ganancias de ${emp.nom} (${periodoLabel(periodo)})?`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Eliminar el documento de ganancias de ${emp.nom} (${periodoLabel(periodo)})?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   await deleteGanancia(key);
   toast('✓ Documento eliminado','var(--yellow)');
   _delEmpSel.gan=null;

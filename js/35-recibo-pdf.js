@@ -164,7 +164,8 @@ async function publicarRecibosPDF(){
   if(!liq.items?.length){ toast('⚠ Sin items en la liquidación','var(--yellow)'); return; }
   if(currentUser?.role !== 'rrhh'){ toast('⚠ Solo RR.HH.','var(--red)'); return; }
 
-  if(!confirm(`¿Generar y publicar ${liq.items.length} recibo${liq.items.length!==1?'s':''} PDF para el período ${liq.periodo}?\n\nLos recibos quedarán disponibles en "Mis Recibos" para que cada empleado los visualice e imprima para firmar.\n\nTiempo estimado: ${Math.ceil(liq.items.length * 0.8)} segundos.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Generar y publicar ${liq.items.length} recibo${liq.items.length!==1?'s':''} PDF para el período ${liq.periodo}?<br><br>Los recibos quedarán disponibles en "Mis Recibos" para que cada empleado los visualice e imprima para firmar.<br><br>Tiempo estimado: ${Math.ceil(liq.items.length * 0.8)} segundos.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
 
   // Modal de progreso
   const overlay = document.createElement('div');
@@ -239,7 +240,7 @@ async function publicarRecibosPDF(){
   window._pubRecErrores = errores;
 }
 
-function _pubRecMostrarErrores(){
+async function _pubRecMostrarErrores(){
   const err = window._pubRecErrores || [];
   if(!err.length) return;
   alert('Errores al generar recibos:\n\n' + err.join('\n'));

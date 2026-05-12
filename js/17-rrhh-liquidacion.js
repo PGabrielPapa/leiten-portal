@@ -360,7 +360,7 @@ function getDefaultAportesTopesPorMes(){
   };
 }
 
-function getAportesTopesPorMes(){
+async function getAportesTopesPorMes(){
   try {
     const stored = JSON.parse(localStorage.getItem(APORTES_TOPES_KEY)||'{}');
     return { ...getDefaultAportesTopesPorMes(), ...stored };
@@ -369,12 +369,12 @@ function getAportesTopesPorMes(){
   }
 }
 
-function saveAportesTopesPorMes(obj){
+async function saveAportesTopesPorMes(obj){
   localStorage.setItem(APORTES_TOPES_KEY, JSON.stringify(obj));
 }
 
 // Resuelve tope aplicable según fecha de pago (YYYY-MM-DD → YYYY-MM)
-function resolveTopesAportesParaFecha(fechaISO){
+async function resolveTopesAportesParaFecha(fechaISO){
   const todos = getAportesTopesPorMes();
   const d = fechaISO
     ? new Date(fechaISO + (fechaISO.length===10?'T12:00:00':''))
@@ -1362,7 +1362,7 @@ function buscarEmpLiq(){
     </div>`).join('');
 }
 
-function seleccionarEmpLiq(leg, nom){
+async function seleccionarEmpLiq(leg, nom){
   _liqEmpSeleccionado = {leg, nom};
   const s = document.getElementById('liq-emp-search');
   if(s) s.value = nom;
@@ -1372,7 +1372,7 @@ function seleccionarEmpLiq(leg, nom){
   if(sel) sel.textContent = `✓ Seleccionado: ${nom} (Leg. ${leg})`;
 }
 
-function abrirNuevoPeriodo(){
+async function abrirNuevoPeriodo(){
   const f = document.getElementById('liq-nuevo-form');
   f.style.display = f.style.display==='none' ? 'block' : 'none';
   resetNuevoLiqForm();
@@ -1486,10 +1486,8 @@ async function abrirLiquidacion(id){
   if(!_liqActiva.items || !_liqActiva.items.length){
     try {
       if(typeof calcularYRenderPreview === 'function'){
-        console.log(`[abrirLiquidacion] Items vacíos en liq ${id} (estado=${_liqActiva.estado}), precalculando…`);
         await calcularYRenderPreview();
         if(_liqActiva.items?.length){
-          console.log(`[abrirLiquidacion] Recálculo OK: ${_liqActiva.items.length} items`);
         }
       }
     } catch(e){
@@ -1509,9 +1507,11 @@ async function borrarLiquidacion(id){
     toast('🔒 Período cerrado definitivamente, no se puede eliminar','var(--red)'); return;
   }
   if(liq.estado === 'aprobada' || liq.estado === 'pagada'){
-    if(!confirm(`⚠ Esta liquidación está ${liq.estado.toUpperCase()}. ¿Realmente querés eliminarla?\n\nPeríodo: ${liq.periodo} · Tipo: ${liq.tipo}\n\nLos datos se perderán en forma irreversible.`)) return;
+    const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`⚠ Esta liquidación está ${liq.estado.toUpperCase()}. ¿Realmente querés eliminarla?<br><br>Período: ${liq.periodo} · Tipo: ${liq.tipo}<br><br>Los datos se perderán en forma irreversible.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   } else {
-    if(!confirm('¿Eliminar esta liquidación en borrador?')) return;
+    const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Eliminar esta liquidación en borrador?'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   }
   await deleteLiquidacion(id);
   // Borrar novedades huérfanas asociadas
@@ -1953,12 +1953,12 @@ function obtenerSuspensionesDelPeriodo(anio, mes){
   return mapa;
 }
 
-function filtrarNov(){ renderNovedades(); }
+async function filtrarNov(){ renderNovedades(); }
 
 // Debounce para autosave de novedades — evita perder datos si el usuario cierra la pestaña
 let _novAutosaveTimer = null;
 let _novAutosavePending = new Set();
-function _scheduleAutosaveNov(leg){
+async function _scheduleAutosaveNov(leg){
   _novAutosavePending.add(leg);
   clearTimeout(_novAutosaveTimer);
   _novAutosaveTimer = setTimeout(async ()=>{
@@ -2043,7 +2043,7 @@ const MOTIVOS_BAJA = [
   { v:'fin_contrato',   label:'Fin de contrato a plazo',     indem:false, desc:'Si supera 1 año: indemnización reducida' }
 ];
 
-function _empleadoTieneBaja(emp, liq){
+async function _empleadoTieneBaja(emp, liq){
   if(!emp.egreso) return false;
   const fEg = _parseFechaLib(emp.egreso);
   if(!fEg) return false;
@@ -2072,13 +2072,13 @@ function _empleadoTieneBaja(emp, liq){
 //   • FCL: aporte mensual del empleador (12% el 1er año, 8% desde el 2do)
 //     depositado en libreta bancaria. No se calcula al cese — se acumuló
 //     durante toda la relación. Solo se entrega la libreta y certificación.
-function esRegimenLey22250(emp){
+async function esRegimenLey22250(emp){
   if(!emp || !emp.cod_sindicato) return false;
   const c = String(emp.cod_sindicato).trim().toUpperCase();
   return c === 'UOCRA' || c === 'UOCRA-IERIC' || c === 'CONSTRUCCION' || c === 'IERIC';
 }
 
-function abrirLiqFinal(leg, nom){
+async function abrirLiqFinal(leg, nom){
   if(!_liqActiva){ toast('⚠ No hay liquidación activa','var(--yellow)'); return; }
   if(_liqActiva.estado !== 'borrador'){
     toast('⚠ Liquidación bloqueada','var(--red)'); return;
@@ -2086,7 +2086,8 @@ function abrirLiqFinal(leg, nom){
   const emp = (typeof getNomina==='function' ? getNomina() : []).find(e => e.leg === leg);
   if(!emp){ toast('⚠ Empleado no encontrado','var(--red)'); return; }
   if(!emp.egreso){
-    if(!confirm(`${nom} no tiene fecha de egreso registrada. ¿Querés cargar una liquidación final igual?`)) return;
+    const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`${nom} no tiene fecha de egreso registrada. ¿Querés cargar una liquidación final igual?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   }
 
   if(!_novedadesActuales[leg]) _novedadesActuales[leg] = { leg, liqId: _liqActiva.id };
@@ -2542,7 +2543,7 @@ function _renderEmbargosLista(leg){
   `;
 }
 
-function _actualizarFormEmbAdd(){
+async function _actualizarFormEmbAdd(){
   const tipo = document.getElementById('emb-add-tipo')?.value || 'comun';
   const wrap = document.getElementById('emb-add-valor-wrap');
   if(!wrap) return;
@@ -2555,7 +2556,7 @@ function _actualizarFormEmbAdd(){
   }
 }
 
-function agregarEmbargo(leg){
+async function agregarEmbargo(leg){
   const tipo = document.getElementById('emb-add-tipo')?.value || 'comun';
   const motivo = (document.getElementById('emb-add-motivo')?.value || '').trim();
   let nuevo;
@@ -2580,8 +2581,9 @@ function agregarEmbargo(leg){
   _renderEmbargosLista(leg);
 }
 
-function quitarEmbargo(leg, id){
-  if(!confirm('¿Quitar este embargo?')) return;
+async function quitarEmbargo(leg, id){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Quitar este embargo?'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const nov = _novedadesActuales[leg];
   if(!nov || !Array.isArray(nov.embargos)) return;
   nov.embargos = nov.embargos.filter(e => e.id !== id);
@@ -2835,7 +2837,7 @@ function _cumpObjPreview(){
 
 let _cumpObjPendiente = null;
 
-function aplicarImportCumplObjetivos(){
+async function aplicarImportCumplObjetivos(){
   if(!_cumpObjPendiente || !_cumpObjPendiente.validos?.length){
     toast('⚠ No hay datos válidos para importar','var(--yellow)'); return;
   }
@@ -2843,7 +2845,8 @@ function aplicarImportCumplObjetivos(){
   const modo = document.querySelector('input[name="cumpobj-modo"]:checked')?.value || 'reemplazar';
   const accionTxt = modo === 'sumar' ? 'SUMARÁN al monto previo' : 'REEMPLAZARÁN el monto previo';
 
-  if(!confirm(`¿Importar Cumplimiento de Objetivos para ${validos.length} empleado${validos.length!==1?'s':''}?\n\nModo: ${modo.toUpperCase()} — los nuevos montos ${accionTxt}.\nTotal: $ ${validos.reduce((s,v)=>s+v.monto,0).toLocaleString('es-AR',{minimumFractionDigits:2})}\n\n${noEncontrados.length?'⚠ '+noEncontrados.length+' legajos no encontrados serán ignorados.\n':''}${errores.length?'⚠ '+errores.length+' líneas con errores de formato serán ignoradas.\n':''}`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Importar Cumplimiento de Objetivos para ${validos.length} empleado${validos.length!==1?'s':''}?<br><br>Modo: ${modo.toUpperCase()} — los nuevos montos ${accionTxt}.<br>Total: $ ${validos.reduce((s,v)=>s+v.monto,0).toLocaleString('es-AR',{minimumFractionDigits:2})}<br><br>${noEncontrados.length?'⚠ '+noEncontrados.length+' legajos no encontrados serán ignorados.<br>':''}${errores.length?'⚠ '+errores.length+' líneas con errores de formato serán ignoradas.<br>':''}`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
 
   let aplicados = 0;
   validos.forEach(v => {
@@ -3367,7 +3370,7 @@ function renderSiradigPreview(empleados){
     </table>`;
 }
 
-function aplicarImportSiradig(){
+async function aplicarImportSiradig(){
   if(!_siradigParsedData || !_liqActiva){ toast('⚠ No hay datos para aplicar','var(--yellow)'); return; }
   const sobrescribir = document.getElementById('siradig-sobrescribir')?.checked;
   const nomina = getNomina();
@@ -3463,7 +3466,6 @@ async function calcularYRenderPreview(){
   if(liq.estado === 'borrador' || !liq.estado){
     await updateLiquidacion(liq);
   } else {
-    console.log(`[calcularYRenderPreview] Liq ${liq.id} en estado "${liq.estado}" — recálculo en memoria, NO se persiste`);
   }
 
   renderPreviewTabla(items);
@@ -3560,6 +3562,7 @@ function renderPreviewTabla(items){
 }
 
 async function aprobarLiquidacion(){
+  if(!_liqActiva){ toast("⚠ No hay liquidación activa","var(--red)"); return; }
   if(!_liqActiva){ toast('⚠ No hay liquidación activa','var(--yellow)'); return; }
   if(currentUser?.role !== 'rrhh'){ toast('⚠ Solo RR.HH. puede aprobar liquidaciones','var(--red)'); return; }
   if(_liqActiva.estado === 'aprobada'){ toast('ℹ Liquidación ya aprobada','var(--yellow)'); return; }
@@ -3577,7 +3580,8 @@ async function aprobarLiquidacion(){
 
   const totHab = _liqActiva.items.reduce((s,i)=>s+$m(i.totalHaberes),0);
   const totNeto = _liqActiva.items.reduce((s,i)=>s+$m(i.netoAPagar),0);
-  if(!confirm(`¿Aprobar la liquidación ${_liqActiva.periodo} — ${_liqActiva.tipo}?\n\n• ${_liqActiva.items.length} empleados\n• Total haberes: ${fmtPesos(totHab)}\n• Total neto a pagar: ${fmtPesos(totNeto)}\n\nUna vez aprobada, los recibos se pueden generar y descargar.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Aprobar la liquidación ${_liqActiva.periodo} — ${_liqActiva.tipo}?<br><br>• ${_liqActiva.items.length} empleados<br>• Total haberes: ${fmtPesos(totHab)}<br>• Total neto a pagar: ${fmtPesos(totNeto)}<br><br>Una vez aprobada, los recibos se pueden generar y descargar.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   _liqActiva.estado='aprobada';
   _liqActiva.aprobadaEl=new Date().toLocaleDateString('es-AR');
   _liqActiva.aprobadaPor=currentUser?.emp?.leg || null;
@@ -3754,7 +3758,7 @@ function mostrarValidacionesPreAprobar(v){
 }
 
 // Formatea un ISO datetime a "DD/MM/YYYY" (fecha corta).
-function _fmtFechaCorta(iso){
+async function _fmtFechaCorta(iso){
   if(!iso) return '';
   try {
     const d = new Date(iso);
@@ -3773,7 +3777,8 @@ async function marcarLiquidacionPagada(){
   if(_liqActiva.estado !== 'aprobada'){
     toast('⚠ Solo se puede marcar como pagada una liquidación aprobada','var(--yellow)'); return;
   }
-  if(!confirm(`¿Marcar como PAGADA la liquidación ${_liqActiva.periodo} — ${_liqActiva.tipo}?\n\nEsta acción confirma que la acreditación fue ejecutada en el banco. Los recibos quedan disponibles para descarga, pero todavía es posible reabrir si hay errores.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Marcar como PAGADA la liquidación ${_liqActiva.periodo} — ${_liqActiva.tipo}?<br><br>Esta acción confirma que la acreditación fue ejecutada en el banco. Los recibos quedan disponibles para descarga, pero todavía es posible reabrir si hay errores.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   _liqActiva.estado='pagada';
   _liqActiva.pagadaEl  = new Date().toISOString();
   _liqActiva.pagadaPor = currentUser?.emp?.leg || null;
@@ -3791,7 +3796,19 @@ async function cerrarPeriodoLiq(){
   if(_liqActiva.estado !== 'pagada'){
     toast('⚠ Solo se cierra un período ya pagado','var(--yellow)'); return;
   }
-  if(!confirm(`🔒 CIERRE DEFINITIVO del período ${_liqActiva.periodo} — ${_liqActiva.tipo}\n\nUna vez cerrado:\n• No se podrán modificar novedades ni cálculos\n• No se podrá reabrir ni eliminar\n• Los datos quedan congelados para auditoría\n\n¿Confirmar el cierre?`)) return;
+  const _cfm = await showConfirm({
+    titulo: `🔒 Cierre definitivo: ${_liqActiva.periodo} — ${_liqActiva.tipo}`,
+    mensaje: `Una vez cerrado el período:<br>
+      <ul style="margin:8px 0 0 16px;line-height:1.9;color:var(--t2)">
+        <li>No se podrán modificar novedades ni cálculos</li>
+        <li>No se podrá reabrir ni eliminar</li>
+        <li>Los datos quedan congelados para auditoría</li>
+      </ul><br>
+      <span style="color:var(--yellow);font-size:12px">Se pedirá confirmación adicional por escrito.</span>`,
+    labelOk: 'Continuar con el cierre',
+    peligroso: true,
+  });
+    if(!_cfm) return;
   // Doble confirmación para evitar accidentes
   const conf = prompt('Para confirmar, escribí "CERRAR" en mayúsculas:');
   if(conf !== 'CERRAR'){
@@ -3848,7 +3865,7 @@ async function reabrirLiquidacion(){
 // Permite a RR.HH. revisar cuándo, quién y por qué se reabrió alguna
 // liquidación. El log se persiste en localStorage 'lsg_liq_reaperturas'
 // y se acumula sin límite (se puede limpiar manualmente desde Admin).
-function abrirHistorialReaperturas(){
+async function abrirHistorialReaperturas(){
   let logs;
   try { logs = JSON.parse(localStorage.getItem('lsg_liq_reaperturas')||'[]'); }
   catch(_){ logs = []; }
@@ -3895,8 +3912,9 @@ function abrirHistorialReaperturas(){
   document.body.appendChild(overlay);
 }
 
-function _limpiarHistorialReaperturas(){
-  if(!confirm('¿Limpiar TODO el historial de reaperturas?\n\nEsta acción es irreversible y debería usarse solo para mantenimiento.')) return;
+async function _limpiarHistorialReaperturas(){
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Limpiar TODO el historial de reaperturas?<br><br>Esta acción es irreversible y debería usarse solo para mantenimiento.'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   localStorage.removeItem('lsg_liq_reaperturas');
   if(typeof logAuditX === 'function') logAuditX('admin', 'limpiar_log_reaperturas', { por: currentUser?.emp?.nom });
   document.getElementById('modal-hist-reap')?.remove();
@@ -3906,7 +3924,7 @@ function _limpiarHistorialReaperturas(){
 // ─── Visor del historial de reaperturas — fin ──────────────────────────
 
 
-function _actualizarBotonesEstadoLiq(){
+async function _actualizarBotonesEstadoLiq(){
   const liq = _liqActiva;
   const show = (id, vis) => { const el = document.getElementById(id); if(el) el.style.display = vis ? 'inline-block' : 'none'; };
   if(!liq){
@@ -3929,7 +3947,8 @@ async function rechazarLiquidacionActiva(){
   const motivo = prompt(`¿Confirmás el rechazo y borrado de la liquidación "${_liqActiva.periodo} — ${_liqActiva.tipo}"?\n\nMotivo del rechazo (obligatorio):`);
   if(motivo === null) return;
   if(!motivo.trim()){ toast('⚠ Ingresá el motivo del rechazo','var(--yellow)'); return; }
-  if(!confirm(`Esta acción ELIMINARÁ la liquidación y todas sus novedades asociadas. Es irreversible.\n\nMotivo: "${motivo.trim()}"\n\n¿Confirmar eliminación?`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`Esta acción ELIMINARÁ la liquidación y todas sus novedades asociadas. Es irreversible.<br><br>Motivo: "${motivo.trim()}"<br><br>¿Confirmar eliminación?`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
 
   const id = _liqActiva.id;
   // Guardar log de rechazo antes de borrar (auditoría persistente vía localStorage)
@@ -4528,13 +4547,15 @@ async function imprimirRecibo(leg){
   // estado, pero con confirmación si NO es borrador.
   if(!liq.items || !liq.items.length){
     if(liq.estado !== 'borrador'){
-      const ok = confirm(
-        `⚠ Esta liquidación está en estado "${liq.estado.toUpperCase()}" pero los items están vacíos.\n\n` +
-        `Esto puede pasar si los datos se corrompieron al guardar.\n\n` +
-        `¿Querés intentar recalcular los items para imprimir el recibo?\n\n` +
-        `Nota: el recálculo usa la nómina y novedades actuales. Si la liquidación ya está aprobada/pagada, ` +
-        `los valores recalculados pueden no coincidir exactamente con lo que se aprobó originalmente.`
-      );
+      const ok = await showConfirm({
+        titulo: `Liquidación ${liq.estado.toUpperCase()} — items vacíos`,
+        mensaje: `⚠ Esta liquidación está en estado <b>${liq.estado.toUpperCase()}</b> pero los items están vacíos.<br><br>
+                  Esto puede pasar si los datos se corrompieron al guardar.<br><br>
+                  ¿Querés intentar recalcular los items para imprimir el recibo?<br><br>
+                  <span style="color:var(--yellow)">Nota: el recálculo usa la nómina y novedades actuales. Si la liquidación ya está aprobada/pagada, los valores recalculados pueden no coincidir exactamente con lo que se aprobó originalmente.</span>`,
+        labelOk: 'Recalcular e imprimir',
+        peligroso: false,
+      });
       if(!ok) return;
     } else {
       toast('⏳ Calculando liquidación antes de imprimir…','var(--accent2)');

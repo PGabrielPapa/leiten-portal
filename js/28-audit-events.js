@@ -129,7 +129,7 @@ function auditActionPhrase(l){
 
 // ─── Export CSV ───────────────────────────────────────────────────────────
 
-function auditExportCSV(filteredLog){
+async function auditExportCSV(filteredLog){
   const data = filteredLog || getAuditLog();
   if(!data.length){
     if(typeof _admToast === 'function') _admToast('No hay eventos para exportar', 'yellow');
@@ -178,7 +178,7 @@ function auditExportCSV(filteredLog){
 
 // ─── Limpiar log (solo Gerente RR.HH.) ────────────────────────────────────
 
-function auditClearAll(){
+async function auditClearAll(){
   if(!esGerenteRRHH(currentUser?.emp)){
     if(typeof _admToast === 'function') _admToast('Solo el Gerente de RR.HH. puede limpiar el log', 'red');
     return;
@@ -188,7 +188,8 @@ function auditClearAll(){
     if(typeof _admToast === 'function') _admToast('El log ya está vacío', 'yellow');
     return;
   }
-  if(!confirm(`¿Borrar los ${total} eventos del log de auditoría?\n\nEsta acción no se puede deshacer. Quedará un único registro indicando que vos limpiaste el log.`)){
+  const _cfm28 = await showConfirm({titulo:"Limpiar log de auditoría",mensaje:`¿Borrar los <b>${total} eventos</b> del log de auditoría?<br><br>Esta acción no se puede deshacer.`,labelOk:"Limpiar log",peligroso:true});
+  if(!_cfm28){
     return;
   }
   // Vaciamos y dejamos un evento que lo registra.

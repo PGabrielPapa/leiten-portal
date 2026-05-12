@@ -59,7 +59,7 @@ const EVAL_ITEMS = {
 const EVAL_LABELS = {1:'Muy Deficiente',2:'Deficiente',3:'Satisfactorio',4:'Bueno',5:'Excelente'};
 
 // Parse fecha ingreso (DD/MM/YYYY o YYYY-MM-DD) → Date
-function parseFechaIng(ing){
+async function parseFechaIng(ing){
   if(!ing) return null;
   if(ing.includes('/')){
     const p = ing.split('/'); if(p.length!==3) return null;
@@ -72,8 +72,8 @@ function parseFechaIng(ing){
   return null;
 }
 
-function fechaISO(d){ return d.toISOString().slice(0,10); }
-function fechaDDMMYYYY(iso){
+async function fechaISO(d){ return d.toISOString().slice(0,10); }
+async function fechaDDMMYYYY(iso){
   if(!iso) return '—';
   const p = iso.split('-'); return `${p[2]}/${p[1]}/${p[0]}`;
 }
@@ -156,7 +156,8 @@ async function inicializarEvalAnual(){
   const alcanceTxt = esRRHH ? `todos los empleados activos (${alcance.length})` : `tu equipo (${alcance.length} empleados a tu cargo)`;
 
   if(!alcance.length){ toast('⚠ No hay empleados en el alcance','var(--yellow)'); return; }
-  if(!confirm(`¿Inicializar evaluaciones anuales ${anio} para ${alcanceTxt}?\n\nSe creará una evaluación pendiente para octubre ${anio} por cada empleado sin evaluación ese año. No se duplica nada existente.`)) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`¿Inicializar evaluaciones anuales ${anio} para ${alcanceTxt}?<br><br>Se creará una evaluación pendiente para octubre ${anio} por cada empleado sin evaluación ese año. No se duplica nada existente.`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
 
   const existentes = await getEvaluaciones();
   const existePorLegAnio = new Set(
@@ -186,7 +187,7 @@ async function inicializarEvalAnual(){
 }
 
 // Calcula estado de alerta de una eval en período de prueba
-function getAlertaEvalPrueba(ev){
+async function getAlertaEvalPrueba(ev){
   if(ev.estado === 'realizada' || ev.estado === 'registrada' || ev.estado === 'no_aplica') return null;
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   const prog = new Date(ev.fechaProgramada + 'T00:00:00');
@@ -197,7 +198,7 @@ function getAlertaEvalPrueba(ev){
 }
 
 // ── Filtrar empleados a cargo del gerente actual ──
-function _getEquipoDelGerente(incluirBajas){
+async function _getEquipoDelGerente(incluirBajas){
   if(!currentUser) return [];
   const gerNom = currentUser.emp.nom.toUpperCase().trim();
   const esPapa = gerNom.includes('PAPA, PABLO GABRIEL');
@@ -241,7 +242,7 @@ async function renderEvaluaciones(){
   await actualizarBadgesEval();
 }
 
-function evalSubTab(sub){
+async function evalSubTab(sub){
   ['anual','prueba','historial'].forEach(s=>{
     const p = document.getElementById('eval-pane-'+s);
     const b = document.getElementById('eval-subtab-'+s);
@@ -458,7 +459,7 @@ async function marcarEvalNoAplica(evId, marcar){
 }
 
 // ── FORMULARIO DE EVALUACIÓN (modal) ──
-function abrirEvalForm(evId, modo, legParam, tipoParam, anioParam){
+async function abrirEvalForm(evId, modo, legParam, tipoParam, anioParam){
   // Si no hay evId (anual aún no inicializada individualmente), lo creamos on-the-fly
   (async ()=>{
     let ev = null;
@@ -618,7 +619,7 @@ function _mostrarEvalForm(ev, modo){
 }
 
 // ── Recolecta datos del formulario ──
-function _recolectarDatosEval(){
+async function _recolectarDatosEval(){
   const datos = {tecnicas:{}, interpersonales:{}, desempeno:{}, liderazgo:{}, fortalezas:[], areasMejora:[], objetivos:[], planDesarrollo:[], comentarios:''};
   document.querySelectorAll('[data-eval-section]').forEach(el=>{
     const sec = el.dataset.evalSection, idx = el.dataset.evalItem, f = el.dataset.evalField;
@@ -650,7 +651,7 @@ async function guardarEvalBorrador(evId){
 }
 
 // Determina si el usuario actual puede editar/finalizar una evaluación específica
-function _puedeEditarEval(ev){
+async function _puedeEditarEval(ev){
   if(!currentUser) return false;
   if(currentUser.role === 'rrhh') return true;
   // El gerente actual debe ser el validador del empleado evaluado
@@ -679,7 +680,8 @@ async function guardarEvalFinal(evId){
       return;
     }
   }
-  if(!confirm('¿Finalizar la evaluación?\n\nUna vez finalizada, la evaluación queda pendiente de registro por RR.HH. y no podés modificarla. RR.HH. la registrará en el legajo digital del empleado.')) return;
+  const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`'¿Finalizar la evaluación?<br><br>Una vez finalizada, la evaluación queda pendiente de registro por RR.HH. y no podés modificarla. RR.HH. la registrará en el legajo digital del empleado.'`, labelOk:'Confirmar', peligroso:true});
+    if(!_cfm) return;
   const evals = await getEvaluaciones();
   const ev = evals.find(e=>e.id===evId);
   if(!ev) return;

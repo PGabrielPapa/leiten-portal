@@ -2508,6 +2508,7 @@
 <script src="data/logos.js"></script>
 <script src="data/firmas.js"></script>
 <script src="data/feriados-ar.js"></script>
+<script src="js/00-constants.js"></script>
 <script src="js/01-state-storage.js"></script>
 <script src="js/02-auth.js"></script>
 <script src="js/03-navigation.js"></script>
@@ -2540,6 +2541,7 @@
 <script src="js/30-cbu-empleados.js"></script>
 <script src="js/31-mis-cbus.js"></script>
 <script src="js/32-cbu-rrhh-novedades.js"></script>
+<script src="js/33-cierre-periodos.js"></script>
 <script src="js/34-f931.js"></script>
 <script src="js/35-recibo-pdf.js"></script>
 <script src="js/36-archivos-banco.js"></script>
@@ -2558,5 +2560,17 @@
 <script src="js/49-documentos-firmados.js"></script>
 <script src="js/50-reporte-conceptos.js"></script>
 <script src="js/51-importador-conceptos.js"></script>
+
+<!-- Modal: Cierre de período contable (js/33) -->
+<div id="liq-cierre-periodos-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:flex-start;justify-content:center;overflow-y:auto;padding:30px 16px">
+  <div class="card" style="max-width:720px;width:100%;padding:0;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:calc(100vh - 60px);display:flex;flex-direction:column">
+    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:14px;font-weight:600;color:var(--t1)">🔒 Cierre de período contable</div>
+      <button class="btn btn-ghost" onclick="cerrarCierrePeriodosModal()" style="font-size:12px;padding:4px 10px">✕</button>
+    </div>
+    <div id="cierre-periodos-body" style="padding:20px;overflow-y:auto"></div>
+  </div>
+</div>
+
 </body>
 </html>
