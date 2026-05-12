@@ -737,34 +737,46 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   // ═══════════════════════════════════════════════════════════════
   //   FERIADOS NO TRABAJADOS (Art. 168 LCT)
   //   ─────────────────────────────────────────────
-  //   El empleado cobra UN JORNAL ADICIONAL por cada feriado del mes
-  //   que NO trabajó. Es independiente de si el feriado cae en día
-  //   hábil o en sábado/domingo (el feriado es feriado).
+  //   Régimen LCT: el empleado cobra UN JORNAL ADICIONAL por cada feriado
+  //   del mes que NO trabajó. Es independiente de si cae en día hábil o
+  //   fin de semana. Si lo trabajó, ese día se paga como hs ext 100%.
   //
-  //   Si el empleado trabajó el feriado, ese día NO se cobra como
-  //   "feriado no trabajado"; se cobra como hs extras al 100% (Art. 169).
-  //   La novedad `nov.feriadosTrabajados` indica cuántos del mes
-  //   trabajó (por defecto 0 → cobra todos como no trabajados).
+  //   Régimen UOCRA (Ley 22.250): también paga feriados según Art. 168 LCT
+  //   pero SOLO se contabilizan los feriados que caen en DÍAS HÁBILES
+  //   (lunes a viernes), porque UOCRA no trabaja sábados ni domingos por
+  //   regla general del régimen. Los feriados que caen en sábado/domingo
+  //   no generan derecho a jornal adicional.
   //
-  //   EXCEPCIÓN: empleados UOCRA (Ley 22.250) NO entran en este
-  //   cálculo. Su régimen contempla FCL aparte que cubre estos casos.
+  //   La novedad `nov.feriadosTrabajados` indica cuántos del mes trabajó
+  //   (por defecto 0 → cobra todos los del régimen como no trabajados).
   //
-  //   Valor del día feriado = bruto / 30 (mismo divisor calendario)
+  //   Valor del día feriado = bruto / divisor (30 calendario para LCT,
+  //   o hábiles para UOCRA, según _esUocra).
   // ═══════════════════════════════════════════════════════════════
   const _feriadosMesAr = (typeof getFeriadosDelMes === 'function') ? getFeriadosDelMes(anio, mes) : [];
   const _feriadosTrabajados = $m(nov.feriadosTrabajados);
-  const cantFeriadosNoTrab = _esUocra ? 0 : Math.max(0, _feriadosMesAr.length - _feriadosTrabajados);
-  const valorFeriado = bruto / 30;
+
+  // Para UOCRA filtramos solo feriados en día hábil (lun-vie)
+  const _feriadosAplicables = _esUocra
+    ? _feriadosMesAr.filter(fIso => {
+        const [y, m, d] = fIso.split('-').map(Number);
+        const dow = new Date(y, m - 1, d).getDay();
+        return dow !== 0 && dow !== 6;  // 0=domingo, 6=sábado
+      })
+    : _feriadosMesAr;
+
+  const cantFeriadosNoTrab = Math.max(0, _feriadosAplicables.length - _feriadosTrabajados);
+  const valorFeriado = _esUocra ? (habiles > 0 ? bruto / habiles : 0) : (bruto / 30);
   // En quincenales, solo contabilizamos los feriados que caen en la quincena
   let _feriadosEnQuincena = cantFeriadosNoTrab;
-  if(_esQuincenal && _feriadosMesAr.length){
-    _feriadosEnQuincena = _feriadosMesAr.filter(fIso => {
+  if(_esQuincenal && _feriadosAplicables.length){
+    _feriadosEnQuincena = _feriadosAplicables.filter(fIso => {
       const d = parseInt(fIso.substring(8, 10));
       return _esQuinc1 ? (d <= 15) : (d > 15);
-    }).length - Math.min(_feriadosTrabajados, _feriadosMesAr.length);
+    }).length - Math.min(_feriadosTrabajados, _feriadosAplicables.length);
     _feriadosEnQuincena = Math.max(0, _feriadosEnQuincena);
   }
-  const mFeriadosNoTrab = _esUocra ? 0 : (valorFeriado * _feriadosEnQuincena);
+  const mFeriadosNoTrab = valorFeriado * _feriadosEnQuincena;
 
   // ═══════════════════════════════════════════════════════════════
   //   ART. 155 LCT — VACACIONES Y LICENCIAS ESPECIALES
