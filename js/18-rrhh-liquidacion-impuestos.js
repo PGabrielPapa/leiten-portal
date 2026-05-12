@@ -506,7 +506,7 @@ function cargarGanPeriodoForm(){
   renderEscalaEditor(r.escala || []);
 }
 
-function renderEscalaEditor(escala){
+async function renderEscalaEditor(escala){
   const cont = document.getElementById('gan-escala-editor');
   if(!cont) return;
   const thS='padding:6px 8px;background:var(--bg2);font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;text-align:left;border-bottom:1px solid var(--border);letter-spacing:.05em';
@@ -554,7 +554,7 @@ async function leerEscalaFromEditor(){
 }
 
 async function agregarNuevoPeriodoGan(){
-  const clave = prompt('Ingresá la clave del semestre (formato "YYYY-S1" o "YYYY-S2"):','2026-S2');
+  const clave = await showPrompt({titulo:'Clave del semestre',mensaje:'Formato: YYYY-S1 o YYYY-S2 (ej: 2026-S1)',placeholder:'2026-S2',valorDefault:'2026-S2',labelOk:'Continuar'});
   if(!clave || !/^\d{4}-S[12]$/.test(clave)){ toast('⚠ Formato inválido (usar YYYY-S1 o YYYY-S2)','var(--yellow)'); return; }
   const periodos = getGanParamsPorSemestre();
   if(periodos[clave]){ toast('⚠ Ese semestre ya existe','var(--yellow)'); return; }
@@ -600,7 +600,7 @@ async function restablecerPeriodoGan(){
 // ═══════════════════════════════════════════════════════════════
 let _aportesMesEditando = null;
 
-function poblarSelectorAportes(){
+async function poblarSelectorAportes(){
   const sel = document.getElementById('aportes-mes-sel');
   if(!sel) return;
   const todos = getAportesTopesPorMes();
@@ -637,7 +637,7 @@ async function cargarAportesMesForm(){
 }
 
 async function agregarNuevoMesAportes(){
-  const clave = prompt('Ingresá la clave del mes (formato "YYYY-MM"):','2026-07');
+  const clave = await showPrompt({titulo:'Clave del mes',mensaje:'Formato: YYYY-MM (ej: 2026-07)',placeholder:'2026-07',valorDefault:'2026-07',labelOk:'Continuar'});
   if(!clave || !/^\d{4}-(0[1-9]|1[0-2])$/.test(clave)){ toast('⚠ Formato inválido (usar YYYY-MM)','var(--yellow)'); return; }
   const todos = getAportesTopesPorMes();
   if(todos[clave]){ toast('⚠ Ese mes ya existe','var(--yellow)'); return; }

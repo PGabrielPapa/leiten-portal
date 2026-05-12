@@ -1,3 +1,8 @@
+// ═══════════════════════════════════════════════════════════════════════
+// ═══   MIS DATOS — Vista del empleado: perfil, domicilio, teléfono    ═══
+// ═══   Módulo 05                                                       ═══
+// ═══════════════════════════════════════════════════════════════════════
+
 function renderMisDatos(){
   const div = document.getElementById('mis-datos-content');
   if(!div || !currentUser) return;

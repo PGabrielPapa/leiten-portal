@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════════════
+// ═══   AUTH — BLANQUEO DE CONTRASEÑAS                                 ═══
+// ═══   Solicitud de blanqueo por empleado → aprobación RRHH           ═══
+// ═══   Módulo 24                                                       ═══
+// ═══════════════════════════════════════════════════════════════════════
+
 function togglePwd(inputId, btnId){
   const inp = document.getElementById(inputId);
   const btn = document.getElementById(btnId);

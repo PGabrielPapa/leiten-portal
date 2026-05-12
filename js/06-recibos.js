@@ -1,3 +1,8 @@
+// ═══════════════════════════════════════════════════════════════════════
+// ═══   RECIBOS DE SUELDO — Vista y descarga de recibos del empleado   ═══
+// ═══   Módulo 06                                                       ═══
+// ═══════════════════════════════════════════════════════════════════════
+
 
 // Inicializar cumpleaños desde datos embebidos (solo la primera vez)
 async function inicializarCumpleanos(){
@@ -95,7 +100,7 @@ function abrirIDB(){
     };
     req.onblocked = () => {
       console.warn('IndexedDB: upgrade bloqueado por otra pestaña. Cerrá las demás pestañas del portal y recargá.');
-      alert('Para aplicar la última actualización del sistema, por favor cerrá todas las demás pestañas del Portal de RR.HH. que tengas abiertas y recargá esta página.');
+      showAlert('Para aplicar la última actualización del sistema, por favor cerrá todas las demás pestañas del Portal de RR.HH. que tengas abiertas y recargá esta página.', 'warning');
     };
   });
 }
@@ -631,9 +636,9 @@ async function confirmarAsignacion(){
 
     if(errores.length){
       setTimeout(()=>{
-        alert(`⚠ No se pudieron guardar ${errores.length} recibo(s):\n\n${errores.join('\n')}\n\n` +
+        showAlert(`⚠ No se pudieron guardar ${errores.length} recibo(s):\n\n${errores.join('\n')}\n\n` +
           (errores.some(e=>e.includes('almacenamiento'))?
-          'El almacenamiento del navegador está lleno. Eliminá recibos de períodos anteriores y reintentá.':''));
+          'El almacenamiento del navegador está lleno. Eliminá recibos de períodos anteriores y reintentá.':''), 'error');
       },300);
     }
 
@@ -642,7 +647,7 @@ async function confirmarAsignacion(){
     _pdfSrcDoc=null;
 
   } catch(e){
-    alert('⚠ Error inesperado al guardar:\n\n'+e.message);
+    showAlert('⚠ Error inesperado al guardar:\n\n'+e.message, "error");
     console.error(e);
   }
   btn.disabled=false; btn.textContent='✓ Guardar recibos asignados';

@@ -267,17 +267,17 @@ async function guardarSindicato(codigoOriginal){
   const pctAnt = parseFloat(document.getElementById('sind-pct-ant').value);
   const nota = (document.getElementById('sind-nota').value || '').trim();
 
-  if(!codigo){ alert('El código es obligatorio.'); return; }
-  if(!nombre){ alert('El nombre es obligatorio.'); return; }
-  if(isNaN(pctEmp) || pctEmp < 0){ alert('El % empleado debe ser un número ≥ 0.'); return; }
-  if(isNaN(pctPat) || pctPat < 0){ alert('El % patronal debe ser un número ≥ 0.'); return; }
-  if(isNaN(pctAnt) || pctAnt < 0){ alert('El % antigüedad/año debe ser un número ≥ 0.'); return; }
+  if(!codigo){ showAlert('El código es obligatorio.', 'warning'); return; }
+  if(!nombre){ showAlert('El nombre es obligatorio.', 'warning'); return; }
+  if(isNaN(pctEmp) || pctEmp < 0){ showAlert('El % empleado debe ser un número ≥ 0.', 'warning'); return; }
+  if(isNaN(pctPat) || pctPat < 0){ showAlert('El % patronal debe ser un número ≥ 0.', 'warning'); return; }
+  if(isNaN(pctAnt) || pctAnt < 0){ showAlert('El % antigüedad/año debe ser un número ≥ 0.', 'warning'); return; }
 
   const lista = getSindicatos();
   if(!codigoOriginal){
     // Alta: verificar que no exista
     if(lista.some(s => s.codigo.toUpperCase() === codigo)){
-      alert(`Ya existe un sindicato con código ${codigo}. Edítalo en lugar de crear uno nuevo.`);
+      showAlert(`Ya existe un sindicato con código ${codigo}. Edítalo en lugar de crear uno nuevo.`, 'warning');
       return;
     }
     lista.push({ codigo, nombre, pctEmpleado:pctEmp, pctPatronal:pctPat, pctAntigPorAnio:pctAnt, nota });

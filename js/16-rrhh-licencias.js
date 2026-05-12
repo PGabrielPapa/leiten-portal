@@ -466,7 +466,7 @@ async function aprobarLicEspGerente(id){
 }
 
 async function rechazarLicEspGerente(id){
-  const motivo = prompt('Motivo del rechazo:');
+  const motivo = await showPrompt({titulo:'Rechazar licencia',mensaje:'Indicá el motivo del rechazo (se notificará al empleado).',placeholder:'Motivo del rechazo...',requerido:true,labelOk:'Rechazar'});
   if(!motivo) return;
   const todos = await getLicenciasEspeciales();
   const l = todos.find(x=>x.id===id); if(!l) return;
@@ -556,7 +556,7 @@ async function aprobarLicAnualGerente(id){
 }
 
 async function rechazarLicAnualGerente(id){
-  const motivo = prompt('Motivo del rechazo (obligatorio):');
+  const motivo = await showPrompt({titulo:'Rechazar licencia',mensaje:'Motivo del rechazo (obligatorio).',placeholder:'Motivo del rechazo...',requerido:true,labelOk:'Rechazar'});
   if(!motivo?.trim()){ toast('⚠ Ingresá el motivo','var(--yellow)'); return; }
   const todos = await getLicAnuales();
   const l = todos.find(x=>x.id===id); if(!l) return;
@@ -630,7 +630,7 @@ async function aprobarLicAnualRRHH(id){
 }
 
 async function rechazarLicAnualRRHH(id){
-  const motivo = prompt('Motivo del rechazo (obligatorio):');
+  const motivo = await showPrompt({titulo:'Rechazar licencia',mensaje:'Motivo del rechazo (obligatorio).',placeholder:'Motivo del rechazo...',requerido:true,labelOk:'Rechazar'});
   if(!motivo?.trim()){ toast('⚠ Ingresá el motivo','var(--yellow)'); return; }
   const todos = await getLicAnuales();
   const l = todos.find(x=>x.id===id); if(!l) return;

@@ -419,14 +419,14 @@ function guardarSolicitudSancion(modo){
   const descripcion = gv('sanc-descripcion');
   const tipo = gv('sanc-tipo');
 
-  if(!leg){ alert('Seleccioná el empleado a sancionar.'); return; }
-  if(!motivo){ alert('Seleccioná el motivo de la sanción.'); return; }
-  if(!descripcion){ alert('La descripción del incumplimiento es obligatoria.'); return; }
-  if(descripcion.length > 500){ alert('La descripción no puede superar los 500 caracteres.'); return; }
-  if(!tipo){ alert(`Seleccioná la sanción ${modo==='rrhh'?'a aplicar':'solicitada'}.`); return; }
+  if(!leg){ showAlert('Seleccioná el empleado a sancionar.', 'warning'); return; }
+  if(!motivo){ showAlert('Seleccioná el motivo de la sanción.', 'warning'); return; }
+  if(!descripcion){ showAlert('La descripción del incumplimiento es obligatoria.', 'warning'); return; }
+  if(descripcion.length > 500){ showAlert('La descripción no puede superar los 500 caracteres.', 'warning'); return; }
+  if(!tipo){ showAlert(`Seleccioná la sanción ${modo==='rrhh'?'a aplicar':'solicitada'}.`, 'warning'); return; }
 
   const emp = empByLeg(leg);
-  if(!emp){ alert('Empleado no encontrado.'); return; }
+  if(!emp){ showAlert('Empleado no encontrado.', 'warning'); return; }
 
   // ═════════════════════════════════════════════════════════════════════
   // VALIDACIÓN DE PERMISOS — backend
@@ -459,7 +459,7 @@ function guardarSolicitudSancion(modo){
       autorizado = (validadorNom === userNom.trim());
     }
     if(!autorizado){
-      alert('⚠ Solo podés solicitar sanciones para empleados que tengas a cargo.\n\nEste empleado no figura como tu subordinado directo. Si necesitás sancionar a alguien fuera de tu área, contactá a RR.HH. o al CEO.');
+      showAlert('⚠ Solo podés solicitar sanciones para empleados que tengas a cargo.\n\nEste empleado no figura como tu subordinado directo. Si necesitás sancionar a alguien fuera de tu área, contactá a RR.HH. o al CEO.', 'warning');
       if(typeof logAuditX === 'function'){
         logAuditX('sanciones', 'intento_no_autorizado', {
           solicitante_leg: currentUser?.emp?.leg,
@@ -477,9 +477,9 @@ function guardarSolicitudSancion(modo){
   if(modo === 'rrhh'){
     fechaNotif = gv('sanc-fecha-notif');
     fechaCumpl = gv('sanc-fecha-cumpl');
-    if(!fechaNotif){ alert('La fecha de notificación es obligatoria.'); return; }
-    if(fechaNotif > new Date().toISOString().slice(0,10)){ alert('La fecha de notificación no puede ser futura.'); return; }
-    if(fechaCumpl && fechaCumpl < fechaNotif){ alert('La fecha de cumplimiento no puede ser anterior a la de notificación.'); return; }
+    if(!fechaNotif){ showAlert('La fecha de notificación es obligatoria.', 'warning'); return; }
+    if(fechaNotif > new Date().toISOString().slice(0,10)){ showAlert('La fecha de notificación no puede ser futura.', 'warning'); return; }
+    if(fechaCumpl && fechaCumpl < fechaNotif){ showAlert('La fecha de cumplimiento no puede ser anterior a la de notificación.', 'warning'); return; }
   }
 
   const ahora = new Date().toISOString();
@@ -645,7 +645,7 @@ function ejecutarResolucionSancion(id){
   const decision = document.getElementById('resolver-decision')?.value;
   const comentario = (document.getElementById('resolver-comentario')?.value || '').trim();
 
-  if(!decision){ alert('Seleccioná la decisión.'); return; }
+  if(!decision){ showAlert('Seleccioná la decisión.', 'warning'); return; }
 
   const ahora = new Date().toISOString();
 
@@ -653,10 +653,10 @@ function ejecutarResolucionSancion(id){
     const tipoApl = document.getElementById('resolver-tipo-aplicado')?.value;
     const fechaNotif = document.getElementById('resolver-fecha-notif')?.value;
     const fechaCumpl = document.getElementById('resolver-fecha-cumpl')?.value;
-    if(!tipoApl){ alert('Seleccioná la sanción a aplicar.'); return; }
-    if(!fechaNotif){ alert('La fecha de notificación es obligatoria.'); return; }
-    if(fechaNotif > new Date().toISOString().slice(0,10)){ alert('La fecha de notificación no puede ser futura.'); return; }
-    if(fechaCumpl && fechaCumpl < fechaNotif){ alert('La fecha de cumplimiento no puede ser anterior a la de notificación.'); return; }
+    if(!tipoApl){ showAlert('Seleccioná la sanción a aplicar.', 'warning'); return; }
+    if(!fechaNotif){ showAlert('La fecha de notificación es obligatoria.', 'warning'); return; }
+    if(fechaNotif > new Date().toISOString().slice(0,10)){ showAlert('La fecha de notificación no puede ser futura.', 'warning'); return; }
+    if(fechaCumpl && fechaCumpl < fechaNotif){ showAlert('La fecha de cumplimiento no puede ser anterior a la de notificación.', 'warning'); return; }
 
     s.estado = 'procedente';
     s.tipo_aplicado = tipoApl;
@@ -1173,7 +1173,7 @@ function exportarSancionesExcel(){
   const s = document.createElement('script');
   s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
   s.onload = cargarYExportar;
-  s.onerror = () => alert('No se pudo cargar la librería de Excel.');
+  s.onerror = () => showAlert('No se pudo cargar la librería de Excel.', 'warning');
   document.head.appendChild(s);
 }
 

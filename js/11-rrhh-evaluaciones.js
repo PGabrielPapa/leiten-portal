@@ -1,3 +1,8 @@
+// ═══════════════════════════════════════════════════════════════════════
+// ═══   EVALUACIONES — Desempeño, período de prueba, objetivos         ═══
+// ═══   Módulo 11                                                       ═══
+// ═══════════════════════════════════════════════════════════════════════
+
 
 // ═══════════════════════════════════════════════════════════════════════
 // ═══   MÓDULO: EVALUACIONES DE DESEMPEÑO                             ═══
@@ -444,7 +449,7 @@ async function marcarEvalNoAplica(evId, marcar){
   if(ev.estado === 'realizada' || ev.estado === 'registrada'){
     toast('⚠ No se puede marcar "No aplica" a una evaluación finalizada','var(--yellow)'); return;
   }
-  const motivo = marcar ? prompt('Motivo por el que no aplica (obligatorio):','') : '';
+  const motivo = marcar ? (await showPrompt({titulo:'Motivo requerido',mensaje:'Indicá por qué no aplica esta evaluación.',placeholder:'Motivo...',requerido:true,labelOk:'Confirmar'}) ?? '') : '';
   if(marcar && !motivo) { toast('⚠ Indicá el motivo','var(--yellow)'); return; }
   ev.estado = marcar ? 'no_aplica' : 'pendiente';
   ev.motivoNoAplica = marcar ? motivo : null;

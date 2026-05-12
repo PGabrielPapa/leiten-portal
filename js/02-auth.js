@@ -1,3 +1,8 @@
+// ═══════════════════════════════════════════════════════════════════════
+// ═══   AUTENTICACIÓN — Login / logout / sesión activa                 ═══
+// ═══   Módulo 02 — carga después de 01-state-storage                  ═══
+// ═══════════════════════════════════════════════════════════════════════
+
 function loginStep1(){
   const dni = document.getElementById('ls-dni').value.trim();
   const errEl = document.getElementById('ls-err-1');

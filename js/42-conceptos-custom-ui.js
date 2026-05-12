@@ -575,7 +575,7 @@ async function rechazarConceptoCustom(id){
   if(!_ccEsAdmin()){ toast('⚠ Solo Admin','var(--red)'); return; }
   const c = await getConceptoCustom(id);
   if(!c) return;
-  const motivo = prompt(`Rechazar el concepto "${c.nombre}".\n\nMotivo del rechazo (opcional):`);
+  const motivo = await showPrompt({titulo:`Rechazar concepto "${c.nombre}"`,mensaje:"Motivo del rechazo (opcional).",placeholder:"Motivo...",labelOk:"Rechazar"});
   if(motivo === null) return;  // canceló
   c.estado = 'rechazado';
   c.rechazadoEl = new Date().toISOString();

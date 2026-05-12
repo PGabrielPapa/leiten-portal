@@ -1,3 +1,8 @@
+// ═══════════════════════════════════════════════════════════════════════
+// ═══   STATE & STORAGE — localStorage helpers, nómina, getters       ═══
+// ═══   Módulo 01 — primer módulo que se carga                         ═══
+// ═══════════════════════════════════════════════════════════════════════
+
 
 // State
 let empresaActual = null;
@@ -92,7 +97,7 @@ let currentUser = null; // {emp, role: 'employee'|'manager'|'rrhh'}
 // ═══ ABM Empresas · Cache global (declarado temprano para evitar TDZ) ═══
 // Este cache es consultado desde getLogoSrc, getEmpresaDatos y getEmpresaFirma
 // durante la generación de recibos. Se puebla en el login vía _refreshEmpresasABMCache.
-var _empresasABMCache = [];
+var _empresasABMCache = []; // var intencional: compartido entre módulos 01 y 20
 
 function getPasswords(){ try{ return JSON.parse(localStorage.getItem('lsg_passwords')||'{}'); }catch(e){return{};} }
 function savePassword(dni, pwd){ const p=getPasswords(); p[dni]=pwd; localStorage.setItem('lsg_passwords', JSON.stringify(p)); }

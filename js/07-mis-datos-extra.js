@@ -1,3 +1,8 @@
+// ═══════════════════════════════════════════════════════════════════════
+// ═══   MIS DATOS EXTRA — Familiares, talles, documentación personal   ═══
+// ═══   Módulo 07                                                       ═══
+// ═══════════════════════════════════════════════════════════════════════
+
 function toggleFormCambioDom(){
   const f = document.getElementById('form-cambio-dom');
   const c = document.getElementById('dom-confirmacion');
@@ -698,15 +703,15 @@ async function guardarFamiliar(leg, idEdit){
   const genero = gv('fam-genero');
   const fecha_vinculo = gv('fam-fecha-vinculo');
 
-  if(!tipo){ alert('Seleccioná el vínculo.'); return; }
-  if(!apellido){ alert('El apellido es obligatorio.'); return; }
-  if(!nombre){ alert('El nombre es obligatorio.'); return; }
+  if(!tipo){ showAlert('Seleccioná el vínculo.', 'warning'); return; }
+  if(!apellido){ showAlert('El apellido es obligatorio.', 'warning'); return; }
+  if(!nombre){ showAlert('El nombre es obligatorio.', 'warning'); return; }
 
   const dniErr = _famValidarDni(dni);
-  if(dniErr){ alert(dniErr); return; }
+  if(dniErr){ showAlert(dniErr, "error"); return; }
 
   const cuilErr = _famValidarCuil(cuilNorm);
-  if(cuilErr){ alert(cuilErr); return; }
+  if(cuilErr){ showAlert(cuilErr, "error"); return; }
 
   // Coherencia DNI ↔ CUIL: los 8 dígitos del medio del CUIL deben coincidir con DNI (si ambos cargados)
   if(dni && cuilNorm){
@@ -720,12 +725,12 @@ async function guardarFamiliar(leg, idEdit){
   }
 
   if(fecha_nac && fecha_nac > new Date().toISOString().slice(0,10)){
-    alert('La fecha de nacimiento no puede ser futura.'); return;
+    showAlert('La fecha de nacimiento no puede ser futura.', 'warning'); return;
   }
 
   const tInfo = _famTipoInfo(tipo);
   if(tInfo.conFecha && fecha_vinculo && fecha_vinculo > new Date().toISOString().slice(0,10)){
-    alert('La fecha de vínculo no puede ser futura.'); return;
+    showAlert('La fecha de vínculo no puede ser futura.', 'warning'); return;
   }
 
   const lista = getFamiliaresEmp(leg);
@@ -734,7 +739,7 @@ async function guardarFamiliar(leg, idEdit){
   if(dni){
     const dup = lista.find(x => x.dni && x.dni === dni && (!idEdit || x.id !== idEdit));
     if(dup){
-      alert(`Ya hay un familiar con DNI ${dni} (${_famTipoInfo(dup.tipo).label}). No se puede repetir.`);
+      showAlert(`Ya hay un familiar con DNI ${dni} (${_famTipoInfo(dup.tipo).label}). No se puede repetir.`, "error");
       return;
     }
   }
@@ -743,7 +748,7 @@ async function guardarFamiliar(leg, idEdit){
   if(cuilNorm){
     const dupCuil = lista.find(x => x.cuil && x.cuil === cuilNorm && (!idEdit || x.id !== idEdit));
     if(dupCuil){
-      alert(`Ya hay un familiar con CUIL ${cuilNorm} (${_famTipoInfo(dupCuil.tipo).label}). No se puede repetir.`);
+      showAlert(`Ya hay un familiar con CUIL ${cuilNorm} (${_famTipoInfo(dupCuil.tipo).label}). No se puede repetir.`, "error");
       return;
     }
   }
@@ -754,7 +759,7 @@ async function guardarFamiliar(leg, idEdit){
   const motivoCie  = gv('fam-motivo-cierre');
 
   if(vigHasta && vigHasta < vigDesde){
-    alert('La fecha "vigente hasta" no puede ser anterior a "vigente desde".'); return;
+    showAlert('La fecha "vigente hasta" no puede ser anterior a "vigente desde".', 'warning'); return;
   }
 
   // Validar único cónyuge / concubino VIGENTE: no pueden coexistir dos
@@ -766,7 +771,7 @@ async function guardarFamiliar(leg, idEdit){
       (!idEdit || x.id !== idEdit)
     );
     if(dup2){
-      alert(`Ya tenés cargado un/a ${_famTipoInfo(dup2.tipo).label} VIGENTE. Cerrá ese vínculo (con motivo divorcio/fallecimiento) antes de cargar uno nuevo.`);
+      showAlert(`Ya tenés cargado un/a ${_famTipoInfo(dup2.tipo).label} VIGENTE. Cerrá ese vínculo (con motivo divorcio/fallecimiento) antes de cargar uno nuevo.`, "error");
       return;
     }
   }
@@ -1188,7 +1193,7 @@ function exportarFamiliaresExcel(){
   const s = document.createElement('script');
   s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
   s.onload = cargarYExportar;
-  s.onerror = () => alert('No se pudo cargar la librería de Excel.');
+  s.onerror = () => showAlert('No se pudo cargar la librería de Excel.', 'warning');
   document.head.appendChild(s);
 }
 

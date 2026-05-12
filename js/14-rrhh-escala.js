@@ -698,8 +698,8 @@ async function confirmarIncremento(){
   const alc = alcEl.value || 'todas';
   const com = (comEl?.value || '').trim();
 
-  if(isNaN(pct) || pct === 0){ alert('Ingresá un porcentaje distinto de cero.'); pctEl.focus(); return; }
-  if(!vig){ alert('Ingresá la fecha de vigencia.'); vigEl.focus(); return; }
+  if(isNaN(pct) || pct === 0){ showAlert('Ingresá un porcentaje distinto de cero.', 'warning'); pctEl.focus(); return; }
+  if(!vig){ showAlert('Ingresá la fecha de vigencia.', 'warning'); vigEl.focus(); return; }
 
   const existentes = getEscalaVersiones();
   const duplicada = existentes.find(v => v.vigencia === vig && v.origen !== 'inicial');
@@ -820,7 +820,7 @@ function exportarEscalaXLSX(){
   const s = document.createElement('script');
   s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
   s.onload = doExport;
-  s.onerror = () => alert('No se pudo cargar la librería de Excel. Probá con CSV.');
+  s.onerror = () => showAlert('No se pudo cargar la librería de Excel. Probá con CSV.', 'warning');
   document.head.appendChild(s);
 }
 

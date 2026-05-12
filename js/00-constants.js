@@ -37,6 +37,23 @@ const LS = Object.freeze({
 
   // Auditoría
   AUDIT_LOG:       'lsg_audit_log',
+
+  // Simulaciones
+  SIM_SCENARIOS:   'lsg_sim_scenarios',
+
+  // Liquidación — parámetros
+  LIQ_PARAMS:      'lsg_liq_params',
+  LIQ_APORTES_TOPES: 'lsg_aportes_topes',
+  LIQ_GAN_PARAMS:  'lsg_gan_params_periodos',
+
+  // Reportes
+  REP_TEMPLATES:   'lsg_rep_templates',
+
+  // Catálogo overrides
+  CAT_OVERRIDES:   'lsg_catalogo_overrides',
+
+  // Cierre de períodos contables
+  CIERRES:         'lsg_cierres_contables',
 });
 
 // ── Configuración de negocio ─────────────────────────────────────────────────
@@ -138,4 +155,129 @@ function showConfirm({ titulo = 'Confirmar', mensaje = '', labelOk = 'Confirmar'
     backdrop.addEventListener('click', onBackdrop);
     document.addEventListener('keydown', onKey);
   });
+}
+
+// ── Modal de entrada de texto reutilizable (reemplaza prompt() nativo) ────────
+/**
+ * showPrompt(opts) → Promise<string|null>
+ *
+ * opts = {
+ *   titulo:      string   (ej: 'Motivo del rechazo')
+ *   mensaje:     string   (texto informativo, HTML permitido)
+ *   placeholder: string   (ej: 'Escribí el motivo...')
+ *   valorDefault: string  (valor inicial del campo)
+ *   labelOk:     string   — default: 'Aceptar'
+ *   labelCancel: string   — default: 'Cancelar'
+ *   requerido:   boolean  — si true, no permite enviar vacío
+ * }
+ * Retorna: string con el valor ingresado, o null si canceló.
+ */
+function showPrompt({ titulo = '', mensaje = '', placeholder = '', valorDefault = '',
+                      labelOk = 'Aceptar', labelCancel = 'Cancelar', requerido = false } = {}) {
+  return new Promise(resolve => {
+    let modal = document.getElementById('_prompt-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = '_prompt-modal';
+      modal.innerHTML = `
+        <div id="_prompt-backdrop" style="
+          position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;
+          display:flex;align-items:center;justify-content:center;padding:20px">
+          <div style="
+            background:var(--bg,#1a1a1a);border:1px solid var(--border,#333);
+            border-radius:10px;padding:26px 26px 20px;max-width:420px;width:100%;
+            box-shadow:0 24px 60px rgba(0,0,0,.6)">
+            <div id="_prompt-title"  style="font-size:14px;font-weight:600;color:var(--t1,#fff);margin-bottom:8px"></div>
+            <div id="_prompt-msg"    style="font-size:12px;color:var(--t2,#ccc);line-height:1.5;margin-bottom:14px"></div>
+            <input  id="_prompt-inp" type="text" autocomplete="off"
+              style="width:100%;background:var(--bg2,#111);border:1px solid var(--border,#444);
+                     border-radius:6px;padding:9px 12px;color:var(--t1,#fff);font-size:13px;
+                     outline:none;box-sizing:border-box;margin-bottom:6px">
+            <div id="_prompt-err" style="font-size:11px;color:var(--red,#e55);min-height:16px;margin-bottom:12px"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button id="_prompt-cancel" style="
+                background:none;border:1px solid var(--border,#444);border-radius:6px;
+                padding:7px 16px;font-size:13px;color:var(--t2,#ccc);cursor:pointer">
+              </button>
+              <button id="_prompt-ok" style="
+                background:var(--accent,#3b82f6);border:none;border-radius:6px;
+                padding:7px 16px;font-size:13px;font-weight:600;color:#fff;cursor:pointer">
+              </button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+    }
+
+    document.getElementById('_prompt-title').textContent   = titulo;
+    document.getElementById('_prompt-msg').innerHTML       = mensaje;
+    document.getElementById('_prompt-err').textContent     = '';
+    document.getElementById('_prompt-cancel').textContent  = labelCancel;
+    document.getElementById('_prompt-ok').textContent      = labelOk;
+    const inp = document.getElementById('_prompt-inp');
+    inp.placeholder = placeholder;
+    inp.value       = valorDefault;
+
+    modal.style.display = 'block';
+    setTimeout(() => inp.focus(), 50);
+
+    const cleanup = (val) => {
+      modal.style.display = 'none';
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      backdrop.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKey);
+      resolve(val);
+    };
+
+    const okBtn     = document.getElementById('_prompt-ok');
+    const cancelBtn = document.getElementById('_prompt-cancel');
+    const backdrop  = document.getElementById('_prompt-backdrop');
+    const errDiv    = document.getElementById('_prompt-err');
+
+    const onOk = () => {
+      const val = inp.value.trim();
+      if (requerido && !val) {
+        errDiv.textContent = '⚠ Este campo es obligatorio.';
+        inp.focus();
+        return;
+      }
+      cleanup(val || null);
+    };
+    const onCancel   = () => cleanup(null);
+    const onBackdrop = (e) => { if (e.target === backdrop) cleanup(null); };
+    const onKey      = (e) => {
+      if (e.key === 'Enter')  { onOk(); }
+      if (e.key === 'Escape') { cleanup(null); }
+    };
+
+    okBtn.addEventListener('click',      onOk);
+    cancelBtn.addEventListener('click',  onCancel);
+    backdrop.addEventListener('click',   onBackdrop);
+    document.addEventListener('keydown', onKey);
+  });
+}
+
+// ── showAlert() — reemplaza alert() nativo ────────────────────────────────────
+/**
+ * showAlert(mensaje, tipo?) → void
+ * tipo: 'error' | 'warning' | 'info'  (default: 'error')
+ * Usa toast() si está disponible, si no crea un toast temporal propio.
+ */
+function showAlert(mensaje, tipo = 'error') {
+  const color = tipo === 'warning' ? 'var(--yellow,#ca8a04)'
+              : tipo === 'info'    ? 'var(--accent,#3b82f6)'
+              : 'var(--red,#dc2626)';
+  if (typeof toast === 'function') {
+    toast(String(mensaje), color, 5000);
+    return;
+  }
+  // Fallback si toast() no está cargado todavía
+  const t = document.createElement('div');
+  t.textContent = String(mensaje);
+  t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:${color};color:#fff;padding:10px 20px;border-radius:8px;
+    font-size:13px;z-index:999999;box-shadow:0 4px 20px rgba(0,0,0,.4);max-width:480px;text-align:center`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 5000);
 }

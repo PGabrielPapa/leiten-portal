@@ -8,7 +8,7 @@
 // Reusa el motor real `calcularItemLiquidacion()` y `getDefaultLiqParams()`
 // para garantizar coherencia 1:1 con la liquidación productiva.
 
-const SIM_STORAGE_KEY = 'lsg_simulaciones';
+const SIM_STORAGE_KEY = LS.SIM_SCENARIOS; // centralizado en js/00-constants.js
 let _simTab = 'mensual';
 let _simResultadoMensual = null;
 let _simResultadoGrat = null;
@@ -360,9 +360,9 @@ function pintarResultadoMensual(){
   `;
 }
 
-function guardarEscenarioMensual(){
+async function guardarEscenarioMensual(){
   if(!_simResultadoMensual){ toast('⚠ Calculá la simulación primero','var(--yellow)'); return; }
-  const nombre = prompt('Nombre del escenario:', `Mensual ${_simResultadoMensual.mes}/${_simResultadoMensual.anio} +${_simResultadoMensual.pctInc}%`);
+  const nombre = await showPrompt({titulo:'Guardar escenario',placeholder:'Nombre del escenario',valorDefault:`Mensual ${_simResultadoMensual.mes}/${_simResultadoMensual.anio} +${_simResultadoMensual.pctInc}%`,labelOk:'Guardar'});
   if(!nombre) return;
   const arr = getSimulaciones();
   arr.push({
@@ -637,9 +637,9 @@ function pintarResultadoGrat(){
   `;
 }
 
-function guardarEscenarioGrat(){
+async function guardarEscenarioGrat(){
   if(!_simResultadoGrat) return;
-  const nombre = prompt('Nombre del escenario:', _simResultadoGrat.concepto);
+  const nombre = await showPrompt({titulo:'Guardar escenario',placeholder:'Nombre del escenario',valorDefault:_simResultadoGrat.concepto,labelOk:'Guardar'});
   if(!nombre) return;
   const arr = getSimulaciones();
   arr.push({
@@ -1083,11 +1083,11 @@ function pintarResultadoFinal(){
   `;
 }
 
-function guardarEscenarioFinal(){
+async function guardarEscenarioFinal(){
   if(!_simResultadoFinal) return;
   const r = _simResultadoFinal;
   const tInfo = SIM_TIPOS_BAJA.find(t => t.v === r.tipo);
-  const nombre = prompt('Nombre del escenario:', `${(r.emp.nom||'').split(',')[0]} · ${tInfo?.lbl||r.tipo}`);
+  const nombre = await showPrompt({titulo:'Guardar escenario',placeholder:'Nombre del escenario',valorDefault:`${(r.emp.nom||'').split(',')[0]} · ${tInfo?.lbl||r.tipo}`,labelOk:'Guardar'});
   if(!nombre) return;
   const arr = getSimulaciones();
   arr.push({

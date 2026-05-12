@@ -243,7 +243,7 @@ async function publicarRecibosPDF(){
 async function _pubRecMostrarErrores(){
   const err = window._pubRecErrores || [];
   if(!err.length) return;
-  alert('Errores al generar recibos:\n\n' + err.join('\n'));
+  showAlert('Errores al generar recibos:\n\n' + err.join('\n'), 'error');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

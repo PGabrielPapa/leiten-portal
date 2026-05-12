@@ -794,10 +794,10 @@ async function hysGuardarEpp(leg, idEdit){
   const gv = id => (document.getElementById(id)?.value || '').trim();
   const elemento = gv('epp-elem');
   const fecha = gv('epp-fecha');
-  if(!elemento){ alert('Seleccioná un elemento.'); return; }
-  if(!fecha){ alert('La fecha de entrega es obligatoria.'); return; }
+  if(!elemento){ showAlert('Seleccioná un elemento.', 'warning'); return; }
+  if(!fecha){ showAlert('La fecha de entrega es obligatoria.', 'warning'); return; }
   if(fecha > new Date().toISOString().slice(0,10)){
-    alert('La fecha no puede ser futura.'); return;
+    showAlert('La fecha no puede ser futura.', 'warning'); return;
   }
 
   const all = getHysEppEntregas();
@@ -1077,11 +1077,11 @@ async function hysGuardarCap(leg, idEdit){
   const gv = id => (document.getElementById(id)?.value || '').trim();
   const tipo = gv('cap-tipo');
   const fecha = gv('cap-fecha');
-  if(!tipo){ alert('Seleccioná el tipo de capacitación.'); return; }
-  if(!fecha){ alert('La fecha es obligatoria.'); return; }
-  if(fecha > new Date().toISOString().slice(0,10)){ alert('La fecha realizada no puede ser futura.'); return; }
+  if(!tipo){ showAlert('Seleccioná el tipo de capacitación.', 'warning'); return; }
+  if(!fecha){ showAlert('La fecha es obligatoria.', 'warning'); return; }
+  if(fecha > new Date().toISOString().slice(0,10)){ showAlert('La fecha realizada no puede ser futura.', 'warning'); return; }
   const venc = gv('cap-vencimiento');
-  if(venc && venc <= fecha){ alert('El vencimiento debe ser posterior a la fecha de realización.'); return; }
+  if(venc && venc <= fecha){ showAlert('El vencimiento debe ser posterior a la fecha de realización.', 'warning'); return; }
 
   const all = getHysCapacitaciones();
   const data = {
@@ -1623,11 +1623,11 @@ async function hysCatTipoGuardar(idx){
   const vig = parseInt(document.getElementById('ct-vigencia').value,10);
   const obligat = !!document.getElementById('ct-obligat')?.checked;
   const desc = (document.getElementById('ct-desc').value||'').trim();
-  if(!codigo){ alert('Código obligatorio.'); return; }
-  if(!nombre){ alert('Nombre obligatorio.'); return; }
+  if(!codigo){ showAlert('Código obligatorio.', 'warning'); return; }
+  if(!nombre){ showAlert('Nombre obligatorio.', 'warning'); return; }
   const tipos = getHysCapacitacionesTipos();
   if(idx===null || idx===undefined){
-    if(tipos.some(t=>t.codigo.toUpperCase()===codigo)){ alert(`Ya existe un tipo con código ${codigo}.`); return; }
+    if(tipos.some(t=>t.codigo.toUpperCase()===codigo)){ showAlert(`Ya existe un tipo con código ${codigo}.`, 'warning'); return; }
     tipos.push({ codigo, nombre, obligatorio:obligat, vigencia_meses:isNaN(vig)?null:vig, descripcion:desc });
   } else {
     tipos[idx] = { ...tipos[idx], nombre, obligatorio:obligat, vigencia_meses:isNaN(vig)?null:vig, descripcion:desc };
@@ -1714,11 +1714,11 @@ async function hysCatEppGuardar(idx){
   const nombre = (document.getElementById('ce-nombre').value||'').trim();
   const categoria = document.getElementById('ce-cat').value;
   const vida = parseInt(document.getElementById('ce-vida').value,10);
-  if(!codigo){ alert('Código obligatorio.'); return; }
-  if(!nombre){ alert('Nombre obligatorio.'); return; }
+  if(!codigo){ showAlert('Código obligatorio.', 'warning'); return; }
+  if(!nombre){ showAlert('Nombre obligatorio.', 'warning'); return; }
   const cat = getHysEppCatalogo();
   if(idx===null || idx===undefined){
-    if(cat.some(x=>x.codigo.toUpperCase()===codigo)){ alert(`Ya existe un elemento con código ${codigo}.`); return; }
+    if(cat.some(x=>x.codigo.toUpperCase()===codigo)){ showAlert(`Ya existe un elemento con código ${codigo}.`, 'warning'); return; }
     cat.push({ codigo, nombre, categoria, vida_util_meses:isNaN(vida)?null:vida });
   } else {
     cat[idx] = { ...cat[idx], nombre, categoria, vida_util_meses:isNaN(vida)?null:vida };
@@ -1765,7 +1765,7 @@ function _hysCargarXLSX(cb){
   const s = document.createElement('script');
   s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
   s.onload = cb;
-  s.onerror = () => alert('No se pudo cargar la librería de Excel.');
+  s.onerror = () => showAlert('No se pudo cargar la librería de Excel.', 'warning');
   document.head.appendChild(s);
 }
 
@@ -1943,7 +1943,7 @@ function hysProcesarArchivo(tipo, ev){
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
         if(rows.length < 3){
-          alert('El archivo no tiene filas de datos.');
+          showAlert('El archivo no tiene filas de datos.', 'warning');
           ev.target.value = '';
           return;
         }
@@ -1956,7 +1956,7 @@ function hysProcesarArchivo(tipo, ev){
         else if(tipo === 'caps') _hysImpCapsPreview(headers, dataRows);
       } catch(err){
         console.error(err);
-        alert('Error al leer el archivo: ' + err.message);
+        showAlert('Error al leer el archivo: ' + err.message, "warning");
       }
       ev.target.value = '';
     };
@@ -1990,7 +1990,7 @@ function _hysIdxOf(headers, ...nombres){
 // ── PREVIEW Y CONFIRMACIÓN: TALLES ──
 function _hysImpTallesPreview(headers, rows){
   const iLeg = _hysIdxOf(headers, 'LEGAJO');
-  if(iLeg < 0){ alert('Falta la columna LEGAJO en la planilla.'); return; }
+  if(iLeg < 0){ showAlert('Falta la columna LEGAJO en la planilla.', 'warning'); return; }
   const cols = ['CALZADO','PANTALON','BUZO','REMERA','CAMPERA','CAMISA','CASCO','GUANTES','OBSERVACIONES'];
   const idxCol = {};
   for(const c of cols){ idxCol[c] = _hysIdxOf(headers, c); }
@@ -2035,7 +2035,7 @@ function _hysImpEppPreview(headers, rows){
   const iMotivo = _hysIdxOf(headers, 'MOTIVO');
   const iObs = _hysIdxOf(headers, 'OBSERVACIONES');
   const iFirm = _hysIdxOf(headers, 'FIRMADO');
-  if(iLeg<0||iFecha<0||iElem<0){ alert('Faltan columnas obligatorias: LEGAJO, FECHA, CODIGO_ELEMENTO.'); return; }
+  if(iLeg<0||iFecha<0||iElem<0){ showAlert('Faltan columnas obligatorias: LEGAJO, FECHA, CODIGO_ELEMENTO.', 'warning'); return; }
 
   const catalogo = getHysEppCatalogo();
   const codigosValidos = new Set(catalogo.map(c => c.codigo.toUpperCase()));
@@ -2084,7 +2084,7 @@ function _hysImpCapsPreview(headers, rows){
   const iMod = _hysIdxOf(headers, 'MODALIDAD');
   const iCons = _hysIdxOf(headers, 'CONSTANCIA');
   const iObs = _hysIdxOf(headers, 'OBSERVACIONES');
-  if(iLeg<0||iFecha<0||iTipo<0){ alert('Faltan columnas obligatorias: LEGAJO, FECHA, CODIGO_TIPO.'); return; }
+  if(iLeg<0||iFecha<0||iTipo<0){ showAlert('Faltan columnas obligatorias: LEGAJO, FECHA, CODIGO_TIPO.', 'warning'); return; }
 
   const tipos = getHysCapacitacionesTipos();
   const codigosValidos = new Set(tipos.map(t => t.codigo.toUpperCase()));
@@ -2432,7 +2432,7 @@ async function hysSubirManualArchivo(ev){
   ev.target.value = '';
   if(!file) return;
   if(file.size > HYS_MANUAL_MAX_SIZE){
-    alert(`El archivo supera el tamaño máximo permitido (${_hysFmtSize(HYS_MANUAL_MAX_SIZE)}).\nArchivo: ${_hysFmtSize(file.size)}`);
+    showAlert(`El archivo supera el tamaño máximo permitido (${_hysFmtSize(HYS_MANUAL_MAX_SIZE)}).\nArchivo: ${_hysFmtSize(file.size)}`, 'warning');
     return;
   }
   // Mostrar form de metadata antes de guardar
@@ -2501,7 +2501,7 @@ function _hysAbrirFormMetaManual({ archivo, meta, isNew }){
 
   document.getElementById('hm-btn-confirm').onclick = async () => {
     const titulo = (document.getElementById('hm-titulo').value||'').trim();
-    if(!titulo){ alert('El título es obligatorio.'); return; }
+    if(!titulo){ showAlert('El título es obligatorio.', 'warning'); return; }
     const data = {
       titulo,
       categoria: document.getElementById('hm-cat').value,
@@ -2535,7 +2535,7 @@ function _hysAbrirFormMetaManual({ archivo, meta, isNew }){
       _hysRenderManualesBody();
     } catch(err){
       console.error(err);
-      alert('Error al guardar el manual: ' + err.message + '\n\nPosibles causas: espacio insuficiente o permisos del navegador.');
+      showAlert('Error al guardar el manual: ' + err.message + '\n\nPosibles causas: espacio insuficiente o permisos del navegador.', "warning");
     }
   };
 }
@@ -2560,7 +2560,7 @@ async function hysDescargarManual(id){
     toast('✓ Descarga iniciada','var(--green)');
   } catch(err){
     console.error(err);
-    alert('Error al descargar: ' + err.message);
+    showAlert('Error al descargar: ' + err.message, "warning");
   }
 }
 
@@ -2583,7 +2583,7 @@ async function hysEliminarManual(id){
     toast('✓ Manual eliminado','var(--red)');
   } catch(err){
     console.error(err);
-    alert('Error al eliminar: ' + err.message);
+    showAlert('Error al eliminar: ' + err.message, "warning");
   }
 }
 

@@ -65,7 +65,7 @@ function _tipoHaberInfo(t){ return TIPOS_HABERES.find(x => x.v === t) || { v:t, 
 function _tipoDescuentoInfo(t){ return TIPOS_DESCUENTOS.find(x => x.v === t) || { v:t, label:t, icon:'•' }; }
 
 // ── Parámetros ──────────────────────────────────────────────────
-const LIQ_PARAMS_KEY = 'lsg_liq_params';
+const LIQ_PARAMS_KEY = LS.LIQ_PARAMS; // centralizado en js/00-constants.js
 function getDefaultLiqParams(){
   // Valores por defecto — marzo 2026 (RG ARCA). Editables en pestaña Parámetros.
   return {
@@ -126,7 +126,7 @@ function getDefaultLiqParams(){
 // liquidación en: https://www.arca.gob.ar/
 // ═══════════════════════════════════════════════════════════════
 
-const GAN_PARAMS_PERIODOS_KEY = 'lsg_gan_periodos';
+const GAN_PARAMS_PERIODOS_KEY = LS.LIQ_GAN_PARAMS; // centralizado en js/00-constants.js
 
 function getDefaultGanParamsPorSemestre(){
   return {
@@ -321,7 +321,7 @@ function saveLiqParams(p){ localStorage.setItem(LIQ_PARAMS_KEY,JSON.stringify(p)
 // contra la RG oficial mensual publicada por ARCA antes de cada liquidación.
 // ═══════════════════════════════════════════════════════════════
 
-const APORTES_TOPES_KEY = 'lsg_aportes_topes';
+const APORTES_TOPES_KEY = LS.LIQ_APORTES_TOPES; // centralizado en js/00-constants.js
 
 function getDefaultAportesTopesPorMes(){
   // Formato: 'YYYY-MM' — topes mensuales de base imponible de aportes SIPA.
@@ -3990,7 +3990,7 @@ async function cerrarPeriodoLiq(){
   });
     if(!_cfm) return;
   // Doble confirmación para evitar accidentes
-  const conf = prompt('Para confirmar, escribí "CERRAR" en mayúsculas:');
+  const conf = await showPrompt({titulo:'Confirmación por escrito',mensaje:'Para confirmar el cierre definitivo, escribí <b>CERRAR</b> en mayúsculas.',placeholder:'CERRAR',requerido:true,labelOk:'Confirmar cierre'});
   if(conf !== 'CERRAR'){
     toast('Cierre cancelado','var(--t3)'); return;
   }
@@ -4014,7 +4014,7 @@ async function reabrirLiquidacion(){
   if(_liqActiva.estado === 'borrador'){
     toast('ℹ Ya está en borrador','var(--yellow)'); return;
   }
-  const motivo = prompt(`Reabrir a borrador la liquidación ${_liqActiva.periodo} — ${_liqActiva.tipo}.\n\nEstado actual: ${_liqActiva.estado.toUpperCase()}\n\nMotivo de la reapertura (obligatorio):`);
+  const motivo = await showPrompt({titulo:`Reabrir liquidación ${_liqActiva.periodo}`,mensaje:`Estado actual: <b>${_liqActiva.estado.toUpperCase()}</b>. Indicá el motivo de la reapertura.`,placeholder:'Motivo de la reapertura...',requerido:true,labelOk:'Reabrir'});
   if(motivo === null) return;
   if(!motivo.trim()){ toast('⚠ El motivo es obligatorio','var(--yellow)'); return; }
   // Log de reapertura para auditoría
@@ -4124,7 +4124,7 @@ async function rechazarLiquidacionActiva(){
   if(!_liqActiva){ toast('⚠ No hay liquidación activa','var(--yellow)'); return; }
   if(currentUser?.role !== 'rrhh'){ toast('⚠ Solo RR.HH. puede rechazar liquidaciones','var(--red)'); return; }
   if(_liqActiva.estado === 'pagada'){ toast('⚠ No se puede rechazar: liquidación ya pagada','var(--red)'); return; }
-  const motivo = prompt(`¿Confirmás el rechazo y borrado de la liquidación "${_liqActiva.periodo} — ${_liqActiva.tipo}"?\n\nMotivo del rechazo (obligatorio):`);
+  const motivo = await showPrompt({titulo:`Rechazar liquidación ${_liqActiva.periodo}`,mensaje:`Se borrará la liquidación <b>${_liqActiva.tipo}</b>. Indicá el motivo del rechazo.`,placeholder:'Motivo del rechazo...',requerido:true,labelOk:'Rechazar y borrar'});
   if(motivo === null) return;
   if(!motivo.trim()){ toast('⚠ Ingresá el motivo del rechazo','var(--yellow)'); return; }
   const _cfm = await showConfirm({titulo:'Confirmar acción', mensaje:`Esta acción ELIMINARÁ la liquidación y todas sus novedades asociadas. Es irreversible.<br><br>Motivo: "${motivo.trim()}"<br><br>¿Confirmar eliminación?`, labelOk:'Confirmar', peligroso:true});
@@ -4180,16 +4180,14 @@ async function rechazarEmpleadoLiq(){
   const opts = liq.items.map((i,idx)=>
     `${String(idx+1).padStart(2,'0')} — ${i.leg} — ${i.nom}`
   ).join('\n');
-  const resp = prompt(
-    `Seleccioná el número del empleado a excluir de esta liquidación:\n\n${opts}\n\nIngresá el número (01, 02, etc.):`
-  );
+  const resp = await showPrompt({titulo:'Confirmar recálculo',mensaje:'¿Querés recalcular los items de esta liquidación?',labelOk:'Recalcular',labelCancel:'Cancelar'});
   if(resp===null) return;
   const idx = parseInt(resp.trim()) - 1;
   if(isNaN(idx) || idx<0 || idx>=liq.items.length){
     toast('⚠ Número inválido','var(--yellow)'); return;
   }
   const emp = liq.items[idx];
-  const motivo = prompt(`Motivo para excluir a ${emp.nom} de esta liquidación (obligatorio):`);
+  const motivo = await showPrompt({titulo:`Excluir a ${emp.nom}`,mensaje:'Indicá el motivo para excluir a este empleado de la liquidación.',placeholder:'Motivo de exclusión...',requerido:true,labelOk:'Excluir'});
   if(motivo===null) return;
   if(!motivo.trim()){ toast('⚠ Ingresá el motivo','var(--yellow)'); return; }
 

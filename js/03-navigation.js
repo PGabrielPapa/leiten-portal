@@ -1,3 +1,8 @@
+// ═══════════════════════════════════════════════════════════════════════
+// ═══   NAVEGACIÓN — Sidebar, routing de secciones, guards de acceso   ═══
+// ═══   Módulo 03 — carga después de 02-auth                           ═══
+// ═══════════════════════════════════════════════════════════════════════
+
 function buildNav(){
   const role = currentUser?.role;
   const level = currentUser?.level;

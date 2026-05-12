@@ -199,7 +199,7 @@ async function deleteEmpresaABM(id){
 // IMPORTANTE: usar `var` en lugar de `let` para evitar TDZ cuando otras
 // funciones (getLogoSrc, getEmpresaDatos, getEmpresaFirma) lo consultan
 // antes de llegar a esta declaración durante la inicialización.
-var _empresasABMCache = (typeof _empresasABMCache !== 'undefined' && Array.isArray(_empresasABMCache)) ? _empresasABMCache : [];
+var _empresasABMCache = (typeof _empresasABMCache !== 'undefined' && Array.isArray(_empresasABMCache)) ? _empresasABMCache : []; // var intencional: cache compartido entre js/01 y js/20
 async function _refreshEmpresasABMCache(){
   try {
     _empresasABMCache = await getEmpresasABM();
@@ -852,16 +852,16 @@ function guardarCentroOp(idxEdit){
   const fechaDesde = gv('co-fecha-desde');
   const fechaHasta = gv('co-fecha-hasta');
 
-  if(!nombre){ alert('El nombre del centro es obligatorio.'); return; }
-  if(!calle){ alert('La calle es obligatoria.'); return; }
-  if(!numero){ alert('El número es obligatorio.'); return; }
-  if(!localidad){ alert('La localidad es obligatoria.'); return; }
-  if(!provincia){ alert('La provincia es obligatoria.'); return; }
+  if(!nombre){ showAlert('El nombre del centro es obligatorio.', 'warning'); return; }
+  if(!calle){ showAlert('La calle es obligatoria.', 'warning'); return; }
+  if(!numero){ showAlert('El número es obligatorio.', 'warning'); return; }
+  if(!localidad){ showAlert('La localidad es obligatoria.', 'warning'); return; }
+  if(!provincia){ showAlert('La provincia es obligatoria.', 'warning'); return; }
   if(fechaHasta && !fechaDesde){
-    alert('Cargá primero la fecha desde antes de la fecha hasta.'); return;
+    showAlert('Cargá primero la fecha desde antes de la fecha hasta.', 'warning'); return;
   }
   if(fechaDesde && fechaHasta && fechaHasta < fechaDesde){
-    alert('La fecha hasta no puede ser anterior a la fecha desde.'); return;
+    showAlert('La fecha hasta no puede ser anterior a la fecha desde.', 'warning'); return;
   }
 
   const centroNuevo = {
@@ -900,7 +900,7 @@ function guardarCentroOp(idxEdit){
       i !== (typeof idxEdit === 'number' ? idxEdit : -1) &&
       (c.codigo||'').toUpperCase() === centroNuevo.codigo
     );
-    if(dup >= 0){ alert(`Ya existe otro centro con el código "${centroNuevo.codigo}".`); return; }
+    if(dup >= 0){ showAlert(`Ya existe otro centro con el código "${centroNuevo.codigo}".`, 'warning'); return; }
   }
 
   if(typeof idxEdit === 'number'){

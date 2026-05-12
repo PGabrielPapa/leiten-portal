@@ -573,7 +573,7 @@ function _audGetFiltrados(){
 // ─── TOAST ─────────────────────────────────────────────────────────────────
 function _admToast(msg, color){
   const t = document.getElementById('toast');
-  if(!t){ alert(msg); return; }
+  if(!t){ showAlert(msg, "warning"); return; }
   t.textContent = msg;
   const cmap = { red:'var(--red)', green:'var(--green)', yellow:'var(--yellow)' };
   t.style.borderColor = cmap[color] || 'var(--accent)';

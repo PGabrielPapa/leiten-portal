@@ -1129,7 +1129,7 @@ function _repAplicarFiltros(){
 // ═══════════════════════════════════════════════════════════════════════════
 // PERSISTENCIA DE REPORTES GUARDADOS
 // ═══════════════════════════════════════════════════════════════════════════
-const _REP_LS = 'lsg_reportes_guardados';
+const _REP_LS = LS.REP_TEMPLATES; // centralizado en js/00-constants.js
 
 async function _repGetGuardados(){
   try { return JSON.parse(localStorage.getItem(_REP_LS) || '[]'); }
@@ -1141,7 +1141,7 @@ async function _repSaveGuardados(arr){
 }
 
 async function _repGuardarReporte(){
-  const nombre = prompt('Nombre del reporte:');
+  const nombre = await showPrompt({titulo:'Guardar reporte',placeholder:'Nombre del reporte...',requerido:true,labelOk:'Guardar'});
   if(!nombre) return;
   const guardados = _repGetGuardados();
   guardados.push({
