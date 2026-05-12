@@ -528,6 +528,7 @@ function navRRHH(sub){
   if(sub==='conceptos-custom'){ abrirPanelConceptosCustom(); }
   if(sub==='reportes'){ abrirGeneradorReportes(); }
   if(sub==='reporte-conceptos'){ renderReporteConceptos(); }
+  if(sub==='importar-conceptos'){ renderImportadorConceptos(); }
 }
 
 function renderDelegacionSub(){

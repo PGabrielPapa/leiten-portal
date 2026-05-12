@@ -701,9 +701,16 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const sueldoBasico=bruto*proporcion*_factorPeriodo;
 
   // ─ Horas extras ─
-  // Valor hora = (bruto / 30 días) / 8 horas = bruto / 240
-  // Para UOCRA mantenemos /200 (legacy, jornal sobre 25 días * 8h)
-  const valHora = _esUocra ? (bruto/200) : (bruto/240);
+  // Valor hora extra = bruto / 173
+  // ─────────────────────────────────────────────────────────
+  // El divisor 173 surge de aplicar el promedio mensual de horas laborables
+  // de la jornada legal de 8 hs (Ley 11.544): 200 hs/mes laborales menos
+  // 27 hs prom. de descanso compensatorio = 173 hs efectivas.
+  // Decisión empresarial LEITEN: usar 173 para todos los regímenes (LCT y
+  // UOCRA), independientemente del divisor del jornal diario.
+  // El bruto incluye: básico + a cuenta futuros aumentos + complemento
+  // función + antigüedad (todos los componentes remunerativos fijos).
+  const valHora = bruto / 173;
   const hsE50=$m(nov.hsExtra50); const hsE100=$m(nov.hsExtra100);
   const mHsE50=hsE50*valHora*1.5; const mHsE100=hsE100*valHora*2;
 
