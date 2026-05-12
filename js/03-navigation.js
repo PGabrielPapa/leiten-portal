@@ -9,7 +9,7 @@ function buildNav(){
   const items = document.querySelectorAll('.sb-item');
   // items: 0=nueva, 1=pendientes, 2=rrhhpanel, 3=historial, 4=recibos, 5=gestionrecibos
   items[1].style.display = verGerente ? 'flex' : 'none';
-  items[2].style.display = role==='rrhh' ? 'flex' : 'none';
+  items[2].style.display = (role==='rrhh' || level==='admin') ? 'flex' : 'none';
   items[0].innerHTML = '<div class="sb-dot blue"></div>Inicio';
   items[3].innerHTML = isEmployee ? '<div class="sb-dot"></div>Mis Solicitudes' : '<div class="sb-dot"></div>Todas las solicitudes';
   items[0].onclick = ()=>nav('home');
@@ -72,7 +72,7 @@ function nav(sec){
   if(sec === 'admin-usuarios' && level !== 'admin'){
     mostrarAccesoNoAutorizado(); return;
   }
-  if(sec === 'rrhhpanel' && role !== 'rrhh'){
+  if(sec === 'rrhhpanel' && role !== 'rrhh' && level !== 'admin'){
     mostrarAccesoNoAutorizado(); return;
   }
   if(sec === 'pendientes' && role !== 'manager' && role !== 'rrhh'){

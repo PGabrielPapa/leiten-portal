@@ -498,7 +498,8 @@ function renderPendientes(){
 const RRHH_SUBS = ['solicitudes','recibos','ganancias','contraseñas','delegacion','exportar','licencias','domicilios','mensajes','repositorio','abm','empresas','lic-anuales','lic-especiales','liquidacion','simulacion','evaluaciones','escala','sindicatos','hys','familiares','sanciones','conceptos-custom','reportes','reporte-conceptos','importar-conceptos'];
 
 function navRRHH(sub){
-  if(currentUser?.role !== 'rrhh'){ mostrarAccesoNoAutorizado(); return; }
+  const _navRole = currentUser?.role; const _navLevel = (typeof getUserLevel === 'function') ? getUserLevel(currentUser?.emp?.dni) : currentUser?.level;
+  if(_navRole !== 'rrhh' && _navLevel !== 'admin'){ mostrarAccesoNoAutorizado(); return; }
   document.getElementById('rrhh-home').style.display = sub ? 'none' : 'block';
   RRHH_SUBS.forEach(s=>{
     const el = document.getElementById(`rrhh-sub-${s}`);
