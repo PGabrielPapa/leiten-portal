@@ -657,6 +657,103 @@ function calcIndemAntiguedad(emp, fechaEgreso, mejorRem, topeCCT){
   };
 }
 
+// ─── Indemnización fuerza mayor / falta trabajo — Art. 247 LCT ─────────────
+// = 50% de la indemnización Art. 245 (mitad). Requiere homologación MTSS.
+// Se aplica cuando el empleador acredita que el cese obedece a fuerza mayor
+// o disminución definitiva de trabajo, no imputable a su responsabilidad.
+function calcIndemFuerzaMayor(emp, fechaEgreso, mejorRem, topeCCT){
+  const base = calcIndemAntiguedad(emp, fechaEgreso, mejorRem, topeCCT);
+  return { ...base, monto: base.monto * 0.5, _reducida50: true, _art: '247' };
+}
+
+// ─── Indemnización incapacidad absoluta — Art. 213 LCT ──────────────────────
+// = misma base que Art. 245 (igual que despido sin causa). Sin preaviso.
+// EXENTO de Ganancias (Art. 26 LIG, inciso i).
+function calcIndemIncapacidadAbsoluta(emp, fechaEgreso, mejorRem, topeCCT){
+  const base = calcIndemAntiguedad(emp, fechaEgreso, mejorRem, topeCCT);
+  return { ...base, _art: '213' };
+}
+
+// ─── Indemnización incapacidad parcial — Art. 212 LCT ───────────────────────
+// Si el empleador puede reasignar tareas equivalentes: NO hay indemnización.
+// Si no puede reasignar y cesa el contrato: indemnización = Art. 245.
+function calcIndemIncapacidadParcial(emp, fechaEgreso, mejorRem, topeCCT){
+  const base = calcIndemAntiguedad(emp, fechaEgreso, mejorRem, topeCCT);
+  return { ...base, _art: '212' };
+}
+
+// ─── Indemnización por embarazo / maternidad — Art. 178 + 182 LCT ───────────
+// = Art. 245 (indemnización ordinaria) + 1 año de remuneraciones (Art. 182).
+// Total: indemArt245 + (mejorRem × 12).
+// EXENTO de Ganancias la parte de Art. 182.
+function calcIndemEmbarazo(emp, fechaEgreso, mejorRem, topeCCT){
+  const base245 = calcIndemAntiguedad(emp, fechaEgreso, mejorRem, topeCCT);
+  const montoEspecial = ($m(mejorRem) || $m(emp.bruto)) * 12;
+  return {
+    ...base245,
+    monto245:       base245.monto,
+    montoEspecial,
+    monto:          base245.monto + montoEspecial,
+    _art:           '178',
+  };
+}
+
+// ─── Indemnización por matrimonio — Art. 182 LCT ────────────────────────────
+// = Art. 245 + 1 año de remuneraciones (igual fórmula que Art. 178).
+function calcIndemMatrimonio(emp, fechaEgreso, mejorRem, topeCCT){
+  const base245 = calcIndemAntiguedad(emp, fechaEgreso, mejorRem, topeCCT);
+  const montoEspecial = ($m(mejorRem) || $m(emp.bruto)) * 12;
+  return {
+    ...base245,
+    monto245:       base245.monto,
+    montoEspecial,
+    monto:          base245.monto + montoEspecial,
+    _art:           '182',
+  };
+}
+
+// ─── Indemnización vencimiento contrato a plazo — Art. 95/97 LCT ────────────
+// Solo si el contrato supera 1 año de duración.
+// = 50% de la indemnización Art. 245.
+function calcIndemFinContrato(emp, fechaEgreso, mejorRem, topeCCT){
+  const base = calcIndemAntiguedad(emp, fechaEgreso, mejorRem, topeCCT);
+  return { ...base, monto: base.monto * 0.5, _reducida50: true, _art: '97' };
+}
+
+// ─── Multa Art. 80 LCT — entrega tardía de certificados ─────────────────────
+// Si el empleador no entrega certificado de trabajo / constancia AFIP dentro
+// de los 30 días de intimación fehaciente: multa = 3 veces la MBRNH.
+// Es REMUNERATIVA (criterio jurisprudencial mayoritario).
+function calcMultaCertificados(emp, mejorRem){
+  const base = $m(mejorRem) || $m(emp.bruto);
+  return { monto: base * 3, base, _art: '80' };
+}
+
+// ─── Ley 25323 Art. 1 — duplicación indem. por trabajo no registrado ─────────
+// Si la relación laboral fue clandestina (no registrada o sub-registrada),
+// la indemnización Art. 245 se duplica. Requiere reclamación fehaciente.
+function calcDobleIndemLey25323Art1(indem245Monto){
+  return { monto: $m(indem245Monto), _art: 'Ley25323-1' };
+}
+
+// ─── Ley 25323 Art. 2 — incremento 50% por mora en el pago ─────────────────
+// Si el empleador no paga en tiempo (notificación fehaciente del trabajador
+// y falta de pago en plazo) la suma de: preaviso + integración + Art. 245
+// se incrementa en un 50%.
+function calcIncrementoMora25323(totalIndem245, totalPreaviso, totalIntegracion){
+  const base = $m(totalIndem245) + $m(totalPreaviso) + $m(totalIntegracion);
+  return { monto: base * 0.5, base, _art: 'Ley25323-2' };
+}
+
+// ─── Art. 132 bis LCT — sanción por retención de aportes ───────────────────
+// Si el empleador retuvo aportes al trabajador y no los depositó ante AFIP:
+// multa = 1 remuneración mensual por cada período retenido.
+function calcSancionArt132bis(mejorRem, mesesRetenidos){
+  const base = $m(mejorRem);
+  const meses = Math.max(0, Math.round($m(mesesRetenidos)));
+  return { monto: base * meses, base, meses, _art: '132bis' };
+}
+
 // ── Motor de cálculo ─────────────────────────────────────────────
 function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPagoLiq, tipoLiq){
   const {diasMes, habiles}=diasHabilesDelMes(anio,mes);
@@ -842,11 +939,23 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   // de liquidación final). El modal calcula los valores y los deja listos;
   // acá solo se suman al lugar correspondiente (rem / exento).
   const lf = nov.liqFinalDatos || null;
-  const mPreaviso        = lf ? $m(lf.preavisoMonto) : 0;       // REMUNERATIVO
-  const mSacProporcional = lf ? $m(lf.sacProporcional) : 0;     // REMUNERATIVO (entra como SAC)
-  const mVacNoGozadas    = lf ? $m(lf.vacNoGozadasMonto) : 0;   // EXENTO Art. 26 LIG
-  const mIntegrMesDesp   = lf ? $m(lf.integracionMesDespido) : 0; // EXENTO
-  const mIndemAntig      = lf ? $m(lf.indemAntiguedad) : 0;     // EXENTO Art. 26 LIG
+  // Conceptos clásicos (Arts. 121, 156, 232, 233, 245)
+  const mPreaviso        = lf ? $m(lf.preavisoMonto) : 0;           // REM — Art. 232
+  const mSacProporcional = lf ? $m(lf.sacProporcional) : 0;         // REM — Art. 121
+  const mVacNoGozadas    = lf ? $m(lf.vacNoGozadasMonto) : 0;       // EXENTO — Art. 156
+  const mIntegrMesDesp   = lf ? $m(lf.integracionMesDespido) : 0;   // EXENTO — Art. 233
+  const mIndemAntig      = lf ? $m(lf.indemAntiguedad) : 0;         // EXENTO — Art. 245
+  // Indemnizaciones especiales (nuevos motivos LCT)
+  const mIndemEspecial   = lf ? $m(lf.indemEspecialMonto) : 0;      // EXENTO — Art. 178/182 (1 año rem)
+  const mIndemFM         = lf ? $m(lf.indemFuerzaMayor) : 0;        // EXENTO — Art. 247
+  const mIndemIncapAbs   = lf ? $m(lf.indemIncapacidadAbsoluta) : 0;// EXENTO — Art. 213
+  const mIndemIncapParc  = lf ? $m(lf.indemIncapacidadParcial) : 0; // EXENTO — Art. 212
+  const mIndemFinCont    = lf ? $m(lf.indemFinContrato) : 0;        // EXENTO — Art. 97
+  // Multas y sanciones
+  const mMultaCert       = lf ? $m(lf.multaCertificados) : 0;       // REM — Art. 80 LCT
+  const mDobleIndem25323 = lf ? $m(lf.dobleIndemLey25323) : 0;      // EXENTO — Ley 25323 Art. 1
+  const mIncremMora25323 = lf ? $m(lf.incrementoMora25323) : 0;     // EXENTO — Ley 25323 Art. 2
+  const mSancion132bis   = lf ? $m(lf.sancionArt132bis) : 0;        // REM — Art. 132 bis
 
   // ─ Otros haberes ─
   // Cada item tiene { tipo, concepto, monto }. El `tipo` define si es
@@ -907,7 +1016,10 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const totalExentos = mHsExtrasExentas + mBonoExento + mIndemniz + mOtrosExentos + mOtrosHNoRem
                      + mAsigNoRem
                      + mAntigSobreNoRem + mPresSobreNoRem
-                     + mVacNoGozadas + mIntegrMesDesp + mIndemAntig;
+                     // Liq. final — conceptos EXENTOS Art. 26 LIG
+                     + mVacNoGozadas + mIntegrMesDesp + mIndemAntig
+                     + mIndemEspecial + mIndemFM + mIndemIncapAbs + mIndemIncapParc + mIndemFinCont
+                     + mDobleIndem25323 + mIncremMora25323;
 
   // BASE REMUNERATIVA (sujeta a aportes y base imponible de ganancias)
   // Importante: SOLO los haberes adicionales remunerativos van acá.
@@ -915,7 +1027,9 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   // Feriados no trabajados (Art. 168 LCT): son remunerativos, suman aquí.
   const totalHaberesRem = sueldoBasico + mHsE50 + mHsE100 + mAntig + mPres
                         + mSac + mVac + mLicEspeciales + mOtrosHRem + mAjuste + mCumpObj
-                        + mPreaviso + mSacProporcional + mFeriadosNoTrab;
+                        + mPreaviso + mSacProporcional + mFeriadosNoTrab
+                        // Liq. final — conceptos REMUNERATIVOS
+                        + mMultaCert + mSancion132bis;
 
   // TOTAL HABERES = remunerativos + no remunerativos exentos (lo que cobra el empleado)
   let totalHaberes = totalHaberesRem + totalExentos;
@@ -2034,13 +2148,24 @@ window.addEventListener('beforeunload', ()=>{
 // Cada cálculo es editable manualmente.
 // ═══════════════════════════════════════════════════════════════════════════
 const MOTIVOS_BAJA = [
-  { v:'renuncia',       label:'Renuncia',                    indem:false, desc:'No genera indemnización ni preaviso' },
-  { v:'despido_sc',     label:'Despido sin causa',           indem:true,  desc:'Genera preaviso + integración + Art. 245' },
-  { v:'despido_cc',     label:'Despido con causa',           indem:false, desc:'No genera indemnización si la causa es justificada' },
-  { v:'mutuo_acuerdo',  label:'Mutuo acuerdo (Art. 241)',    indem:false, desc:'Acuerdo extintivo (puede tener gratificación)' },
-  { v:'jubilacion',     label:'Jubilación',                  indem:false, desc:'No genera indemnización (Art. 252 LCT)' },
-  { v:'fallecimiento',  label:'Fallecimiento',               indem:true,  desc:'Indemnización reducida 50% Art. 248' },
-  { v:'fin_contrato',   label:'Fin de contrato a plazo',     indem:false, desc:'Si supera 1 año: indemnización reducida' }
+  // ── Ceses sin indemnización (o con mínima) ──────────────────────────────
+  { v:'renuncia',            label:'Renuncia',                            indem:false, grupo:'sin_indem',  desc:'No genera preaviso ni indemnización (Art. 240 LCT). Corresponden: SAC proporcional + vacaciones no gozadas.' },
+  { v:'despido_cc',          label:'Despido con causa (Art. 242)',        indem:false, grupo:'sin_indem',  desc:'No hay indemnización si la causa es debidamente justificada y notificada. Igual: SAC proporcional + vacaciones.' },
+  { v:'mutuo_acuerdo',       label:'Mutuo acuerdo (Art. 241)',            indem:false, grupo:'sin_indem',  desc:'Acuerdo homologado ante MTSS o escribano. Puede incluir gratificación voluntaria. SAC + vacaciones obligatorios.' },
+  { v:'jubilacion',          label:'Jubilación (Art. 252)',               indem:false, grupo:'sin_indem',  desc:'El empleador intima a iniciar trámite. Al obtener el beneficio, cesa sin indemnización. SAC + vacaciones.' },
+  { v:'abandono_trabajo',    label:'Abandono de trabajo (Art. 244)',      indem:false, grupo:'sin_indem',  desc:'Previa intimación fehaciente (telegrama). No genera indemnización. SAC + vacaciones no gozadas.' },
+  { v:'vencimiento_contrato',label:'Vencimiento contrato a plazo (Art. 95/97)', indem:'parcial', grupo:'parcial', desc:'Si el contrato supera 1 año: indemnización del 50% del Art. 245 (Art. 97 LCT). Si es inferior a 1 año: solo SAC + vacaciones.' },
+
+  // ── Despido sin causa — régimen general LCT ────────────────────────────
+  { v:'despido_sc',          label:'Despido sin causa (Art. 245)',        indem:true,  grupo:'despido_sc', desc:'Genera: preaviso (Art. 232) + integración mes despido (Art. 233) + indemnización por antigüedad (Art. 245). SAC proporcional y vacaciones siempre.' },
+
+  // ── Ceses con indemnización especial ───────────────────────────────────
+  { v:'fuerza_mayor',        label:'Fuerza mayor / falta trabajo (Art. 247)', indem:true, grupo:'especial', desc:'Indemnización = 50% del Art. 245 (mitad). NO hay preaviso ni integración. Requiere homologación MTSS.' },
+  { v:'incapacidad_absoluta',label:'Incapacidad absoluta (Art. 213)',    indem:true,  grupo:'especial', desc:'Incapacidad que impide toda prestación. Indemnización = Art. 245 (igual que despido sin causa). Sin preaviso.' },
+  { v:'incapacidad_parcial', label:'Incapacidad parcial (Art. 212)',     indem:true,  grupo:'especial', desc:'Si hay tareas disponibles: solo diferencia salarial. Si no puede relocalizarse: indemnización = Art. 245. Sin preaviso.' },
+  { v:'despido_embarazo',    label:'Despido por embarazo/maternidad (Art. 178)', indem:true, grupo:'especial', desc:'Presunción: si el despido es dentro de 7½ meses antes/después del parto. Indemnización = Art. 245 + 1 año de remuneraciones (Art. 182). Sin preaviso.' },
+  { v:'despido_matrimonio',  label:'Despido por matrimonio (Art. 182)',  indem:true,  grupo:'especial', desc:'Presunción: si el despido es dentro de 3 meses antes/6 después del matrimonio. Indemnización = Art. 245 + 1 año de remuneraciones.' },
+  { v:'fallecimiento',       label:'Fallecimiento del trabajador (Art. 248)', indem:true, grupo:'especial', desc:'Indemnización = 50% del Art. 245. Cobran causahabientes (cónyuge/conviviente/hijos). Sin preaviso. Exento de Ganancias.' },
 ];
 
 async function _empleadoTieneBaja(emp, liq){
@@ -2130,58 +2255,83 @@ function _renderLiqFinalContenido(leg, emp){
   const lf = nov.liqFinalDatos || {};
   const motivo = lf.motivoBaja || '';
   const motivoInfo = MOTIVOS_BAJA.find(m => m.v === motivo);
-  const fmtN = n => n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtN = n => ($m(n)||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
   const _esLey22250 = esRegimenLey22250(emp);
-  // En régimen Ley 22.250 (UOCRA), aunque el motivo sea despido sin causa,
-  // NO se calculan preaviso / integración / Art. 245 LCT.
-  const _aplicaLCT = motivoInfo?.indem && !_esLey22250;
 
-  // Calcular auto-valores si hay motivo y fecha de egreso
   const fEgreso = emp.egreso ? _parseFechaLib(emp.egreso) : null;
   const mejorRem = $m(lf.mejorRem) || $m(emp.bruto);
 
-  let calcVac = { dias:0, monto:0 };
-  let calcSac = { monto:0 };
-  let calcPre = { dias:0, meses:0, monto:0 };
-  let calcInt = { dias:0, monto:0 };
-  let calcInd = { aniosCalc:0, monto:0, baseAplicada:0 };
+  // Calcular todos los conceptos posibles
+  let calcVac   = { dias:0, monto:0, valorDia:0, diasCorresp:0, diasGozados:0, diasEnAnio:0, anioCalculo:null };
+  let calcSac   = { monto:0, diasSemestre:0, semestre:null, base:0 };
+  let calcPre   = { dias:0, meses:0, monto:0, antiguedadMeses:0 };
+  let calcInt   = { dias:0, monto:0 };
+  let calcInd   = { aniosCalc:0, monto:0, baseAplicada:0, aniosFloat:0, fraccionMayor3meses:false, topeAplicado:false };
+  let calcEsp   = { monto:0, monto245:0, montoEspecial:0 };
+  let calcFM    = { monto:0, aniosCalc:0, baseAplicada:0 };
+  let calcIA    = { monto:0, aniosCalc:0, baseAplicada:0 };
+  let calcIP    = { monto:0, aniosCalc:0, baseAplicada:0 };
+  let calcFC    = { monto:0, aniosCalc:0 };
+
+  // Flags de qué aplica según motivo
+  const _aplicaPreaviso = !_esLey22250 && motivo === 'despido_sc';
+  const _aplicaIntegr   = !_esLey22250 && motivo === 'despido_sc';
+  const _aplica245      = !_esLey22250 && ['despido_sc','incapacidad_absoluta','incapacidad_parcial','despido_embarazo','despido_matrimonio'].includes(motivo);
+  const _aplicaEspecial = !_esLey22250 && ['despido_embarazo','despido_matrimonio'].includes(motivo);
+  const _aplicaFM       = !_esLey22250 && motivo === 'fuerza_mayor';
+  const _aplicaIA       = !_esLey22250 && motivo === 'incapacidad_absoluta';
+  const _aplicaIP       = !_esLey22250 && motivo === 'incapacidad_parcial';
+  const _aplicaFallec   = motivo === 'fallecimiento';
+  const _aplicaFC       = motivo === 'vencimiento_contrato';
 
   if(fEgreso){
     calcVac = calcVacNoGozadas(emp, fEgreso, lf.diasGozadosEnAnio || 0);
     calcSac = calcSacProporcional(emp, fEgreso, mejorRem);
-    if(_aplicaLCT){
-      calcPre = calcPreaviso(emp, fEgreso);
-      calcInt = calcIntegracionMes(emp, fEgreso);
+    if(_aplicaPreaviso)  calcPre = calcPreaviso(emp, fEgreso);
+    if(_aplicaIntegr)    calcInt = calcIntegracionMes(emp, fEgreso);
+    if(_aplica245 || _aplicaFallec){
       calcInd = calcIndemAntiguedad(emp, fEgreso, mejorRem, $m(lf.topeCCT));
+      if(_aplicaFallec){ calcInd.monto = calcInd.monto * 0.5; calcInd._reducida50 = true; }
     }
-    // Para fallecimiento bajo régimen LCT: indemnización reducida al 50% Art. 248
-    if(motivo === 'fallecimiento' && _aplicaLCT){
-      calcInd.monto = calcInd.monto * 0.5;
-      calcInd._reducida50 = true;
-    }
+    if(_aplicaEspecial)  calcEsp = motivo === 'despido_embarazo' ? calcIndemEmbarazo(emp, fEgreso, mejorRem, $m(lf.topeCCT)) : calcIndemMatrimonio(emp, fEgreso, mejorRem, $m(lf.topeCCT));
+    if(_aplicaFM)        calcFM  = calcIndemFuerzaMayor(emp, fEgreso, mejorRem, $m(lf.topeCCT));
+    if(_aplicaIA)        calcIA  = calcIndemIncapacidadAbsoluta(emp, fEgreso, mejorRem, $m(lf.topeCCT));
+    if(_aplicaIP)        calcIP  = calcIndemIncapacidadParcial(emp, fEgreso, mejorRem, $m(lf.topeCCT));
+    if(_aplicaFC)        calcFC  = calcIndemFinContrato(emp, fEgreso, mejorRem, $m(lf.topeCCT));
   }
 
   const motivoOpts = MOTIVOS_BAJA.map(m =>
     `<option value="${m.v}" ${motivo===m.v?'selected':''}>${m.label}</option>`
   ).join('');
 
+  // Helper: bloque de un concepto indemnizatorio
+  const bloqueConcepto = ({id, titulo, art, badge, badgeColor, detalle, valorAuto, valorGuardado}) => {
+    const badgeBg = badgeColor==='exento' ? 'rgba(168,85,247,.12)' : 'rgba(34,197,94,.12)';
+    const badgeTxt= badgeColor==='exento' ? 'rgb(168,85,247)' : 'var(--green)';
+    const badgeLabel = badgeColor==='exento' ? 'EXENTO' : 'REM';
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px">
+        <div>
+          <strong style="font-size:13px;color:${badgeTxt}">${titulo}</strong>
+          <span style="font-size:9px;padding:1px 6px;border-radius:6px;background:${badgeBg};color:${badgeTxt};margin-left:6px;font-family:var(--font-mono)">${badgeLabel}</span>
+        </div>
+        <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">${art}</div>
+      </div>
+      <div style="font-size:10px;color:var(--t3);margin-bottom:8px;line-height:1.5">${detalle}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">$</span>
+        <input type="number" step="0.01" value="${valorGuardado??valorAuto}" id="${id}"
+          style="flex:1;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
+        <button onclick="document.getElementById('${id}').value='${valorAuto}'" style="font-size:10px;padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--t3);cursor:pointer">↻ auto</button>
+      </div>
+    </div>`;
+  };
+
   cont.innerHTML = `
-    ${_esLey22250 ? `
-    <!-- Banner régimen Ley 22.250 -->
-    <div style="margin-bottom:18px;padding:12px 16px;background:rgba(234,88,12,.06);border:1px solid rgba(234,88,12,.3);border-radius:var(--r);font-size:12px;color:var(--t1);line-height:1.6">
-      <div style="font-weight:600;color:rgb(234,88,12);margin-bottom:6px;display:flex;align-items:center;gap:6px">
-        <span style="font-size:16px">🏗️</span> Régimen Ley 22.250 — Industria de la Construcción (UOCRA)
-      </div>
-      <div style="font-size:11px;color:var(--t2)">
-        Por convenio (CCT UOCRA), este empleado se rige por el régimen ESPECIAL de la <strong>Ley 22.250</strong>, que reemplaza el sistema indemnizatorio de la LCT por el <strong>Fondo de Cese Laboral (FCL)</strong>.
-      </div>
-      <div style="font-size:10px;color:var(--t3);margin-top:8px;padding-top:8px;border-top:1px dashed rgba(234,88,12,.3);line-height:1.7">
-        <strong>NO aplican</strong> al cese: preaviso (Art. 232 LCT), integración mes despido (Art. 233 LCT), indemnización por antigüedad (Art. 245 LCT).<br>
-        <strong>SÍ corresponden</strong>: SAC proporcional (Art. 121 LCT) y vacaciones no gozadas (Art. 156 LCT).<br>
-        <strong>FCL</strong>: el aporte mensual del empleador (12% el 1er año, 8% desde el 2do) ya se depositó en la libreta del trabajador durante toda la relación. Solo se entrega libreta y certificación.
-      </div>
-    </div>
-    ` : ''}
+    ${_esLey22250 ? `<div style="margin-bottom:18px;padding:12px 16px;background:rgba(234,88,12,.06);border:1px solid rgba(234,88,12,.3);border-radius:var(--r);font-size:12px;color:var(--t1);line-height:1.6">
+      <div style="font-weight:600;color:rgb(234,88,12);margin-bottom:4px">🏗️ Régimen Ley 22.250 — Industria de la Construcción (UOCRA)</div>
+      <div style="font-size:10px;color:var(--t2);line-height:1.7">NO aplican: preaviso (Art. 232), integración mes despido (Art. 233), indemnización Art. 245. SÍ corresponden: SAC proporcional + vacaciones no gozadas.<br>FCL (Fondo de Cese Laboral): se entrega libreta bancaria con el saldo acumulado.</div>
+    </div>` : ''}
 
     <!-- Selector motivo -->
     <div style="margin-bottom:18px">
@@ -2191,162 +2341,180 @@ function _renderLiqFinalContenido(leg, emp){
         <option value="">— Elegí un motivo —</option>
         ${motivoOpts}
       </select>
-      ${motivoInfo ? `<div style="font-size:10px;color:var(--t3);margin-top:6px;font-style:italic">${motivoInfo.desc}${_esLey22250 && motivoInfo.indem?' <strong style="color:rgb(234,88,12)">— Régimen UOCRA: NO aplica indemnización LCT</strong>':''}</div>` : ''}
+      ${motivoInfo ? `<div style="font-size:11px;color:var(--t3);margin-top:6px;line-height:1.5">${motivoInfo.desc}</div>` : ''}
     </div>
 
     ${motivo ? `
-    <!-- Mejor remuneración / parametros base -->
+    <!-- Parámetros base -->
     <div style="margin-bottom:18px;padding:12px 14px;background:rgba(61,127,255,.04);border:1px solid rgba(61,127,255,.2);border-radius:var(--r)">
       <div style="font-size:11px;font-family:var(--font-mono);color:var(--accent2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Parámetros base</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
           <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px">Mejor rem. mensual normal y habitual ($)</label>
           <input type="number" step="0.01" value="${mejorRem}" id="lf-mejorrem" onchange="_actualizarLiqFinal('${leg}')"
-            style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
+            style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right;box-sizing:border-box">
         </div>
         <div>
-          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px" title="Tope CCT × 3 (Art. 245). Dejar 0 si no aplica.">Tope base CCT individual ($)</label>
+          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px" title="Art. 245: tope = 3 × promedio CCT. Dejar 0 si no aplica.">Tope base CCT individual ($)</label>
           <input type="number" step="0.01" value="${lf.topeCCT||0}" id="lf-topecct" onchange="_actualizarLiqFinal('${leg}')"
-            style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
+            style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right;box-sizing:border-box">
         </div>
       </div>
     </div>
 
-    <!-- Conceptos calculados -->
     <div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Conceptos a liquidar</div>
 
-    <!-- 1. SAC proporcional (siempre) -->
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px">
-        <div>
-          <strong style="font-size:13px;color:var(--green)">SAC proporcional</strong>
-          <span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(34,197,94,.1);color:var(--green);margin-left:6px;font-family:var(--font-mono)">REM</span>
-        </div>
-        <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Art. 121 LCT</div>
-      </div>
-      <div style="font-size:10px;color:var(--t3);margin-bottom:8px;line-height:1.5">
-        ${calcSac.diasSemestre || 0} días del ${calcSac.semestre||'?'}° semestre / 180 × ½ mejor rem ($${fmtN(calcSac.base||0)})
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">$</span>
-        <input type="number" step="0.01" value="${$m(lf.sacProporcional ?? calcSac.monto).toFixed(2)}" id="lf-sac"
-          style="flex:1;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
-        <button onclick="document.getElementById('lf-sac').value=${calcSac.monto.toFixed(2)}" style="font-size:10px;padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--t3);cursor:pointer">↻ auto</button>
-      </div>
-    </div>
+    <!-- SAC proporcional — siempre -->
+    ${bloqueConcepto({ id:'lf-sac', titulo:'SAC proporcional', art:'Art. 121 LCT', badge:'REM', badgeColor:'rem',
+      detalle: `${calcSac.diasSemestre||0} días del ${calcSac.semestre||'?'}° semestre / 180 × ½ mejor rem ($${fmtN(calcSac.base||0)})`,
+      valorAuto: (calcSac.monto||0).toFixed(2), valorGuardado: lf.sacProporcional != null ? $m(lf.sacProporcional).toFixed(2) : null })}
 
-    <!-- 2. Vacaciones no gozadas (siempre) -->
+    <!-- Vacaciones no gozadas — siempre -->
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div>
           <strong style="font-size:13px;color:rgb(168,85,247)">Vacaciones no gozadas</strong>
-          <span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(168,85,247,.1);color:rgb(168,85,247);margin-left:6px;font-family:var(--font-mono)">EXENTO</span>
+          <span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(168,85,247,.12);color:rgb(168,85,247);margin-left:6px;font-family:var(--font-mono)">EXENTO</span>
         </div>
         <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Art. 156 LCT · Art. 26 LIG</div>
       </div>
       <div style="font-size:10px;color:var(--t3);margin-bottom:8px;line-height:1.5">
-        ${calcVac.dias} día${calcVac.dias!==1?'s':''} no gozados (${calcVac.diasCorresp} corresp. − ${calcVac.diasGozados} gozados) × $${fmtN(calcVac.valorDia||0)}/día (sueldo/25)
-        ${calcVac.regimen==='proporcional_art153'?' · <em>Régimen Art. 153 (proporcional 1 día/20 trab.)</em>':''}
+        ${calcVac.dias} días no gozados (${calcVac.diasCorresp} corresp. − ${calcVac.diasGozados} gozados) × $${fmtN(calcVac.valorDia||0)}/día (sueldo/25)
+        ${calcVac.regimen==='proporcional_art153' ? ' · <em>Art. 153: proporcional 1 día / 20 trabajados</em>' : ''}
       </div>
-      <div style="display:grid;grid-template-columns:80px 1fr;gap:8px;margin-bottom:6px">
+      <div style="display:grid;grid-template-columns:90px 1fr;gap:8px;margin-bottom:6px">
         <div>
           <label style="font-size:9px;color:var(--t3)">Días</label>
           <input type="number" value="${lf.diasVacNoGozadas ?? calcVac.dias}" id="lf-vac-dias" onchange="_actualizarVacMonto('${leg}')"
-            style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
+            style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right;box-sizing:border-box">
         </div>
         <div>
           <label style="font-size:9px;color:var(--t3)">Monto ($)</label>
-          <input type="number" step="0.01" value="${$m(lf.vacNoGozadasMonto ?? calcVac.monto).toFixed(2)}" id="lf-vac-monto"
-            style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
+          <input type="number" step="0.01" value="${lf.vacNoGozadasMonto != null ? $m(lf.vacNoGozadasMonto).toFixed(2) : (calcVac.monto||0).toFixed(2)}" id="lf-vac-monto"
+            style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right;box-sizing:border-box">
         </div>
       </div>
-      <div style="font-size:9px;color:var(--t3)">Días ya gozados en ${calcVac.anioCalculo||'el año'}: <input type="number" value="${lf.diasGozadosEnAnio||0}" id="lf-vac-gozados" onchange="_actualizarLiqFinal('${leg}')" style="width:60px;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:3px 6px;color:var(--t1);font-size:11px;outline:none;font-family:var(--font-mono);text-align:right;margin-left:4px"></div>
-    </div>
-
-    ${_aplicaLCT ? `
-    <!-- 3. Preaviso (solo despido s/c, régimen LCT) -->
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px">
-        <div>
-          <strong style="font-size:13px;color:var(--green)">Preaviso (sustitutiva)</strong>
-          <span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(34,197,94,.1);color:var(--green);margin-left:6px;font-family:var(--font-mono)">REM</span>
-        </div>
-        <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Art. 232 LCT</div>
-      </div>
-      <div style="font-size:10px;color:var(--t3);margin-bottom:8px;line-height:1.5">
-        Antigüedad: ${calcPre.antiguedadMeses||0} meses · Preaviso: ${calcPre.dias?calcPre.dias+' días':calcPre.meses+' mes'+(calcPre.meses!==1?'es':'')}
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">$</span>
-        <input type="number" step="0.01" value="${$m(lf.preavisoMonto ?? calcPre.monto).toFixed(2)}" id="lf-preaviso"
-          style="flex:1;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
-        <button onclick="document.getElementById('lf-preaviso').value=${calcPre.monto.toFixed(2)}" style="font-size:10px;padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--t3);cursor:pointer">↻ auto</button>
+      <div style="font-size:9px;color:var(--t3)">Días gozados en ${calcVac.anioCalculo||'el año'}:
+        <input type="number" value="${lf.diasGozadosEnAnio||0}" id="lf-vac-gozados" onchange="_actualizarLiqFinal('${leg}')"
+          style="width:60px;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:3px 6px;color:var(--t1);font-size:11px;outline:none;font-family:var(--font-mono);text-align:right;margin-left:4px">
       </div>
     </div>
 
-    <!-- 4. Integración mes despido -->
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px">
-        <div>
-          <strong style="font-size:13px;color:rgb(168,85,247)">Integración mes despido</strong>
-          <span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(168,85,247,.1);color:rgb(168,85,247);margin-left:6px;font-family:var(--font-mono)">EXENTO</span>
-        </div>
-        <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Art. 233 LCT</div>
-      </div>
-      <div style="font-size:10px;color:var(--t3);margin-bottom:8px;line-height:1.5">
-        ${calcInt.dias} día${calcInt.dias!==1?'s':''} restantes hasta fin de mes × $${fmtN($m(emp.bruto)/30)}/día
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">$</span>
-        <input type="number" step="0.01" value="${$m(lf.integracionMesDespido ?? calcInt.monto).toFixed(2)}" id="lf-integr"
-          style="flex:1;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
-        <button onclick="document.getElementById('lf-integr').value=${calcInt.monto.toFixed(2)}" style="font-size:10px;padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--t3);cursor:pointer">↻ auto</button>
-      </div>
-    </div>
+    ${_aplicaPreaviso ? bloqueConcepto({ id:'lf-preaviso', titulo:'Preaviso (sustitutivo)', art:'Art. 232 LCT', badgeColor:'rem',
+      detalle:`Antigüedad: ${calcPre.antiguedadMeses||0} meses · Plazo: ${calcPre.dias?calcPre.dias+' días':calcPre.meses+' mes'+(calcPre.meses!==1?'es':'')}`,
+      valorAuto:(calcPre.monto||0).toFixed(2), valorGuardado:lf.preavisoMonto != null ? $m(lf.preavisoMonto).toFixed(2) : null }) : ''}
 
-    <!-- 5. Indemnización Art. 245 -->
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px">
-        <div>
-          <strong style="font-size:13px;color:rgb(168,85,247)">Indemnización por antigüedad${calcInd._reducida50?' (50%)':''}</strong>
-          <span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(168,85,247,.1);color:rgb(168,85,247);margin-left:6px;font-family:var(--font-mono)">EXENTO</span>
-        </div>
-        <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Art. 245 LCT · Art. 26 LIG</div>
-      </div>
-      <div style="font-size:10px;color:var(--t3);margin-bottom:8px;line-height:1.5">
-        ${calcInd.aniosCalc} año${calcInd.aniosCalc!==1?'s':''} (${(calcInd.aniosFloat||0).toFixed(2)} reales${calcInd.fraccionMayor3meses?' · fracción >3 meses suma año':''})
-        × $${fmtN(calcInd.baseAplicada||0)} ${calcInd.topeAplicado?'<span style="color:var(--yellow)">(tope CCT aplicado)</span>':''}
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">$</span>
-        <input type="number" step="0.01" value="${$m(lf.indemAntiguedad ?? calcInd.monto).toFixed(2)}" id="lf-indem"
-          style="flex:1;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
-        <button onclick="document.getElementById('lf-indem').value=${calcInd.monto.toFixed(2)}" style="font-size:10px;padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--t3);cursor:pointer">↻ auto</button>
-      </div>
-    </div>
+    ${_aplicaIntegr ? bloqueConcepto({ id:'lf-integr', titulo:'Integración mes despido', art:'Art. 233 LCT', badgeColor:'exento',
+      detalle:`${calcInt.dias} día${calcInt.dias!==1?'s':''} restantes hasta fin de mes × $${fmtN($m(emp.bruto)/30)}/día`,
+      valorAuto:(calcInt.monto||0).toFixed(2), valorGuardado:lf.integracionMesDespido != null ? $m(lf.integracionMesDespido).toFixed(2) : null }) : ''}
+
+    ${(_aplica245 || _aplicaFallec) && !_aplicaEspecial ? bloqueConcepto({ id:'lf-indem', titulo:`Indemnización por antigüedad${calcInd._reducida50?' — 50%':''}`, art:`Art. ${_aplicaFallec?'248':_aplicaIA?'213':_aplicaIP?'212':'245'} LCT · Art. 26 LIG`, badgeColor:'exento',
+      detalle:`${calcInd.aniosCalc} año${calcInd.aniosCalc!==1?'s':''} (${(calcInd.aniosFloat||0).toFixed(2)} reales${calcInd.fraccionMayor3meses?' · fracción >3 meses suma año':''}) × $${fmtN(calcInd.baseAplicada||0)}${calcInd.topeAplicado?' <span style="color:var(--yellow)">(tope CCT)</span>':''}`,
+      valorAuto:(calcInd.monto||0).toFixed(2), valorGuardado:lf.indemAntiguedad != null ? $m(lf.indemAntiguedad).toFixed(2) : null }) : ''}
+
+    ${_aplicaEspecial ? `
+    ${bloqueConcepto({ id:'lf-indem', titulo:'Indemnización por antigüedad (Art. 245)', art:'Art. 245 LCT · Art. 26 LIG', badgeColor:'exento',
+      detalle:`${calcEsp.aniosCalc||calcInd.aniosCalc} año${(calcEsp.aniosCalc||calcInd.aniosCalc)!==1?'s':''} × $${fmtN(calcEsp.baseAplicada||calcInd.baseAplicada||0)}`,
+      valorAuto:(calcEsp.monto245||(calcInd.monto||0)).toFixed(2), valorGuardado:lf.indemAntiguedad != null ? $m(lf.indemAntiguedad).toFixed(2) : null })}
+    ${bloqueConcepto({ id:'lf-indem-especial', titulo:`Indemnización especial — 1 año de remuneraciones`, art:`Art. 182 LCT · Art. 26 LIG`, badgeColor:'exento',
+      detalle:`Mejor rem. ($${fmtN(mejorRem)}) × 12 meses`,
+      valorAuto:(calcEsp.montoEspecial||0).toFixed(2), valorGuardado:lf.indemEspecialMonto != null ? $m(lf.indemEspecialMonto).toFixed(2) : null })}
     ` : ''}
 
-    <!-- Total -->
+    ${_aplicaFM ? bloqueConcepto({ id:'lf-indem-fm', titulo:'Indemnización fuerza mayor (50% Art. 245)', art:'Art. 247 LCT · Art. 26 LIG', badgeColor:'exento',
+      detalle:`${calcFM.aniosCalc} año${calcFM.aniosCalc!==1?'s':''} × $${fmtN(calcFM.baseAplicada||0)} × 50%`,
+      valorAuto:(calcFM.monto||0).toFixed(2), valorGuardado:lf.indemFuerzaMayor != null ? $m(lf.indemFuerzaMayor).toFixed(2) : null }) : ''}
+
+    ${_aplicaFC ? bloqueConcepto({ id:'lf-indem-fc', titulo:'Indemnización fin de contrato (50% Art. 245)', art:'Art. 97 LCT · Art. 26 LIG', badgeColor:'exento',
+      detalle:`Solo si el contrato supera 1 año de duración. ${calcFC.aniosCalc||0} años × $${fmtN(calcFC.baseAplicada||0)} × 50%`,
+      valorAuto:(calcFC.monto||0).toFixed(2), valorGuardado:lf.indemFinContrato != null ? $m(lf.indemFinContrato).toFixed(2) : null }) : ''}
+
+    <!-- Multas / sanciones opcionales — siempre visibles en liq. final -->
+    <div style="margin-top:6px;margin-bottom:6px">
+      <div style="font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-top:8px;border-top:1px dashed var(--border)">
+        Multas y sanciones (opcionales — completar solo si corresponden)
+      </div>
+
+      ${bloqueConcepto({ id:'lf-multa-cert', titulo:'Multa entrega tardía de certificados', art:'Art. 80 LCT', badgeColor:'rem',
+        detalle:`3 × mejor rem. ($${fmtN(mejorRem)}). Solo si no se entregan certificados dentro de 30 días de intimación fehaciente.`,
+        valorAuto:(mejorRem*3).toFixed(2), valorGuardado:lf.multaCertificados != null ? $m(lf.multaCertificados).toFixed(2) : '0' })}
+
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div>
+            <strong style="font-size:13px;color:rgb(234,179,8)">Doble indemnización — trabajo no registrado</strong>
+            <span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(234,179,8,.12);color:rgb(234,179,8);margin-left:6px;font-family:var(--font-mono)">EXENTO</span>
+          </div>
+          <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Ley 25323 Art. 1</div>
+        </div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:8px">Duplica la indemnización Art. 245 si la relación fue clandestina. Completar con el monto adicional (= monto Art. 245 ya calculado arriba).</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">$</span>
+          <input type="number" step="0.01" value="${lf.dobleIndemLey25323 != null ? $m(lf.dobleIndemLey25323).toFixed(2) : '0'}" id="lf-doble-indem"
+            style="flex:1;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
+        </div>
+      </div>
+
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div>
+            <strong style="font-size:13px;color:rgb(234,179,8)">Incremento 50% por mora en el pago</strong>
+            <span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(234,179,8,.12);color:rgb(234,179,8);margin-left:6px;font-family:var(--font-mono)">EXENTO</span>
+          </div>
+          <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Ley 25323 Art. 2</div>
+        </div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:8px">Si el empleador no paga en tiempo tras intimación fehaciente: 50% adicional sobre preaviso + integración + Art. 245.</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">$</span>
+          <input type="number" step="0.01" value="${lf.incrementoMora25323 != null ? $m(lf.incrementoMora25323).toFixed(2) : '0'}" id="lf-mora-25323"
+            style="flex:1;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right">
+          <button onclick="(() => { const _ind=$m(document.getElementById('lf-indem')?.value); const _pre=$m(document.getElementById('lf-preaviso')?.value); const _int=$m(document.getElementById('lf-integr')?.value); document.getElementById('lf-mora-25323').value=((_ind+_pre+_int)*0.5).toFixed(2); })()" style="font-size:10px;padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--t3);cursor:pointer">↻ auto</button>
+        </div>
+      </div>
+
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div>
+            <strong style="font-size:13px;color:var(--red)">Sanción retención de aportes</strong>
+            <span style="font-size:9px;padding:1px 6px;border-radius:6px;background:rgba(239,68,68,.12);color:var(--red);margin-left:6px;font-family:var(--font-mono)">REM</span>
+          </div>
+          <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Art. 132 bis LCT</div>
+        </div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:8px">1 remuneración por cada mes en que el empleador retuvo aportes sin depositarlos ante AFIP. Indicar cantidad de meses.</div>
+        <div style="display:grid;grid-template-columns:100px 1fr;gap:8px">
+          <div>
+            <label style="font-size:9px;color:var(--t3)">Meses retenidos</label>
+            <input type="number" min="0" step="1" value="${lf.sancionArt132bisMeses||0}" id="lf-132bis-meses"
+              onchange="(() => { const m=parseInt(document.getElementById('lf-132bis-meses').value)||0; document.getElementById('lf-132bis-monto').value=(${mejorRem}*m).toFixed(2); })()"
+              style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:9px;color:var(--t3)">Monto ($)</label>
+            <input type="number" step="0.01" value="${lf.sancionArt132bis != null ? $m(lf.sancionArt132bis).toFixed(2) : '0'}" id="lf-132bis-monto"
+              style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right;box-sizing:border-box">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Totales -->
     <div style="margin-top:14px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);font-family:var(--font-mono)">
+      <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Resumen final</div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);margin-bottom:4px">
-        <span>Total REM (preaviso + SAC):</span>
-        <span style="color:var(--green)">$ ${fmtN($m(document.getElementById('lf-sac')?.value||calcSac.monto) + $m(document.getElementById('lf-preaviso')?.value||(_aplicaLCT?calcPre.monto:0)))}</span>
+        <span>Total REM (SAC + preaviso + multas):</span>
+        <span style="color:var(--green)">$</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);margin-bottom:4px">
         <span>Total EXENTO (vac + integr + indem):</span>
-        <span style="color:rgb(168,85,247)">$ ${fmtN(
-          $m(document.getElementById('lf-vac-monto')?.value||calcVac.monto) +
-          $m(document.getElementById('lf-integr')?.value||(_aplicaLCT?calcInt.monto:0)) +
-          $m(document.getElementById('lf-indem')?.value||(_aplicaLCT?calcInd.monto:0))
-        )}</span>
+        <span style="color:rgb(168,85,247)">$</span>
       </div>
     </div>
 
     <!-- Notas -->
     <div style="margin-top:14px">
       <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Notas / observaciones</label>
-      <textarea id="lf-notas" rows="2" placeholder="Telegrama, expediente, observaciones..."
-        style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:9px 12px;color:var(--t1);font-size:12px;outline:none;resize:vertical">${(lf.notas||'').replace(/</g,'&lt;')}</textarea>
+      <textarea id="lf-notas" rows="2" placeholder="Telegrama, expediente, acuerdo homologado, observaciones..."
+        style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:9px 12px;color:var(--t1);font-size:12px;outline:none;resize:vertical;box-sizing:border-box">${(lf.notas||'').replace(/</g,'&lt;')}</textarea>
     </div>
     ` : '<div style="padding:36px;text-align:center;color:var(--t3);font-size:12px">Seleccioná un motivo de baja para ver los conceptos a liquidar.</div>'}
   `;
@@ -2396,16 +2564,28 @@ function guardarLiqFinal(leg){
   nov.liqFinalDatos = {
     motivoBaja: motivo,
     regimen: _esLey22250 ? 'ley_22250' : 'lct',
-    mejorRem: _v('lf-mejorrem'),
-    topeCCT: _v('lf-topecct'),
-    diasVacNoGozadas: _v('lf-vac-dias'),
+    mejorRem:          _v('lf-mejorrem'),
+    topeCCT:           _v('lf-topecct'),
+    diasVacNoGozadas:  _v('lf-vac-dias'),
     diasGozadosEnAnio: parseInt(document.getElementById('lf-vac-gozados')?.value) || 0,
     vacNoGozadasMonto: _v('lf-vac-monto'),
-    sacProporcional: _v('lf-sac'),
-    // En régimen Ley 22.250: NO aplican conceptos LCT
+    sacProporcional:   _v('lf-sac'),
+    // Arts. 232 / 233 / 245 — régimen LCT
     preavisoMonto:           _esLey22250 ? 0 : _v('lf-preaviso'),
     integracionMesDespido:   _esLey22250 ? 0 : _v('lf-integr'),
     indemAntiguedad:         _esLey22250 ? 0 : _v('lf-indem'),
+    // Indemnizaciones especiales
+    indemEspecialMonto:      _v('lf-indem-especial'),   // Art. 178 / 182 — 1 año rem.
+    indemFuerzaMayor:        _v('lf-indem-fm'),          // Art. 247
+    indemIncapacidadAbsoluta: _v('lf-indem'),            // Art. 213 (reutiliza lf-indem)
+    indemIncapacidadParcial:  _v('lf-indem'),            // Art. 212 (reutiliza lf-indem)
+    indemFinContrato:        _v('lf-indem-fc'),          // Art. 97
+    // Multas y sanciones (opcionales)
+    multaCertificados:       _v('lf-multa-cert'),        // Art. 80 LCT
+    dobleIndemLey25323:      _v('lf-doble-indem'),       // Ley 25323 Art. 1
+    incrementoMora25323:     _v('lf-mora-25323'),        // Ley 25323 Art. 2
+    sancionArt132bisMeses:   parseInt(document.getElementById('lf-132bis-meses')?.value) || 0,
+    sancionArt132bis:        _v('lf-132bis-monto'),      // Art. 132 bis
     notas: (document.getElementById('lf-notas')?.value || '').trim(),
     calculadoEl: new Date().toISOString(),
     calculadoPor: currentUser?.emp?.nom || 'RRHH'

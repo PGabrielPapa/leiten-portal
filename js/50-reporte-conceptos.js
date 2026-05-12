@@ -79,7 +79,46 @@ const CATALOGO_CONCEPTOS_HARDCODED = [
   { codigo: 80960, descripcion: 'IERIC',                                     columna: 'PATRONAL', categoria: 'UOCRA Ley 22.250',       tipo: 'CONTRIBUCION_PATRONAL', calculo: 'auto', formula: 'totalHaberesRem × 1%', baseLegal: 'Decreto 1342/03 — IERIC' },
   { codigo: 80970, descripcion: 'Fondo Sanidad - UOCRA',                     columna: 'PATRONAL', categoria: 'UOCRA Ley 22.250',       tipo: 'CONTRIBUCION_PATRONAL', calculo: 'auto', formula: 'totalHaberesRem × 1,5%', baseLegal: 'Acuerdo paritario UOCRA' },
   { codigo: 80980, descripcion: 'CAR (Cuota Adicional UOCRA)',               columna: 'PATRONAL', categoria: 'UOCRA Ley 22.250',       tipo: 'CONTRIBUCION_PATRONAL', calculo: 'auto', formula: 'totalHaberesRem × 0,5%', baseLegal: 'Convenio colectivo UOCRA' },
-  { codigo: 80990, descripcion: 'CESLU',                                     columna: 'PATRONAL', categoria: 'UOCRA Ley 22.250',       tipo: 'CONTRIBUCION_PATRONAL', calculo: 'auto', formula: 'totalHaberesRem × 0,4%', baseLegal: 'Convenio colectivo UOCRA' }
+  { codigo: 80990, descripcion: 'CESLU',                                     columna: 'PATRONAL', categoria: 'UOCRA Ley 22.250',       tipo: 'CONTRIBUCION_PATRONAL', calculo: 'auto', formula: 'totalHaberesRem × 0,4%', baseLegal: 'Convenio colectivo UOCRA' },
+
+  // ═════════════════════ LIQUIDACIÓN FINAL — CONCEPTOS INDEMNIZATORIOS ═
+  // Aplican solo cuando liq.tipo === 'final' y se carga el modal de baja.
+
+  // ── Arts. 232 / 233 / 245 — Despido sin causa (régimen general) ──────
+  { codigo: 70100, descripcion: 'Preaviso — indemnización sustitutiva',       columna: 'HABERES', categoria: 'Liq. final — Art. 232',   tipo: 'REM',     calculo: 'final', formula: '<3 meses: 15 días; 3m-5 años: 1 mes; ≥5 años: 2 meses × bruto mensual', baseLegal: 'Art. 232 LCT' },
+  { codigo: 70200, descripcion: 'Integración mes de despido',                 columna: 'ADICIONALES', categoria: 'Liq. final — Art. 233', tipo: 'NO_REM', calculo: 'final', formula: 'Días restantes hasta fin de mes × (bruto / 30). Exento Art. 26 LIG.', baseLegal: 'Art. 233 LCT' },
+  { codigo: 70300, descripcion: 'Indemnización por antigüedad (despido s/c)', columna: 'ADICIONALES', categoria: 'Liq. final — Art. 245', tipo: 'NO_REM', calculo: 'final', formula: 'Mejor rem. mensual × años de servicio (fracción >3 meses = año). Mín. 1 sueldo. Tope: 3 × prom. CCT.', baseLegal: 'Art. 245 LCT · Art. 26 LIG' },
+
+  // ── Art. 247 — Fuerza mayor / falta de trabajo ────────────────────────
+  { codigo: 70400, descripcion: 'Indemnización fuerza mayor (50% Art. 245)', columna: 'ADICIONALES', categoria: 'Liq. final — Art. 247', tipo: 'NO_REM',  calculo: 'final', formula: '50% de la base calculada con Art. 245. Requiere homologación MTSS.', baseLegal: 'Art. 247 LCT · Art. 26 LIG' },
+
+  // ── Art. 213 — Incapacidad absoluta ──────────────────────────────────
+  { codigo: 70500, descripcion: 'Indemnización incapacidad absoluta',         columna: 'ADICIONALES', categoria: 'Liq. final — Art. 213', tipo: 'NO_REM', calculo: 'final', formula: 'Igual fórmula que Art. 245 (misma base y antigüedad). Sin preaviso.', baseLegal: 'Art. 213 LCT · Art. 26 LIG' },
+
+  // ── Art. 212 — Incapacidad parcial ────────────────────────────────────
+  { codigo: 70550, descripcion: 'Indemnización incapacidad parcial',          columna: 'ADICIONALES', categoria: 'Liq. final — Art. 212', tipo: 'NO_REM', calculo: 'final', formula: 'Si no se puede reasignar: igual Art. 245. Si sí: diferencia de salario durante 1 año.', baseLegal: 'Art. 212 LCT' },
+
+  // ── Arts. 178 + 182 — Despido por embarazo / maternidad ──────────────
+  { codigo: 70600, descripcion: 'Indemnización por embarazo/maternidad',      columna: 'ADICIONALES', categoria: 'Liq. final — Art. 178', tipo: 'NO_REM', calculo: 'final', formula: 'Art. 245 + 1 año de remuneraciones (12 × mejor rem.). Presunción 7½ meses antes/después del parto.', baseLegal: 'Art. 178 + 182 LCT · Art. 26 LIG' },
+
+  // ── Art. 182 — Despido por matrimonio ────────────────────────────────
+  { codigo: 70700, descripcion: 'Indemnización por matrimonio',               columna: 'ADICIONALES', categoria: 'Liq. final — Art. 182', tipo: 'NO_REM', calculo: 'final', formula: 'Art. 245 + 1 año de remuneraciones (12 × mejor rem.). Presunción 3 meses antes / 6 después del matrimonio.', baseLegal: 'Art. 182 LCT · Art. 26 LIG' },
+
+  // ── Art. 248 — Fallecimiento del trabajador ───────────────────────────
+  { codigo: 70800, descripcion: 'Indemnización por fallecimiento (50%)',      columna: 'ADICIONALES', categoria: 'Liq. final — Art. 248', tipo: 'NO_REM', calculo: 'final', formula: '50% de la base Art. 245. Cobran causahabientes: cónyuge/conviviente/hijos.', baseLegal: 'Art. 248 LCT · Art. 26 LIG' },
+
+  // ── Art. 97 — Vencimiento contrato a plazo ────────────────────────────
+  { codigo: 70900, descripcion: 'Indemnización vencimiento contrato (50%)',   columna: 'ADICIONALES', categoria: 'Liq. final — Art. 97',  tipo: 'NO_REM', calculo: 'final', formula: '50% de la base Art. 245. Solo si el contrato superó 1 año de duración.', baseLegal: 'Art. 95/97 LCT' },
+
+  // ── Conceptos siempre presentes en liquidación final ──────────────────
+  { codigo: 70010, descripcion: 'SAC proporcional al egreso',                 columna: 'HABERES',     categoria: 'Liq. final — Art. 121', tipo: 'REM',    calculo: 'final', formula: 'Mejor rem / 2 × (días trabajados del semestre / 180). Remunerativo.', baseLegal: 'Art. 121 LCT' },
+  { codigo: 70020, descripcion: 'Vacaciones no gozadas al egreso',            columna: 'ADICIONALES', categoria: 'Liq. final — Art. 156', tipo: 'NO_REM', calculo: 'final', formula: 'Días proporcionales según antigüedad − días ya gozados × (sueldo / 25). Exento Art. 26 LIG.', baseLegal: 'Art. 156 LCT · Art. 26 LIG' },
+
+  // ── Multas y sanciones (aplicables según circunstancias) ─────────────
+  { codigo: 71000, descripcion: 'Multa entrega tardía de certificados',       columna: 'HABERES',     categoria: 'Liq. final — Art. 80',  tipo: 'REM',    calculo: 'final', formula: '3 × mejor remuneración mensual normal y habitual. Si no se entregan en 30 días de intimación.', baseLegal: 'Art. 80 LCT — Ley 24.576' },
+  { codigo: 71100, descripcion: 'Doble indemnización — trabajo no registrado',columna: 'ADICIONALES', categoria: 'Liq. final — Ley 25323', tipo: 'NO_REM', calculo: 'final', formula: 'Duplica la indemnización Art. 245 si la relación fue clandestina o sub-registrada. Requiere reclamación fehaciente.', baseLegal: 'Ley 25323 Art. 1 · Art. 26 LIG' },
+  { codigo: 71200, descripcion: 'Incremento 50% por mora en el pago',         columna: 'ADICIONALES', categoria: 'Liq. final — Ley 25323', tipo: 'NO_REM', calculo: 'final', formula: '50% sobre la suma de preaviso + integración mes despido + Art. 245. Si no paga en término tras intimación.', baseLegal: 'Ley 25323 Art. 2' },
+  { codigo: 71300, descripcion: 'Sanción retención de aportes',               columna: 'HABERES',     categoria: 'Liq. final — Art. 132 bis', tipo: 'REM', calculo: 'final', formula: '1 remuneración mensual × cantidad de períodos en que se retuvo sin depositar en AFIP.', baseLegal: 'Art. 132 bis LCT' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
