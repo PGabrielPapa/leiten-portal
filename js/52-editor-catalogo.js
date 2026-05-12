@@ -67,15 +67,34 @@ async function abrirEditorCatalogo() {
     toast('🔒 Solo Admin y RR.HH. pueden editar el catálogo', 'var(--red)'); return;
   }
 
+  // ── Overlay sólido que tapa la página ──────────────────────────────────────
+  let overlay = document.getElementById('_editor-cat-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = '_editor-cat-overlay';
+    overlay.style.position  = 'fixed';
+    overlay.style.inset      = '0';
+    overlay.style.background = '#05060a';   // negro casi puro — opacidad 100%
+    overlay.style.opacity    = '0.94';
+    overlay.style.zIndex     = '9980';
+    overlay.style.display    = 'none';
+    overlay.addEventListener('click', cerrarEditorCatalogo);
+    document.body.appendChild(overlay);
+  }
+
+  // ── Contenedor scrolleable del modal ────────────────────────────────────────
   let modal = document.getElementById('_editor-cat-modal');
   if (!modal) {
     modal = document.createElement('div');
-    modal.id = '_editor-cat-modal';
-    modal.style.cssText = `
-      display:none;position:fixed;inset:0;
-      background:${_EC.backdrop};z-index:9990;
-      align-items:flex-start;justify-content:center;
-      overflow-y:auto;padding:28px 16px`;
+    modal.id              = '_editor-cat-modal';
+    modal.style.position  = 'fixed';
+    modal.style.inset     = '0';
+    modal.style.zIndex    = '9981';         // encima del overlay
+    modal.style.display   = 'none';
+    modal.style.alignItems     = 'flex-start';
+    modal.style.justifyContent = 'center';
+    modal.style.overflowY      = 'auto';
+    modal.style.padding        = '28px 16px';
 
     modal.innerHTML = `
       <div style="
@@ -177,16 +196,19 @@ async function abrirEditorCatalogo() {
       </div>`;
 
     document.body.appendChild(modal);
-    modal.addEventListener('click', e => { if (e.target === modal) cerrarEditorCatalogo(); });
+    // click fuera = cerrar (manejado por el overlay)
   }
 
-  modal.style.display = 'flex';
+  overlay.style.display = 'block';
+  modal.style.display   = 'flex';
   await _ecCargarDatos();
 }
 
 function cerrarEditorCatalogo() {
   const m = document.getElementById('_editor-cat-modal');
+  const o = document.getElementById('_editor-cat-overlay');
   if (m) m.style.display = 'none';
+  if (o) o.style.display = 'none';
 }
 
 // ── Datos ─────────────────────────────────────────────────────────────────────
