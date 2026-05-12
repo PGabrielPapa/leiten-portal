@@ -809,6 +809,14 @@
             </div>
           </div>
 
+          <div class="card home-card" onclick="navRRHH('reporte-conceptos')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📒</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Catálogo de Conceptos</div>
+              <div style="font-size:11px;color:var(--t3)">Reporte completo de conceptos de nómina (sistema + custom)</div>
+            </div>
+          </div>
+
           <div class="card home-card" onclick="navRRHH('simulacion')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(251,168,52,.08);border:1px solid rgba(251,168,52,.25);display:flex;align-items:center;justify-content:center;font-size:24px">🧮</div>
             <div>
@@ -1976,6 +1984,13 @@
         <div id="panel-generador-reportes" style="display:block"></div>
       </div>
 
+<!-- Reporte / catálogo de conceptos de nómina -->
+      <div id="rrhh-sub-reporte-conceptos" style="display:none">
+        <button onclick="navRRHH(null)" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--t2);font-size:12px;cursor:pointer;padding:6px 14px;margin-bottom:18px;font-family:var(--font-mono);transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--t2)'">← Volver al panel</button>
+        <div style="font-size:12px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Catálogo de Conceptos de Nómina</div>
+        <div id="panel-reporte-conceptos"></div>
+      </div>
+
 <!-- Mensajes -->
       <div id="rrhh-sub-mensajes" style="display:none">
         <button onclick="navRRHH(null)" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--t2);font-size:12px;cursor:pointer;padding:6px 14px;margin-bottom:18px;font-family:var(--font-mono);transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--t2)'">← Volver al panel</button>
@@ -2525,5 +2540,6 @@
 <script src="js/47-generador-reportes.js"></script>
 <script src="js/48-gerente-licencias-filtros.js"></script>
 <script src="js/49-documentos-firmados.js"></script>
+<script src="js/50-reporte-conceptos.js"></script>
 </body>
 </html>
