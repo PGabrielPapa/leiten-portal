@@ -176,6 +176,10 @@ async function renderReporteConceptos(){
           style="font-size:12px;padding:7px 14px" title="Versión imprimible">
           🖨 Imprimir
         </button>
+        <button onclick="abrirEditorCatalogo()" class="btn btn-ghost"
+          style="font-size:12px;padding:7px 14px;color:var(--accent2);border-color:rgba(99,102,241,.35)" title="Editar descripción, fórmula y base legal de cada concepto">
+          ✏️ Editor
+        </button>
       </div>
 
       <!-- ESTADÍSTICAS -->
