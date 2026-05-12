@@ -30,6 +30,7 @@ const CATALOGO_CONCEPTOS_HARDCODED = [
   { codigo: 3,     descripcion: 'Horas Extras 100%',                         columna: 'HABERES', categoria: 'Horas extras',          tipo: 'REM',          calculo: 'novedad',  formula: 'valorHora × 2.0 × cantidad', baseLegal: 'Art. 201 LCT' },
   { codigo: 8000,  descripcion: 'Presentismo',                               columna: 'HABERES', categoria: 'Adicionales',           tipo: 'REM',          calculo: 'auto',     formula: 'sueldoBasico × pctPresentismo% (si no hay ausencias/suspensión)', baseLegal: 'CCT — paritarias' },
   { codigo: 9100,  descripcion: 'SAC Proporcional',                          columna: 'HABERES', categoria: 'SAC',                   tipo: 'REM',          calculo: 'novedad',  formula: 'sueldoMejor / 12 × proporciónSemestre', baseLegal: 'Art. 121-123 LCT — Ley 23.041' },
+  { codigo: 6500,  descripcion: 'Feriados no trabajados (Art. 168 LCT)',     columna: 'HABERES', categoria: 'Feriados',              tipo: 'REM',          calculo: 'auto',     formula: '(bruto / 30) × feriadosNoTrabajados (calendario AR, excluye UOCRA)', baseLegal: 'Art. 168 LCT — Ley 27.399' },
 
   // ═════════════════════ LICENCIAS (Art. 155 LCT) ═════════════════════
   { codigo: 5800,  descripcion: 'Vacaciones (Art. 155 LCT)',                 columna: 'HABERES', categoria: 'Vacaciones',            tipo: 'REM',          calculo: 'auto',     formula: 'valorDiaVacaciones × diasVac', baseLegal: 'Art. 155 LCT' },

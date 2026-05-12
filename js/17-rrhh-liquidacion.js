@@ -429,15 +429,20 @@ async function saveNovedad(nov){
   });
 }
 
-// ── Feriados Argentina 2024-2026 ──────────────────────────────────
-const FERIADOS_AR = {
-  '2024':['01-01','24-03','29-03','01-04','02-04','01-05','25-05','17-06','09-07','19-08','12-10','25-11','08-12','25-12'],
-  '2025':['01-01','24-03','18-04','01-05','25-05','16-06','09-07','18-08','12-10','24-11','08-12','25-12'],
-  '2026':['01-01','16-02','17-02','24-03','01-04','02-04','01-05','25-05','15-06','09-07','17-08','12-10','23-11','08-12','25-12'],
-};
+// ── Feriados Argentina ─────────────────────────────────────────────
+// El catálogo completo 2024-2028 está en data/feriados-ar.js (cargado antes).
+// Si por algún motivo no se cargó (fallback), declaramos un objeto vacío.
+if(typeof FERIADOS_AR === 'undefined'){ window.FERIADOS_AR = {}; }
 
 function diasHabilesDelMes(anio, mes){
-  const feriados=new Set((FERIADOS_AR[String(anio)]||[]).map(f=>f.slice(3)+'-'+f.slice(0,2)));
+  // Soporta el nuevo formato ISO ('YYYY-MM-DD') del catálogo completo.
+  const feriadosArr = FERIADOS_AR[anio] || FERIADOS_AR[String(anio)] || [];
+  // Aceptamos tanto 'YYYY-MM-DD' (formato ISO nuevo) como 'DD-MM' (legacy).
+  const feriados = new Set(feriadosArr.map(f => {
+    if(f.length === 10 && f.includes('-')) return f.substring(5);  // 'YYYY-MM-DD' → 'MM-DD'
+    if(f.length === 5  && f.includes('-')) return f.slice(3) + '-' + f.slice(0, 2); // 'DD-MM' → 'MM-DD'
+    return f;
+  }));
   let habiles=0;
   const diasMes=new Date(anio,mes,0).getDate();
   for(let d=1;d<=diasMes;d++){
@@ -666,17 +671,39 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const _esQuinc2 = tipoLiq === 'quincenal_2';
   const _esQuincenal = _esQuinc1 || _esQuinc2;
   const _factorPeriodo = _esQuincenal ? 0.5 : 1.0;
-  const diasTrab=$m(nov.diasTrabajados??habiles);
-  const ausentismo=Math.max(0,habiles-diasTrab);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // CÁLCULO DE DÍAS Y JORNAL DIARIO — POLÍTICA: DIVISOR CALENDARIO (30)
+  // ───────────────────────────────────────────────────────────────────────
+  // El divisor del jornal diario es 30 (días calendario), no días hábiles.
+  // Esto significa que todos los días del mes (laborales, sábados, domingos
+  // y feriados) valen lo mismo. El sueldo mensual = jornal × 30, indistinto
+  // del calendario laboral.
+  //
+  // El campo nov.diasTrabajados sigue siendo la cantidad de días efectivamente
+  // trabajados (en escala de 30). Si el empleado tuvo ausencias, se cuentan
+  // contra los 30 días calendario.
+  //
+  // EXCEPCIÓN UOCRA (Ley 22.250): los empleados bajo régimen UOCRA siguen
+  // calculando sobre días hábiles porque su sistema tiene FCL aparte y no
+  // necesita el divisor 30 (sistema indemnizatorio propio).
+  // ═══════════════════════════════════════════════════════════════════════
+  const _esUocra = (typeof esRegimenLey22250 === 'function') && esRegimenLey22250(emp);
+  const diasBase = _esUocra ? habiles : 30;  // divisor del jornal
+  const diasBaseDescripcion = _esUocra ? 'hábiles' : 'calendario (30)';
+  const diasTrab=$m(nov.diasTrabajados ?? diasBase);
+  const ausentismo=Math.max(0, diasBase - diasTrab);
   const bruto=$m(emp.bruto);
-  const proporcion=habiles>0?diasTrab/habiles:1;
+  const proporcion = diasBase > 0 ? diasTrab/diasBase : 1;
 
   // ─ Sueldo básico proporcional a días trabajados ─
   // En quincenales se paga la MITAD del bruto mensual prorrateado.
   const sueldoBasico=bruto*proporcion*_factorPeriodo;
 
   // ─ Horas extras ─
-  const valHora=bruto/200;
+  // Valor hora = (bruto / 30 días) / 8 horas = bruto / 240
+  // Para UOCRA mantenemos /200 (legacy, jornal sobre 25 días * 8h)
+  const valHora = _esUocra ? (bruto/200) : (bruto/240);
   const hsE50=$m(nov.hsExtra50); const hsE100=$m(nov.hsExtra100);
   const mHsE50=hsE50*valHora*1.5; const mHsE100=hsE100*valHora*2;
 
@@ -690,18 +717,14 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   // ─ Suspensiones disciplinarias del período ─
   // Las suspensiones aplicadas como sanción son días NO trabajados → descuento proporcional
   const diasSuspension = $m(nov.diasSuspension);
-  const valorDiaSuspH  = habiles > 0 ? bruto / habiles : 0; // mismo criterio que ausencia común
+  const valorDiaSuspH  = diasBase > 0 ? bruto / diasBase : 0;
   const mDescSuspension = diasSuspension * valorDiaSuspH;
   const tieneSuspension = diasSuspension > 0;
 
   // ─ Empleados Fuera de Convenio (FC) ─
-  // No tienen sindicato asignado → no calculan antigüedad ni presentismo.
-  // (La antigüedad ya queda en 0 vía getPctAntiguedadPorAnio que detecta FC).
   const esFueraConvenio = (typeof empleadoFueraConvenio === 'function') && empleadoFueraConvenio(emp);
 
   // ─ Presentismo ─
-  // Se pierde si hay ausencias O ausencias injustificadas O suspensión disciplinaria
-  // Y NO se calcula si el empleado es Fuera de Convenio (FC).
   const tienePres = !esFueraConvenio
                  && ausentismo===0
                  && !$m(nov.ausenciasInjustificadas)
@@ -712,14 +735,44 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const mSac=$m(nov.sac);
 
   // ═══════════════════════════════════════════════════════════════
+  //   FERIADOS NO TRABAJADOS (Art. 168 LCT)
+  //   ─────────────────────────────────────────────
+  //   El empleado cobra UN JORNAL ADICIONAL por cada feriado del mes
+  //   que NO trabajó. Es independiente de si el feriado cae en día
+  //   hábil o en sábado/domingo (el feriado es feriado).
+  //
+  //   Si el empleado trabajó el feriado, ese día NO se cobra como
+  //   "feriado no trabajado"; se cobra como hs extras al 100% (Art. 169).
+  //   La novedad `nov.feriadosTrabajados` indica cuántos del mes
+  //   trabajó (por defecto 0 → cobra todos como no trabajados).
+  //
+  //   EXCEPCIÓN: empleados UOCRA (Ley 22.250) NO entran en este
+  //   cálculo. Su régimen contempla FCL aparte que cubre estos casos.
+  //
+  //   Valor del día feriado = bruto / 30 (mismo divisor calendario)
+  // ═══════════════════════════════════════════════════════════════
+  const _feriadosMesAr = (typeof getFeriadosDelMes === 'function') ? getFeriadosDelMes(anio, mes) : [];
+  const _feriadosTrabajados = $m(nov.feriadosTrabajados);
+  const cantFeriadosNoTrab = _esUocra ? 0 : Math.max(0, _feriadosMesAr.length - _feriadosTrabajados);
+  const valorFeriado = bruto / 30;
+  // En quincenales, solo contabilizamos los feriados que caen en la quincena
+  let _feriadosEnQuincena = cantFeriadosNoTrab;
+  if(_esQuincenal && _feriadosMesAr.length){
+    _feriadosEnQuincena = _feriadosMesAr.filter(fIso => {
+      const d = parseInt(fIso.substring(8, 10));
+      return _esQuinc1 ? (d <= 15) : (d > 15);
+    }).length - Math.min(_feriadosTrabajados, _feriadosMesAr.length);
+    _feriadosEnQuincena = Math.max(0, _feriadosEnQuincena);
+  }
+  const mFeriadosNoTrab = _esUocra ? 0 : (valorFeriado * _feriadosEnQuincena);
+
+  // ═══════════════════════════════════════════════════════════════
   //   ART. 155 LCT — VACACIONES Y LICENCIAS ESPECIALES
-  //   Valor del día = sueldo mensual / 25
-  //   Aplica a: vacaciones, matrimonio, nacimiento hijo, fallecimiento, examen
-  //   "Otras licencias" (enfermedad, donación sangre, mudanza, trámites, etc.)
-  //   se liquidan como DÍA COMÚN: sueldo / días hábiles del mes
+  //   Valor del día = sueldo mensual / 25 (mantenemos legalmente Art. 155)
+  //   "Otras licencias" se liquidan con divisor calendario (igual sueldo)
   // ═══════════════════════════════════════════════════════════════
   const valorDia155   = bruto / 25;
-  const valorDiaComun = habiles > 0 ? bruto / habiles : 0;
+  const valorDiaComun = diasBase > 0 ? bruto / diasBase : 0;
 
   // ─ Vacaciones (días ingresados en novedades) — Art. 155 ─
   const diasVac = $m(nov.vacaciones);
@@ -840,9 +893,10 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   // BASE REMUNERATIVA (sujeta a aportes y base imponible de ganancias)
   // Importante: SOLO los haberes adicionales remunerativos van acá.
   // Para liq. final: preaviso (rem) y SAC proporcional (rem) se suman acá.
+  // Feriados no trabajados (Art. 168 LCT): son remunerativos, suman aquí.
   const totalHaberesRem = sueldoBasico + mHsE50 + mHsE100 + mAntig + mPres
                         + mSac + mVac + mLicEspeciales + mOtrosHRem + mAjuste + mCumpObj
-                        + mPreaviso + mSacProporcional;
+                        + mPreaviso + mSacProporcional + mFeriadosNoTrab;
 
   // TOTAL HABERES = remunerativos + no remunerativos exentos (lo que cobra el empleado)
   let totalHaberes = totalHaberesRem + totalExentos;
@@ -1126,7 +1180,14 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   return {
     leg:emp.leg, nom:emp.nom, empresa:emp.emp, lugar:emp.lugar||'', cuil:emp.cuil||'',
     diasMes, habiles, diasTrab, ausentismo, anios,
+    diasBase, diasBaseDescripcion,
     bruto, sueldoBasico, valHora, valorDia155, valorDiaComun,
+    // Feriados no trabajados (Art. 168 LCT) — exclusivo régimen LCT, no UOCRA
+    cantFeriadosMes: _feriadosMesAr.length,
+    cantFeriadosNoTrab: _feriadosEnQuincena,
+    feriadosTrabajados: _feriadosTrabajados,
+    valorFeriado,
+    mFeriadosNoTrab,
     hsE50, mHsE50, hsE100, mHsE100,
     pctAntig, mAntig,
     tienePres, mPres, esFueraConvenio,
@@ -1542,7 +1603,7 @@ async function renderNovedades(){
       <th style="${thStyle}" rowspan="2">Días</th>
       <th style="${thStyle};background:rgba(239,68,68,.05)" rowspan="2" title="Días de licencia tomados en el período">Licencias</th>
       <th style="${thStyle};background:rgba(239,68,68,.08)" rowspan="2" title="Días de suspensión disciplinaria aplicada en el período (sanciones)">Susp.</th>
-      <th style="${thStyle};background:rgba(34,197,94,.05);text-align:center" colspan="2">Horas Extras Grav.</th>
+      <th style="${thStyle};background:rgba(34,197,94,.05);text-align:center" colspan="3">Horas Extras Grav.</th>
       <th style="${thStyle};background:rgba(234,179,8,.05);text-align:center" colspan="4">Exentos Ganancias</th>
       <th style="${thStyle}" rowspan="2">Ausenc.</th>
       <th style="${thStyle}" rowspan="2">Anticipo</th>
@@ -1558,6 +1619,7 @@ async function renderNovedades(){
     <tr>
       <th style="${thStyle}">50%</th>
       <th style="${thStyle}">100%</th>
+      <th style="${thStyle};background:rgba(59,130,246,.05)" title="Cantidad de feriados del mes que trabajó (cobra hs extras 100% por ellos). Si dejás 0, todos los feriados se pagan como 'no trabajados'.">Fer.Trab.</th>
       <th style="${thStyle}" title="Horas extras exentas Art. 82 LIG">HE Ex.</th>
       <th style="${thStyle}" title="Bono productividad exento">Bono Pr.</th>
       <th style="${thStyle}" title="Indemnizaciones Art. 180 bis">Indem.</th>
@@ -1628,6 +1690,7 @@ async function renderNovedades(){
         </td>
         <td style="${tdStyle}">${inp('hsExtra50',nov.hsExtra50||0,60)}</td>
         <td style="${tdStyle}">${inp('hsExtra100',nov.hsExtra100||0,60)}</td>
+        <td style="${tdStyle};background:rgba(59,130,246,.03)" title="Cantidad de feriados del mes que trabajó (cobra hs extras 100%). Si dejás 0, cobra todos los feriados como 'no trabajados'.">${inp('feriadosTrabajados',nov.feriadosTrabajados||0,55)}</td>
         <td style="${tdStyle};background:rgba(234,179,8,.03)">${inp('hsExtrasExentas',nov.hsExtrasExentas||0,80)}</td>
         <td style="${tdStyle};background:rgba(234,179,8,.03)">${inp('bonoProductividadExento',nov.bonoProductividadExento||0,90)}</td>
         <td style="${tdStyle};background:rgba(234,179,8,.03)">${inp('indemnizaciones',nov.indemnizaciones||0,90)}</td>
@@ -4089,6 +4152,9 @@ function buildConceptRows(item, params){
   pH('Horas Extras 100%',  3,     item.hsE100||'',            item.mHsE100);
   pH('Presentismo',        8000,  '',                         item.tienePres?item.mPres:0);
   pH('SAC Proporcional',   9100,  '',                         $m(item.mSac));
+  // Feriados no trabajados (Art. 168 LCT) — un jornal por cada feriado del mes
+  // que el empleado no trabajó. UOCRA excluido (régimen propio).
+  pH('Feriados no trabajados (Art. 168 LCT)', 6500, item.cantFeriadosNoTrab||'', $m(item.mFeriadosNoTrab));
   // ── Art. 155 LCT: vacaciones y licencias especiales (valor día = sueldo/25) ──
   pH('Vacaciones (Art.155 LCT)',       5800, item.diasVac||'',           $m(item.mVac));
   pH('Lic. Matrimonio (Art.155 LCT)',  5810, item.diasMatrimonio||'',    $m(item.mMatrimonio));
