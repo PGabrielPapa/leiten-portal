@@ -88,6 +88,15 @@ async function abrirEditorCatalogo() {
             <option value="custom">✎ Custom</option>
             <option value="editado">📝 Con cambios</option>
           </select>
+          <select id="_ec-fcat" onchange="_ecFiltrar()"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none">
+            <option value="">Todas las categorías</option>
+            <option value="liqfinal">📋 Liquidación final</option>
+            <option value="haberes">💵 Haberes</option>
+            <option value="aportes">📋 Aportes / retenciones</option>
+            <option value="patronal">🏢 Patronal</option>
+            <option value="uocra">🏗️ UOCRA</option>
+          </select>
           <button onclick="_ecRestaurarTodos()"
             style="padding:7px 13px;background:none;border:1px solid rgba(239,68,68,.4);border-radius:var(--r);color:var(--red);font-size:12px;cursor:pointer">
             ↺ Restaurar todo
@@ -125,31 +134,28 @@ function cerrarEditorCatalogo() {
 let _ecDatos = []; // cache de conceptos + overrides aplicados
 
 async function _ecCargarDatos() {
-  // Reusar los datos del catálogo si ya están cargados
-  let base = window._reporteConceptosDatos;
-  if (!base || !base.length) {
-    // Cargar igual que js/50
-    let custom = [];
-    if (typeof getConceptosCustom === 'function') {
-      try { custom = await getConceptosCustom() || []; } catch {}
-    }
-    const customNorm = custom.map(c => ({
-      codigo:      c.codigo || c.cod || '—',
-      descripcion: c.descripcion || c.label || '(sin descripción)',
-      tipo:        c.tipo || '—',
-      calculo:     typeof _calculoCustom === 'function' ? _calculoCustom(c) : 'custom',
-      formula:     c.formula || 'Carga manual',
-      baseLegal:   c.baseLegal || '—',
-      categoria:   c.categoria || '—',
-      _esCustom:   true,
-      _estado:     c.estado || 'activo',
-      _idCustom:   c.id || c.codigo,
-    }));
-    base = [
-      ...CATALOGO_CONCEPTOS_HARDCODED.map(c => ({ ...c, _esCustom: false, _esSistema: true })),
-      ...customNorm,
-    ];
+  // Siempre construir desde CATALOGO_CONCEPTOS_HARDCODED + custom
+  // (no depender de _reporteConceptosDatos que puede no estar cargado)
+  let custom = [];
+  if (typeof getConceptosCustom === 'function') {
+    try { custom = await getConceptosCustom() || []; } catch {}
   }
+  const customNorm = custom.map(cc => ({
+    codigo:      cc.codigo || cc.cod || '—',
+    descripcion: cc.descripcion || cc.label || '(sin descripción)',
+    tipo:        cc.tipo || '—',
+    calculo:     typeof _calculoCustom === 'function' ? _calculoCustom(cc) : 'custom',
+    formula:     cc.formula || 'Carga manual',
+    baseLegal:   cc.baseLegal || '—',
+    categoria:   cc.categoria || '—',
+    _esCustom:   true,
+    _estado:     cc.estado || 'activo',
+    _idCustom:   cc.id || cc.codigo,
+  }));
+  let base = [
+    ...CATALOGO_CONCEPTOS_HARDCODED.map(cc => ({ ...cc, _esCustom: false, _esSistema: true })),
+    ...customNorm,
+  ];
 
   _ecDatos = aplicarOverridesCatalogo(base);
   _ecActualizarBadge();
@@ -169,12 +175,21 @@ function _ecFiltrar() {
   const txt    = (document.getElementById('_ec-busq')?.value   || '').toLowerCase().trim();
   const tipo   = document.getElementById('_ec-ftipo')?.value   || '';
   const origen = document.getElementById('_ec-forigen')?.value || '';
+  const cat    = document.getElementById('_ec-fcat')?.value    || '';
 
   const filtrados = _ecDatos.filter(c => {
     if (origen === 'sistema' && c._esCustom)  return false;
     if (origen === 'custom'  && !c._esCustom) return false;
     if (origen === 'editado' && !c._editado)  return false;
     if (tipo && c.tipo !== tipo)              return false;
+    if (cat) {
+      const catStr = (c.categoria || '').toLowerCase();
+      if (cat === 'liqfinal'  && !catStr.includes('liq. final'))  return false;
+      if (cat === 'haberes'   && (catStr.includes('liq. final') || catStr.includes('aporte') || catStr.includes('patronal') || catStr.includes('uocra') || catStr.includes('retenc'))) return false;
+      if (cat === 'aportes'   && !catStr.includes('aporte') && !catStr.includes('retenc') && !catStr.includes('sindic') && !catStr.includes('impuest')) return false;
+      if (cat === 'patronal'  && !catStr.includes('patronal') && !catStr.includes('contrib')) return false;
+      if (cat === 'uocra'     && !catStr.includes('uocra')) return false;
+    }
     if (txt) {
       const hay = `${c.codigo} ${c.descripcion} ${c.categoria} ${c.baseLegal} ${c.formula}`.toLowerCase();
       if (!hay.includes(txt)) return false;
@@ -206,12 +221,26 @@ function _ecRenderLista(lista) {
     CONTRIBUCION_PATRONAL:  'rgb(168,85,247)',
   };
 
+  // Detectar cambios de grupo para separadores visuales
+  let lastGrupo = null;
+
   cont.innerHTML = lista.map((c, idx) => {
     const color  = tipoColor[c.tipo] || 'var(--t3)';
     const esEdit = !!c._editado;
     const key    = String(c.codigo);
+    const esLiqFinal = (c.categoria || '').toLowerCase().includes('liq. final');
+    let separador = '';
+    if (esLiqFinal && lastGrupo !== 'liqfinal') {
+      separador = `<div style="padding:10px 18px 6px;background:rgba(168,85,247,.06);border-top:1px solid rgba(168,85,247,.2);border-bottom:1px solid rgba(168,85,247,.15);display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;font-weight:600;color:rgb(168,85,247);font-family:var(--font-mono)">📋 LIQUIDACIÓN FINAL</span>
+        <span style="font-size:10px;color:var(--t3)">Conceptos indemnizatorios — Arts. LCT + Leyes 24013 / 25323</span>
+      </div>`;
+      lastGrupo = 'liqfinal';
+    } else if (!esLiqFinal && lastGrupo === 'liqfinal') {
+      lastGrupo = null;
+    }
 
-    return `
+    return separador + `
     <div id="_ec-row-${key}" style="border-bottom:1px solid var(--border);transition:background .15s">
 
       <!-- Fila resumen (siempre visible) -->
