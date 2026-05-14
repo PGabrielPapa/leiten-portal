@@ -1116,22 +1116,22 @@ const UOM_R17_SEED = {
   mensualizado: [
     { grupo:'A', label:'Administrativos', cats:[
       { cat:'Cat. 1°', basico:833257.48,  ok:true },
-      { cat:'Cat. 2°', basico:null,       ok:false },
-      { cat:'Cat. 3°', basico:null,       ok:false },
+      { cat:'Cat. 2°', basico:924732.49,  ok:true },
+      { cat:'Cat. 3°', basico:1067759.96, ok:true },
       { cat:'Cat. 4°', basico:1166170.85, ok:true },
     ]},
     { grupo:'B', label:'Técnicos', cats:[
       { cat:'Cat. 1°', basico:833257.48,  ok:true },
-      { cat:'Cat. 2°', basico:null,       ok:false },
-      { cat:'Cat. 3°', basico:null,       ok:false },
-      { cat:'Cat. 4°', basico:null,       ok:false },
-      { cat:'Cat. 5°', basico:null,       ok:false },
+      { cat:'Cat. 2°', basico:924875.28,  ok:true },
+      { cat:'Cat. 3°', basico:988568.62,  ok:true },
+      { cat:'Cat. 4°', basico:1121394.56, ok:true },
+      { cat:'Cat. 5°', basico:1166216.35, ok:true, nota:'proporcional s/escala mar 2026' },
       { cat:'Cat. 6°', basico:1276880.99, ok:true },
     ]},
     { grupo:'C', label:'Auxiliares', cats:[
-      { cat:'Cat. 1°', basico:801577.24, ok:true },
-      { cat:'Cat. 2°', basico:null,      ok:false },
-      { cat:'Cat. 3°', basico:992754.70, ok:true },
+      { cat:'Cat. 1°', basico:801577.24,  ok:true },
+      { cat:'Cat. 2°', basico:872359.46,  ok:true, nota:'proporcional s/escala mar 2026' },
+      { cat:'Cat. 3°', basico:992754.70,  ok:true },
     ]},
   ],
   adicionales: [
@@ -1176,41 +1176,45 @@ const COM_SEED = {
   mesLabel: 'Mayo 2026',
   origen: 'seed',
   cct: 'CCT 130/75 – Empleados de Comercio (FAECYS / SEC)',
-  acuerdo: 'Acuerdo abr–jun 2026: +5% escalonado (2% abr + 1,5% may + 1,5% jun) + bono $120.000 · CAC, CAME, UDECA',
+  acuerdo: 'Acuerdo abr–jun 2026 (hom. 27/04/2026): +5% escalonado (2% abr + 1,5% may + 1,5% jun) + bono $120.000 · CAC, CAME, UDECA',
   categorias: [
     { grupo:'Maestranza', cats:[
-      { cat:'Cat. A', basico:1196262, ok:true },
-      { cat:'Cat. B', basico:1203498, ok:true },
+      { cat:'Cat. A', basico:1215095, ok:true },
+      { cat:'Cat. B', basico:1218163, ok:true },
+      { cat:'Cat. C', basico:1222258, ok:true },
     ]},
     { grupo:'Administrativos', cats:[
-      { cat:'Cat. 1°', basico:1210613, ok:true  },
-      { cat:'Cat. 2°', basico:null,    ok:false },
-      { cat:'Cat. 3°', basico:null,    ok:false },
-      { cat:'Cat. 4°', basico:null,    ok:false },
-      { cat:'Cat. 5°', basico:1261221, ok:true  },
+      { cat:'Cat. A', basico:1226972, ok:true },
+      { cat:'Cat. B', basico:1231728, ok:true },
+      { cat:'Cat. C', basico:1236477, ok:true },
+      { cat:'Cat. D', basico:1250732, ok:true },
+      { cat:'Cat. E', basico:1262610, ok:true },
+      { cat:'Cat. F', basico:1279966, ok:true },
     ]},
     { grupo:'Cajeros', cats:[
-      { cat:'Cat. 1°', basico:1214566, ok:true  },
-      { cat:'Cat. 2°', basico:null,    ok:false },
-      { cat:'Cat. 3°', basico:1227579, ok:true  },
+      { cat:'Cat. A', basico:1231163, ok:true },
+      { cat:'Cat. B', basico:1236559, ok:true },
+      { cat:'Cat. C', basico:1243613, ok:true },
     ]},
     { grupo:'Personal Auxiliar', cats:[
-      { cat:'Cat. 1°', basico:1214566, ok:true  },
-      { cat:'Cat. 2°', basico:null,    ok:false },
-      { cat:'Cat. 3°', basico:null,    ok:false },
-      { cat:'Cat. 4°', basico:1246304, ok:true  },
+      { cat:'Cat. A', basico:1231163, ok:true },
+      { cat:'Cat. B', basico:1238055, ok:true },
+      { cat:'Cat. C', basico:1247013, ok:true },
+    ]},
+    { grupo:'Auxiliar Especializado', cats:[
+      { cat:'Cat. A', basico:1240437, ok:true },
+      { cat:'Cat. B', basico:1254950, ok:true },
     ]},
     { grupo:'Vendedores', cats:[
-      { cat:'Cat. 1°', basico:1214566, ok:true  },
-      { cat:'Cat. 2°', basico:null,    ok:false },
-      { cat:'Cat. 3°', basico:null,    ok:false },
-      { cat:'Cat. 4°', basico:null,    ok:false },
-      { cat:'Cat. 5°', basico:1262890, ok:true  },
+      { cat:'Cat. A', basico:1231163, ok:true },
+      { cat:'Cat. B', basico:1254950, ok:true },
+      { cat:'Cat. C', basico:1262610, ok:true },
+      { cat:'Cat. D', basico:1279966, ok:true },
     ]},
   ],
   noRemunerativos: [
     { id:'com_nr_bono26', mes:'2026-04', label:'Bono extraordinario abr–jun 2026', monto:120000, activo:true,
-      nota:'Incl. los $100.000 previos. Se abona abr/may/jun. En jul 2026 se incorporan $20.000 al básico.' },
+      nota:'$100.000 prórroga + $20.000 nuevo. Abr/may/jun. En jul 2026: $20.000 se incorporan al básico.' },
   ],
   adicionales: [
     { art:'Art. 40', concepto:'Presentismo', tipo:'pct', pct:8.33, base:'básico + NR', rem:true,
@@ -2029,8 +2033,8 @@ const SINDS_BUILTINS = [
         { cat:'Oficial Especializado', valorHora:6011,   ok:true },
         { cat:'Oficial',              valorHora:5142,   ok:true },
         { cat:'Medio Oficial',        valorHora:4752,   ok:true },
-        { cat:'Ayudante',             valorHora:null,   ok:false, nota:'ver planilla oficial UOCRA' },
-        { cat:'Sereno (mensual)',      basico:808877,    ok:true,  nota:'valor mensual, Zona A' },
+        { cat:'Ayudante',             valorHora:4375,   ok:true,  nota:'calculado proporcional (ratio Jan 2026 vs Oficial Esp)' },
+        { cat:'Sereno (mensual)',      basico:808877,    ok:true,  nota:'valor mensual Zona A — equiv. ~$4.044/h (800h)' },
       ]
     }],
     noRemunerativos:[
@@ -2107,17 +2111,19 @@ const SINDS_BUILTINS = [
     nombre:'Unión Obreros y Empleados Plásticos (UOYEP)',
     cct:'CCT 797/22',
     vigencia:'2026-05-01', mesLabel:'Mayo 2026',
-    acuerdo:'Acuerdo mar–ago 2026: +16,83% total en 6 meses + NR $65.000 para todas las categorías | CAIP',
+    acuerdo:'Acuerdo mar–ago 2026: +16,83% total en 6 meses + NR $80.000 (mayo) | CAIP',
     tablas:[
       {
         titulo:'Producción y Mantenimiento (jornalizado, por hora)',
         subtitulo:'CCT 797/22 — Operarios de planta, jornada legal',
         tipo:'hora',
         cats:[
-          { cat:'Operario (inicio)',     valorHora:null, ok:false, nota:'Feb 2026: $5.643,3/h — mayo: consultar planilla UOYEP/CAIP' },
-          { cat:'Medio Oficial',         valorHora:null, ok:false, nota:'ver planilla oficial UOYEP' },
-          { cat:'Oficial',               valorHora:null, ok:false, nota:'ver planilla oficial UOYEP' },
-          { cat:'Oficial Especializado', valorHora:null, ok:false, nota:'ver planilla oficial UOYEP' },
+          { cat:'Operario',                valorHora:5859.82,  ok:true },
+          { cat:'Auxiliar',                valorHora:6318.52,  ok:true },
+          { cat:'Operador',                valorHora:6799.49,  ok:true },
+          { cat:'Operador Calificado',     valorHora:7103.66,  ok:true },
+          { cat:'Operador Especializado',  valorHora:7400.74,  ok:true },
+          { cat:'Oficial Especializado',   valorHora:8213.79,  ok:true },
         ]
       },
       {
@@ -2125,14 +2131,14 @@ const SINDS_BUILTINS = [
         subtitulo:'Categorías administrativas del CCT 797/22',
         tipo:'mensual',
         cats:[
-          { cat:'Categoría inicial', basico:null, ok:false, nota:'ver planilla oficial UOYEP' },
-          { cat:'Categoría máxima', basico:null, ok:false, nota:'ver planilla oficial UOYEP' },
+          { cat:'Nivel 1 (inicial)', basico:null, ok:false, nota:'consultar planilla oficial UOYEP/CAIP para mayo 2026' },
+          { cat:'Nivel máximo',      basico:null, ok:false, nota:'consultar planilla oficial UOYEP/CAIP para mayo 2026' },
         ]
       }
     ],
     noRemunerativos:[
-      { id:'uoyep_nr_marabr26', mes:'2026-04', label:'NR todas las categorías (mar–ago 2026)',
-        monto:65000, activo:true, nota:'$65.000 fija para todas las categorías. Vigencia mar–ago 2026.' },
+      { id:'uoyep_nr_may26', mes:'2026-05', label:'NR todas las categorías — mayo 2026',
+        monto:80000, activo:true, nota:'$80.000 fija para todas las categorías. Vigencia: mayo 2026 (confirmar cronograma completo mar–ago 2026).' },
     ],
     adicionales:[
       { concepto:'Presentismo',  tipo:'pct', valor:0, base:'básico', rem:true,  nota:'Verificar % vigente en CCT 797/22' },
