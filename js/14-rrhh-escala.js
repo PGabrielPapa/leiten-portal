@@ -1774,8 +1774,8 @@ function getSMVMData(){
 }
 function saveSMVMData(d){ localStorage.setItem(SMVM_USER_SK, JSON.stringify(d)); }
 
-function getSMVMActual(){
-  const hoy=new Date().toISOString().slice(0,7); // YYYY-MM
+function getSMVMActual(fechaRef){
+  const hoy = (fechaRef || new Date().toISOString()).slice(0,7); // acepta YYYY-MM o ISO full
   const rows=[...getSMVMData().cronograma].sort((a,b)=>b.mes.localeCompare(a.mes));
   return rows.find(r=>r.mes<=hoy) || rows[rows.length-1];
 }
@@ -2119,6 +2119,8 @@ function renderSMVM(){
   const actual=getSMVMActual();
   const hoy=new Date().toISOString().slice(0,7);
   const smvmEnLiq=(typeof getLiqParams==='function') ? (getLiqParams().smvmMensual||0) : 0;
+  // Con el fix, la liquidación siempre lee desde getSMVMActual() directamente,
+  // por lo que el valor en liqParams ya no es la fuente de verdad.
   const sincronizado = smvmEnLiq===actual.mensual;
 
   pane.innerHTML=`
@@ -2134,17 +2136,16 @@ function renderSMVM(){
           </div>
           <div style="border-left:1px solid var(--border);padding-left:16px">
             <div style="font-size:11px;color:var(--t3);margin-bottom:4px">En módulo de Liquidaciones</div>
-            <div style="font-size:14px;font-weight:600;font-family:var(--font-mono);color:${sincronizado?'rgb(34,197,94)':'rgb(239,68,68)'}">
-              ${smvmEnLiq>0 ? '$ '+smvmEnLiq.toLocaleString('es-AR') : 'No configurado'}
+            <div style="font-size:13px;font-weight:600;font-family:var(--font-mono);color:rgb(34,197,94)">
+              ✓ Automático
             </div>
-            <div style="font-size:10px;color:${sincronizado?'rgb(34,197,94)':'rgb(239,68,68)'}">
-              ${sincronizado?'✓ Sincronizado':'⚠ Desactualizado'}
+            <div style="font-size:10px;color:var(--t3)">
+              Siempre toma el valor del período liquidado
             </div>
           </div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px">
-        ${!sincronizado?`<button class="btn btn-primary" onclick="sincronizarSMVM()" style="font-size:12px;padding:6px 14px">🔄 Sincronizar con liquidaciones</button>`:''}
         <button class="btn btn-ghost" onclick="abrirModalNuevoPeriodoSMVM()" style="font-size:12px;padding:6px 14px">+ Agregar período</button>
       </div>
     </div>

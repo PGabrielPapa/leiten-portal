@@ -94,7 +94,7 @@ function getDefaultLiqParams(){
     // SMVM (Salario Mínimo Vital y Móvil) para tope embargo Art. 147 LCT.
     // Editable en pestaña Parámetros. Valor a actualizar mensualmente según
     // resoluciones del Consejo del Salario.
-    smvmMensual: 322200,  // valor de referencia (ajustar según resolución vigente)
+    smvmMensual: 363000,  // fallback Mayo 2026 (Res. 9/2025) — la liq. siempre usa getSMVMActual
     // Topes AFIP F.931 — actualizar cada trimestre con la resolución vigente.
     // 0 = sin tope (no recomendado, AFIP rechaza la DDJJ).
     f931TopeJub: 0,
@@ -310,6 +310,19 @@ function buildParamsConPeriodo(baseParams, fechaISO){
 }
 function getLiqParams(){ try{ return {...getDefaultLiqParams(),...JSON.parse(localStorage.getItem(LIQ_PARAMS_KEY)||'{}')}; }catch(e){ return getDefaultLiqParams(); } }
 function saveLiqParams(p){ localStorage.setItem(LIQ_PARAMS_KEY,JSON.stringify(p)); }
+
+// ── SMVM para un período de liquidación ───────────────────────
+// Siempre prioriza el módulo de escalas (getSMVMActual con la fecha del período),
+// que siempre está actualizado. Fallback a params.smvmMensual solo si la función
+// no está disponible (carga parcial del portal).
+function _smvmParaPeriodo(anio, mes, params){
+  if(typeof getSMVMActual === 'function'){
+    const fechaRef = `${anio}-${String(mes).padStart(2,'0')}`;
+    const row = getSMVMActual(fechaRef);
+    if(row && row.mensual > 0) return row.mensual;
+  }
+  return $m(params?.smvmMensual) || 0;
+}
 
 // ─────────────────────────────────────────────────────────────
 // COMPLEMENTO FUNCIÓN — función pública, única fuente de verdad
@@ -1264,7 +1277,7 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
     return [];
   })();
 
-  const smvm = $m(params.smvmMensual) || 0;
+  const smvm = _smvmParaPeriodo(anio, mes, params);
   // Para quincenales: el SMVM se proporciona al período liquidado para que
   // el tope Art. 147 LCT (20% del excedente) tenga sentido sobre el neto
   // quincenal. Sin este ajuste, los netos quincenales nunca superarían el
@@ -2698,7 +2711,14 @@ function _renderEmbargosLista(leg){
   const nov = _novedadesActuales[leg] || {};
   if(!Array.isArray(nov.embargos)) nov.embargos = [];
   const lista = nov.embargos;
-  const smvm = $m(getLiqParams().smvmMensual) || 0;
+  const smvm = (()=>{
+    if(typeof getSMVMActual==='function' && _liqActiva){
+      const ref = `${_liqActiva.anio}-${String(_liqActiva.mes).padStart(2,'0')}`;
+      const row = getSMVMActual(ref);
+      if(row && row.mensual > 0) return row.mensual;
+    }
+    return $m(getLiqParams().smvmMensual) || 0;
+  })();
   const fmtN = n => n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
   const filaEmbargo = (e, idx) => {
