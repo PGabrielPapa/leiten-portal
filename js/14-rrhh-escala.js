@@ -1045,53 +1045,6 @@ async function actualizarBadgesEvalRRHH(){
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ESCALA SALARIAL — 4 PESTAÑAS MAESTRAS
-// ═══════════════════════════════════════════════════════════════
-
-function renderEscalaSalarial(){
-  const cont = document.getElementById('escala-content');
-  if(!cont) return;
-  const tabs = [
-    { id:'interna',  label:'🏢 Escala interna' },
-    { id:'uom',      label:'⚙️ UOM – Rama 17' },
-    { id:'comercio', label:'🛒 Comercio (SEC)' },
-    { id:'smvm',     label:'💰 S.M.V.M.' },
-  ];
-  cont.innerHTML = `
-    <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);flex-wrap:wrap" id="escala-master-tabbar">
-      ${tabs.map((t,i)=>`
-        <button id="escala-mtab-${t.id}" onclick="escalaMasterTab('${t.id}')"
-          style="background:none;border:none;padding:10px 18px;cursor:pointer;font-size:13px;
-                 font-weight:${i===0?'600':'400'};color:${i===0?'var(--t1)':'var(--t3)'};
-                 border-bottom:2px solid ${i===0?'var(--accent2)':'transparent'};margin-bottom:-2px">
-          ${t.label}
-        </button>`).join('')}
-    </div>
-    <div id="escala-pane-master-interna"></div>
-    <div id="escala-pane-master-uom" style="display:none"></div>
-    <div id="escala-pane-master-comercio" style="display:none"></div>
-    <div id="escala-pane-master-smvm" style="display:none"></div>`;
-  _renderEscalaInternaEnPaneMaster();
-}
-
-function escalaMasterTab(which){
-  ['interna','uom','comercio','smvm'].forEach(t=>{
-    const btn  = document.getElementById(`escala-mtab-${t}`);
-    const pane = document.getElementById(`escala-pane-master-${t}`);
-    const on   = (t===which);
-    if(btn){ btn.style.fontWeight=on?'600':'400'; btn.style.color=on?'var(--t1)':'var(--t3)'; btn.style.borderBottom=on?'2px solid var(--accent2)':'2px solid transparent'; }
-    if(pane) pane.style.display=on?'block':'none';
-  });
-  const lazyLoad = { uom: ()=>{ renderEscalaUOM(); }, comercio: ()=>{ renderEscalaComercio(); }, smvm: ()=>{ renderSMVM(); } };
-  const pane = document.getElementById(`escala-pane-master-${which}`);
-  if(lazyLoad[which] && pane && !pane.dataset.loaded){
-    lazyLoad[which]();
-    pane.dataset.loaded = '1';
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
 // SEEDS — UOM RAMA 17
 // ═══════════════════════════════════════════════════════════════
 
@@ -1451,6 +1404,8 @@ function uomTab(which){
     if(b){ b.style.fontWeight=on?'600':'400'; b.style.color=on?'var(--t1)':'var(--t3)'; b.style.borderBottom=on?'2px solid var(--accent2)':'2px solid transparent'; }
     if(p) p.style.display=on?'block':'none';
   });
+  const masterPane=document.getElementById('escala-pane-master-uom');
+  if(masterPane&&masterPane.dataset.loaded) renderLiqSyncCard('uom',masterPane);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1584,6 +1539,8 @@ function comTab(which){
     if(b){ b.style.fontWeight=on?'600':'400'; b.style.color=on?'var(--t1)':'var(--t3)'; b.style.borderBottom=on?'2px solid var(--accent2)':'2px solid transparent'; }
     if(p) p.style.display=on?'block':'none';
   });
+  const masterPane=document.getElementById('escala-pane-master-comercio');
+  if(masterPane&&masterPane.dataset.loaded) renderLiqSyncCard('comercio',masterPane);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1666,8 +1623,14 @@ function renderSMVM(){
 
 function sincronizarSMVM(){
   const actual=getSMVMActual();
+  const anteriorVal=_getLiqDeep('smvmMensual');
   const ok=syncSMVMaLiquidaciones(actual.mensual);
   if(ok){
+    _pushLiqSyncHist({ ts:new Date().toISOString(), sindId:'smvm', sindLabel:'S.M.V.M.',
+      campo:'SMVM mensual', liqPath:'smvmMensual',
+      valorAnterior:anteriorVal, valorNuevo:actual.mensual,
+      operador:(typeof currentUser!=='undefined'&&currentUser?.emp?.leg)||null,
+      operadorNom:(typeof currentUser!=='undefined'&&currentUser?.emp?.nom)||null });
     if(typeof toast==='function') toast(`✓ SMVM sincronizado: $ ${actual.mensual.toLocaleString('es-AR')} → módulo de liquidaciones`,'var(--green)',3500);
     renderSMVM();
     document.getElementById('escala-pane-master-smvm').dataset.loaded='1';
@@ -2189,34 +2152,6 @@ function renderEscalaSalarial(){
   _renderEscalaInternaEnPaneMaster();
 }
 
-function escalaMasterTab(which){
-  // Si es acción Nueva, abrir modal directamente
-  if(which==='__nuevo__'){ abrirModalNuevoSindicato(); return; }
-  // Actualizar styles de todas las tabs
-  document.querySelectorAll('[id^="escala-mtab-"]').forEach(btn=>{
-    const id=btn.id.replace('escala-mtab-','');
-    const on=id===which;
-    btn.style.fontWeight=on?'600':'400';
-    btn.style.color=on?'var(--t1)':id==='__nuevo__'?'var(--accent2)':'var(--t3)';
-    btn.style.borderBottom=on?'2px solid var(--accent2)':'2px solid transparent';
-  });
-  // Ocultar todos los panes, mostrar el seleccionado
-  document.querySelectorAll('[id^="escala-pane-master-"]').forEach(p=>p.style.display='none');
-  const pane=document.getElementById(`escala-pane-master-${which}`);
-  if(pane){ pane.style.display='block'; }
-  // Lazy render
-  if(!pane || pane.dataset.loaded) return;
-  if(which==='uom')     { renderEscalaUOM(); }
-  else if(which==='comercio') { renderEscalaComercio(); }
-  else if(which==='smvm')     { renderSMVM(); }
-  else if(which.startsWith('sind_')){
-    const id=which.slice(5);
-    const sind=getSindById(id);
-    if(sind) renderEscalaSindGenerico(sind, pane);
-  }
-  pane.dataset.loaded='1';
-}
-
 // ── Render genérico de sindicato ───────────────────────────────
 function renderEscalaSindGenerico(sind, paneEl){
   const pane=paneEl||document.getElementById(`escala-pane-master-sind_${sind.id}`);
@@ -2711,147 +2646,6 @@ function _pushLiqSyncHist(entry){
 }
 
 // ── Sincronización ────────────────────────────────────────────
-function syncSindALiq(sindId, param){
-  const escalaVal=param.getEscala();
-  const anteriorVal=_getLiqDeep(param.liqPath);
-  if(escalaVal===null||escalaVal===undefined){
-    if(typeof showAlert==='function') showAlert('No hay valor disponible en la escala para sincronizar.','warning');
-    return false;
-  }
-  const ok=_setLiqDeep(param.liqPath, param.formato==='%' ? parseFloat(escalaVal) : parseInt(escalaVal)||escalaVal);
-  if(!ok){
-    if(typeof showAlert==='function') showAlert('No se pudo acceder al módulo de liquidaciones.','warning');
-    return false;
-  }
-  _pushLiqSyncHist({
-    ts: new Date().toISOString(),
-    sindId, sindLabel: _getSindLabel(sindId),
-    campo: param.campo, liqPath: param.liqPath,
-    valorAnterior: anteriorVal, valorNuevo: escalaVal,
-    operador: (typeof currentUser!=='undefined'&&currentUser?.emp?.leg)||null,
-    operadorNom: (typeof currentUser!=='undefined'&&currentUser?.emp?.nom)||null,
-  });
-  return true;
-}
-
-function syncTodosSindALiq(sindId){
-  const params=SIND_LIQ_PARAMS[sindId];
-  if(!params||!params.length){ if(typeof toast==='function') toast('⚠ Sin parámetros configurados para este sindicato','var(--yellow)'); return; }
-  let count=0;
-  params.forEach(p=>{ if(syncSindALiq(sindId, p)) count++; });
-  if(count>0 && typeof toast==='function') toast(`✓ ${count} parámetro${count===1?'':'s'} sincronizado${count===1?'':'s'} → Liquidaciones`,'var(--green)',3500);
-}
-
-// ── Render de la tarjeta de sincronización ────────────────────
-function renderLiqSyncCard(sindId, paneEl){
-  const existingCard=paneEl.querySelector('.liq-sync-card');
-  if(existingCard) existingCard.remove();
-
-  const params=SIND_LIQ_PARAMS[sindId];
-  if(!params||!typeof getLiqParams==='function') return;
-
-  const fN=n=>(n===null||n===undefined||n==='')?'—':'$ '+Math.round(n).toLocaleString('es-AR');
-  const fV=(n,fmt)=>fmt==='%'?(n===null||n===undefined?'—':n+'%'):(fN(n));
-  const sindHist=getLiqSyncHist().filter(h=>h.sindId===sindId).slice(-8).reverse();
-
-  const rows=params.map(p=>{
-    const escalaVal=p.getEscala();
-    const liqVal=_getLiqDeep(p.liqPath);
-    const sinc=(escalaVal!==null&&escalaVal!==undefined)
-      ? (p.formato==='%' ? Math.abs(parseFloat(escalaVal)-(parseFloat(liqVal)||0))<0.01 : parseInt(escalaVal)===(parseInt(liqVal)||0))
-      : true;
-    return { p, escalaVal, liqVal, sinc };
-  });
-
-  const allSynced=rows.every(r=>r.sinc||(r.escalaVal===0&&!r.liqVal));
-  const hasPending=rows.some(r=>!r.sinc && r.escalaVal>0);
-
-  const card=document.createElement('div');
-  card.className='liq-sync-card';
-  card.innerHTML=`
-    <div class="card" style="padding:0;overflow:hidden;margin-top:18px;border:${hasPending?'1px solid rgba(61,127,255,.4)':'1px solid var(--border)'}">
-      <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:${hasPending?'rgba(61,127,255,.06)':'var(--bg2)'};display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div>
-          <span style="font-size:13px;font-weight:600;color:var(--t1)">🔗 Sincronización con Liquidaciones</span>
-          <div style="font-size:10px;color:var(--t3);margin-top:2px">Los valores de esta pantalla alimentan directamente los parámetros de liquidación de haberes</div>
-        </div>
-        ${hasPending?`<button class="btn btn-primary" onclick="syncTodosSindALiq('${sindId}');setTimeout(()=>{const p=document.getElementById('escala-pane-master-${sindId==='uom'?'uom':sindId==='comercio'?'comercio':sindId==='smvm'?'smvm':'sind_'+sindId}');if(p)renderLiqSyncCard('${sindId}',p);},100)" style="font-size:12px;padding:6px 14px">⇡ Sincronizar todo</button>`:`<span style="font-size:11px;color:rgb(34,197,94)">✓ Todo sincronizado</span>`}
-      </div>
-
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
-            <th style="padding:9px 16px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;min-width:250px">Parámetro</th>
-            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:rgb(59,130,246);text-transform:uppercase">Escala vigente</th>
-            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:rgb(251,191,36);text-transform:uppercase">En liquidaciones</th>
-            <th style="padding:9px 10px;text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Estado</th>
-            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase"></th>
-          </tr></thead>
-          <tbody>
-            ${rows.map((r,i)=>{
-              const escStr=fV(r.escalaVal, r.p.formato);
-              const liqStr=fV(r.liqVal, r.p.formato);
-              const noData=(r.escalaVal===0||r.escalaVal===null);
-              return `
-              <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
-                <td style="padding:10px 16px">
-                  <div style="color:var(--t1);font-weight:500">${r.p.campo}</div>
-                  ${r.p.nota?`<div style="font-size:9px;color:var(--t3);margin-top:2px">⚠ ${r.p.nota}</div>`:''}
-                  <div style="font-size:9px;font-family:var(--font-mono);color:var(--t3);margin-top:1px">${r.p.liqPath}</div>
-                </td>
-                <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:${noData?'var(--t3)':'rgb(59,130,246)'};font-weight:${noData?'400':'600'}">
-                  ${noData?'<span style="font-size:10px;font-style:italic">sin NR activo</span>':escStr}
-                </td>
-                <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:${r.liqVal?'rgb(251,191,36)':'var(--t3)'};font-weight:500">${r.liqVal?liqStr:'—'}</td>
-                <td style="padding:10px 10px;text-align:center">
-                  ${r.sinc||noData
-                    ? `<span style="font-size:10px;color:rgb(34,197,94)">✓</span>`
-                    : `<span style="font-size:10px;font-family:var(--font-mono);padding:2px 7px;border-radius:8px;background:rgba(239,68,68,.1);color:rgb(239,68,68);border:1px solid rgba(239,68,68,.3)">⚠ desfasado</span>`}
-                </td>
-                <td style="padding:10px 12px;text-align:right">
-                  ${(!r.sinc&&!noData)?`<button class="btn btn-ghost" onclick="syncSindALiq('${sindId}',SIND_LIQ_PARAMS['${sindId}'][${i}]);setTimeout(()=>{const p=document.getElementById('escala-pane-master-${sindId==='uom'?'uom':sindId==='comercio'?'comercio':sindId==='smvm'?'smvm':'sind_'+sindId}');if(p)renderLiqSyncCard('${sindId}',p);},100)" style="font-size:11px;padding:4px 10px">Sincronizar</button>`:''}
-                </td>
-              </tr>`;}).join('')}
-          </tbody>
-        </table>
-      </div>
-
-      ${sindHist.length>0?`
-      <div style="border-top:1px solid var(--border)">
-        <div style="padding:10px 16px;background:var(--bg2);display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="_toggleLiqHist('${sindId}')">
-          <span style="font-size:11px;font-weight:600;color:var(--t2)">📜 Historial de sincronizaciones (${sindHist.length} recientes)</span>
-          <span id="liq-hist-arrow-${sindId}" style="font-size:12px;color:var(--t3)">▼</span>
-        </div>
-        <div id="liq-hist-${sindId}" style="display:none">
-          <table style="width:100%;border-collapse:collapse;font-size:11px">
-            <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
-              <th style="padding:7px 16px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Fecha</th>
-              <th style="padding:7px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Campo</th>
-              <th style="padding:7px 10px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Anterior</th>
-              <th style="padding:7px 10px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Nuevo</th>
-              <th style="padding:7px 10px;text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Por</th>
-            </tr></thead>
-            <tbody>
-              ${sindHist.map((h,i)=>{
-                const ts=new Date(h.ts);
-                const fecha=`${ts.getDate().toString().padStart(2,'0')}/${(ts.getMonth()+1).toString().padStart(2,'0')}/${ts.getFullYear()} ${ts.getHours().toString().padStart(2,'0')}:${ts.getMinutes().toString().padStart(2,'0')}`;
-                const fH=v=>v===null||v===undefined?'—':(typeof v==='number'&&v>100?'$ '+Math.round(v).toLocaleString('es-AR'):v);
-                return `<tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
-                  <td style="padding:7px 16px;font-family:var(--font-mono);color:var(--t3)">${fecha}</td>
-                  <td style="padding:7px 14px;color:var(--t2)">${h.campo}</td>
-                  <td style="padding:7px 10px;text-align:right;font-family:var(--font-mono);color:var(--t3)">${fH(h.valorAnterior)}</td>
-                  <td style="padding:7px 10px;text-align:right;font-family:var(--font-mono);color:rgb(34,197,94);font-weight:600">${fH(h.valorNuevo)}</td>
-                  <td style="padding:7px 10px;text-align:center;font-size:10px;color:var(--t3)">${h.operador||'—'}</td>
-                </tr>`;}).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`:''}
-    </div>`;
-
-  paneEl.appendChild(card);
-}
-
 function _toggleLiqHist(sindId){
   const div=document.getElementById(`liq-hist-${sindId}`);
   const arr=document.getElementById(`liq-hist-arrow-${sindId}`);
@@ -2931,30 +2725,7 @@ function escalaMasterTab(which){
       renderLiqSyncCard(sindIdForCard, pane);
     }
   }
-  // Para SMVM inyectar el historial de sync dentro del pane
-  if(which==='smvm'){
-    const smvmPane=document.getElementById('escala-pane-master-smvm');
-    if(smvmPane && !smvmPane.querySelector('.liq-sync-card')){
-      renderLiqSyncCard('smvm', smvmPane);
-    }
-  }
 }
-
-// ── Actualizar tarjeta de sync cuando se navega entre pestañas internas
-// (para UOM y COM, cuya tarjeta no se re-renderiza al cambiar sub-pestañas)
-const _origUOMTab=uomTab;
-uomTab=function(which){
-  _origUOMTab(which);
-  const p=document.getElementById('escala-pane-master-uom');
-  if(p && SIND_LIQ_PARAMS['uom']){ renderLiqSyncCard('uom',p); }
-};
-const _origCOMTab=comTab;
-comTab=function(which){
-  _origCOMTab(which);
-  const p=document.getElementById('escala-pane-master-comercio');
-  if(p && SIND_LIQ_PARAMS['comercio']){ renderLiqSyncCard('comercio',p); }
-};
-
 
 // ═══════════════════════════════════════════════════════════════
 // SYNC COMPLETO — REMUNERATIVOS + NO REMUNERATIVOS
