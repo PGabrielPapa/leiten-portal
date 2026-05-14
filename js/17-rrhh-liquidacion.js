@@ -311,6 +311,29 @@ function buildParamsConPeriodo(baseParams, fechaISO){
 function getLiqParams(){ try{ return {...getDefaultLiqParams(),...JSON.parse(localStorage.getItem(LIQ_PARAMS_KEY)||'{}')}; }catch(e){ return getDefaultLiqParams(); } }
 function saveLiqParams(p){ localStorage.setItem(LIQ_PARAMS_KEY,JSON.stringify(p)); }
 
+// ─────────────────────────────────────────────────────────────
+// COMPLEMENTO FUNCIÓN — función pública, única fuente de verdad
+// Fórmula LEITEN: CF = escala(cat,tramo) − (básico + aCuenta) × (1 + %pres/100)
+// Prioridades:
+//   1. básico > 0 + escala disponible  → calcula dinámicamente
+//   2. básico > 0 + sin escala/tramo   → devuelve emp.complemento guardado
+//   3. básico = 0                      → devuelve 0
+// Disponible globalmente; usada por calcLiquidacion y el módulo ABM.
+// ─────────────────────────────────────────────────────────────
+function calcCFMensual(emp, params){
+  const basico = $m(emp.basico);
+  if(basico <= 0) return 0;
+  const aCuenta = $m(emp.a_cuenta) || 0;
+  if(emp.cat && emp.tramo && typeof getMontoEscala === 'function'){
+    const escala = getMontoEscala(emp.cat, emp.tramo);
+    if(escala && escala > 0){
+      const pctPres = params?.pctPresentismo ?? 5;
+      return Math.max(0, Math.round((escala - (basico + aCuenta)*(1 + pctPres/100))*100)/100);
+    }
+  }
+  return $m(emp.complemento) || 0; // fallback: sin escala → valor guardado
+}
+
 // ═══════════════════════════════════════════════════════════════
 // TOPES DE APORTES — ART. 9 LEY 24.241 (SIPA)
 // Actualización MENSUAL por movilidad IPC (Ley 27.609 mod. Ley 27.743)
@@ -790,30 +813,12 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const diasBaseDescripcion = _esUocra ? 'hábiles' : 'calendario (30)';
   const diasTrab=$m(nov.diasTrabajados ?? diasBase);
   const ausentismo=Math.max(0, diasBase - diasTrab);
-  const _basicoEmp   = $m(emp.basico);
-  const _aCuentaEmp  = $m(emp.a_cuenta) || 0;
+  const _basicoEmp  = $m(emp.basico);
+  const _aCuentaEmp = $m(emp.a_cuenta) || 0;
+  const _cfMensual  = calcCFMensual(emp, params);  // ver función global
 
-  // ── Complemento Función ──────────────────────────────────────
-  // Fórmula LEITEN: CF = escala(cat,tramo) − (básico + aCuenta) × (1 + %pres/100)
-  // Prioridades:
-  //   1. Básico > 0 + escala disponible  → calcula dinámicamente
-  //   2. Básico > 0 + sin escala         → usa emp.complemento guardado (legacy)
-  //   3. Sin básico                      → sin complemento separado
-  let _cfMensual = 0;
-  if(_basicoEmp > 0 && emp.cat && emp.tramo && typeof getMontoEscala === 'function'){
-    const _escalaEmp = getMontoEscala(emp.cat, emp.tramo);
-    if(_escalaEmp && _escalaEmp > 0){
-      const _base = _basicoEmp + _aCuentaEmp;
-      _cfMensual = Math.max(0, Math.round((_escalaEmp - _base*(1 + params.pctPresentismo/100))*100)/100);
-    } else {
-      _cfMensual = $m(emp.complemento) || 0;
-    }
-  } else if(_basicoEmp > 0){
-    _cfMensual = $m(emp.complemento) || 0;
-  }
-
-  // bruto: respeta el valor guardado (retrocompatibilidad). Solo calcula
-  // desde la fórmula cuando el empleado no tiene bruto cargado manualmente.
+  // bruto: respeta el valor guardado (retrocompatibilidad). Solo usa la
+  // fórmula cuando el empleado no tiene bruto cargado manualmente.
   const _brutoGuardado = $m(emp.bruto);
   const bruto = _brutoGuardado > 0
     ? _brutoGuardado
@@ -823,7 +828,6 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
 
   // ─ Sueldo básico + Complemento Función ──────────────────────
   // Invariante: sueldoBasico + mCompFuncion = bruto × proporcion × factor
-  // Esto preserva el total remunerativo sin alterar HE, antigüedad, etc.
   const _tieneCompFuncion = _cfMensual > 0 && _basicoEmp > 0;
   const sueldoBasico = _tieneCompFuncion
     ? (bruto - _cfMensual) * proporcion * _factorPeriodo

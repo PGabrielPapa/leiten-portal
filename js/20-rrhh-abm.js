@@ -1465,23 +1465,21 @@ function gV(id){ const el=document.getElementById(id); return el?el.value.trim()
 
 
 // ── Complemento Función — recálculo en tiempo real en el formulario ABM ──────
-// Fórmula LEITEN: CF = escala(cat,tramo) − (básico + aCuenta) × (1 + %pres/100)
+// _abmComplementoCalculado: lee DOM → arma emp mock → delega en calcCFMensual (global)
 function _abmComplementoCalculado(){
-  const basico   = parseFloat(document.getElementById('abm-e-basico')?.value)  || 0;
-  const aCuenta  = parseFloat(document.getElementById('abm-e-acuenta')?.value) || 0;
+  const basico  = parseFloat(document.getElementById('abm-e-basico')?.value)  || 0;
   if(!basico) return null;
-  const cat   = (document.getElementById('abm-e-cat')?.value   || '').trim().toUpperCase();
-  const tramo = (document.getElementById('abm-e-tramo')?.value || '').trim().toUpperCase();
+  const aCuenta = parseFloat(document.getElementById('abm-e-acuenta')?.value) || 0;
+  const cat     = (document.getElementById('abm-e-cat')?.value   || '').trim().toUpperCase();
+  const tramo   = (document.getElementById('abm-e-tramo')?.value || '').trim().toUpperCase();
   if(!cat && !tramo) return null;
-  const escala = (typeof getMontoEscala === 'function') ? getMontoEscala(cat, tramo) : null;
-  if(!escala || escala <= 0) return null;
-  const liqParams  = (typeof getLiqParams === 'function') ? getLiqParams() : null;
-  const pctPres    = liqParams?.pctPresentismo ?? 5;
-  const base       = basico + aCuenta;
-  const comp       = Math.round((escala - base * (1 + pctPres / 100)) * 100) / 100;
-  return Math.max(0, comp);
+  if(typeof calcCFMensual !== 'function') return null;
+  const params = (typeof getLiqParams === 'function') ? getLiqParams() : null;
+  const cf = calcCFMensual({ basico, a_cuenta: aCuenta, cat, tramo, complemento: 0 }, params);
+  return cf > 0 ? cf : null;
 }
 
+// abmRecalcComplemento: actualiza el display leyendo el resultado de _abmComplementoCalculado
 function abmRecalcComplemento(){
   const el = document.getElementById('abm-e-comp-calc');
   if(!el) return;
@@ -1489,28 +1487,27 @@ function abmRecalcComplemento(){
   const aCuenta = parseFloat(document.getElementById('abm-e-acuenta')?.value) || 0;
   const cat     = (document.getElementById('abm-e-cat')?.value   || '').trim().toUpperCase();
   const tramo   = (document.getElementById('abm-e-tramo')?.value || '').trim().toUpperCase();
-  const fmt = n => '$ ' + Math.round(n).toLocaleString('es-AR');
+  const fmt     = n => '$ ' + Math.round(n).toLocaleString('es-AR');
 
-  if(!basico){ el.textContent = '— (cargá básico)'; el.style.color='var(--t3)'; return; }
-  if(!cat && !tramo){ el.textContent = '— (cargá categoría / tramo)'; el.style.color='var(--t3)'; return; }
+  if(!basico)         { el.textContent = '— (cargá básico)';                    el.style.color='var(--t3)'; return; }
+  if(!cat && !tramo)  { el.textContent = '— (cargá categoría / tramo)';          el.style.color='var(--t3)'; return; }
 
   const escala = (typeof getMontoEscala === 'function') ? getMontoEscala(cat, tramo) : null;
   if(!escala || escala <= 0){
-    el.textContent = `— (sin escala asignada para ${cat}${tramo?' / '+tramo:''})`;
+    el.textContent = `— (sin escala para ${cat}${tramo?' / '+tramo:''})`;
     el.style.color = 'var(--t3)'; return;
   }
 
-  const liqParams = (typeof getLiqParams === 'function') ? getLiqParams() : null;
-  const pctPres   = liqParams?.pctPresentismo ?? 5;
-  const base      = basico + aCuenta;
-  const comp      = Math.round((escala - base * (1 + pctPres / 100)) * 100) / 100;
+  const comp    = _abmComplementoCalculado();
+  const params  = (typeof getLiqParams === 'function') ? getLiqParams() : null;
+  const pctPres = params?.pctPresentismo ?? 5;
 
-  if(comp <= 0){
-    el.innerHTML = `<span style="color:var(--yellow)">⚠ Básico + A Cuenta supera la escala (${fmt(escala)}). Verificar.</span>`;
+  if(!comp || comp <= 0){
+    el.innerHTML   = `<span style="color:var(--yellow)">⚠ Básico + A Cuenta supera la escala (${fmt(escala)}). Verificar.</span>`;
+    el.style.color = 'var(--yellow)';
   } else {
-    const brutoCalc = base + comp;
-    el.innerHTML = `${fmt(comp)}<span style="font-size:10px;color:var(--t3);margin-left:10px">` +
-      `Escala: ${fmt(escala)} · Bruto resultante: ${fmt(brutoCalc)} · Presentismo aplicado: ${pctPres}%</span>`;
+    el.innerHTML   = `${fmt(comp)}<span style="font-size:10px;color:var(--t3);margin-left:10px">` +
+      `Escala: ${fmt(escala)} · Bruto: ${fmt(basico + aCuenta + comp)} · %Pres: ${pctPres}%</span>`;
     el.style.color = 'var(--accent2)';
   }
 }
