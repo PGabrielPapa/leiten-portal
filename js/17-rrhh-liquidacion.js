@@ -794,36 +794,39 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const _aCuentaEmp  = $m(emp.a_cuenta) || 0;
 
   // ── Complemento Función ──────────────────────────────────────
-  // Si el empleado tiene básico y tramo asignados: calcula complemento
-  // dinámicamente desde la fórmula LEITEN.
-  //   CF = escala(cat,tramo) - (básico + aCuenta) × (1 + %pres/100)
-  // Si no: usa el campo emp.complemento guardado (legacy/manual).
+  // Fórmula LEITEN: CF = escala(cat,tramo) − (básico + aCuenta) × (1 + %pres/100)
+  // Prioridades:
+  //   1. Básico > 0 + escala disponible  → calcula dinámicamente
+  //   2. Básico > 0 + sin escala         → usa emp.complemento guardado (legacy)
+  //   3. Sin básico                      → sin complemento separado
   let _cfMensual = 0;
-  let bruto;
   if(_basicoEmp > 0 && emp.cat && emp.tramo && typeof getMontoEscala === 'function'){
     const _escalaEmp = getMontoEscala(emp.cat, emp.tramo);
     if(_escalaEmp && _escalaEmp > 0){
       const _base = _basicoEmp + _aCuentaEmp;
       _cfMensual = Math.max(0, Math.round((_escalaEmp - _base*(1 + params.pctPresentismo/100))*100)/100);
-      bruto = _basicoEmp + _aCuentaEmp + _cfMensual;
     } else {
-      bruto = $m(emp.bruto);    // sin asignación de escala → bruto manual
+      _cfMensual = $m(emp.complemento) || 0;
     }
-  } else {
-    bruto = $m(emp.bruto);
-    // Puede tener complemento guardado manualmente (datos históricos)
-    if(_basicoEmp > 0) _cfMensual = $m(emp.complemento) || 0;
+  } else if(_basicoEmp > 0){
+    _cfMensual = $m(emp.complemento) || 0;
   }
+
+  // bruto: respeta el valor guardado (retrocompatibilidad). Solo calcula
+  // desde la fórmula cuando el empleado no tiene bruto cargado manualmente.
+  const _brutoGuardado = $m(emp.bruto);
+  const bruto = _brutoGuardado > 0
+    ? _brutoGuardado
+    : (_basicoEmp + _aCuentaEmp + _cfMensual) || 0;
+
   const proporcion = diasBase > 0 ? diasTrab/diasBase : 1;
 
-  // ─ Sueldo básico proporcional a días trabajados ─
-  // Si hay complemento función calculado: sueldoBasico = solo la parte base
-  // (básico + a_cuenta). Complemento va como concepto separado mCompFuncion.
-  // Esto garantiza que todos los demás cálculos (HE, antigüedad, etc.) sigan
-  // usando el bruto completo como base.
+  // ─ Sueldo básico + Complemento Función ──────────────────────
+  // Invariante: sueldoBasico + mCompFuncion = bruto × proporcion × factor
+  // Esto preserva el total remunerativo sin alterar HE, antigüedad, etc.
   const _tieneCompFuncion = _cfMensual > 0 && _basicoEmp > 0;
   const sueldoBasico = _tieneCompFuncion
-    ? (_basicoEmp + _aCuentaEmp) * proporcion * _factorPeriodo
+    ? (bruto - _cfMensual) * proporcion * _factorPeriodo
     : bruto * proporcion * _factorPeriodo;
   const mCompFuncion = _tieneCompFuncion
     ? _cfMensual * proporcion * _factorPeriodo
@@ -2293,7 +2296,7 @@ function _renderLiqFinalContenido(leg, emp){
   const _esLey22250 = esRegimenLey22250(emp);
 
   const fEgreso = emp.egreso ? _parseFechaLib(emp.egreso) : null;
-  const mejorRem = $m(lf.mejorRem) || $m(emp.bruto);
+  const mejorRem = $m(lf.mejorRem) || bruto;
 
   // Calcular todos los conceptos posibles
   let calcVac   = { dias:0, monto:0, valorDia:0, diasCorresp:0, diasGozados:0, diasEnAnio:0, anioCalculo:null };
@@ -3712,15 +3715,20 @@ function renderPreviewTabla(items){
     ${items.map(i=>`<tr>
       <td style="${tdS('left',false)}">${i.nom.split(',')[0]}<br><span style="font-size:9px;color:var(--t3)">${i.leg}</span></td>
       <td style="${tdS('left',false)}">${i.empresa}</td>
-      <td style="${tdS('right',false,'var(--t2)')}">${fmtPesos(i.sueldoBasico)}</td>
+      <td style="${tdS('right',false,'var(--t2)')}">${(()=>{
+        const total = i.sueldoBasico + $m(i.mCompFuncion);
+        if(!$m(i.mCompFuncion)) return fmtPesos(i.sueldoBasico);
+        return `<span title="Base: ${fmtPesos(i.sueldoBasico)} · Comp.Func.: ${fmtPesos(i.mCompFuncion)}" style="cursor:help">${fmtPesos(total)}</span>`;
+      })()}</td>
       <td style="${tdS('right',false)}">${i.mHsE50?fmtPesos(i.mHsE50):'-'}</td>
       <td style="${tdS('right',false)}">${i.mHsE100?fmtPesos(i.mHsE100):'-'}</td>
       <td style="${tdS('right',false)}">${i.mAntig?fmtPesos(i.mAntig):'-'}</td>
       <td style="${tdS('right',false)}">${i.mPres?fmtPesos(i.mPres):'-'}</td>
       <td style="${tdS('right',false)}">${(()=>{
-        const total = i.mOtrosH+$m(i.mSac)+$m(i.mVac)+$m(i.mLicEspeciales)+$m(i.mAjuste);
+        const total = i.mOtrosH+$m(i.mSac)+$m(i.mVac)+$m(i.mLicEspeciales)+$m(i.mAjuste)+$m(i.mCompFuncion);
         if(!total) return '-';
         const desgloses = [];
+        if($m(i.mCompFuncion)) desgloses.push(`Comp.Func.: ${fmtPesos(i.mCompFuncion)}`);
         if(i.mOtrosHRem)   desgloses.push(`Plus REM: ${fmtPesos(i.mOtrosHRem)}`);
         if(i.mOtrosHNoRem) desgloses.push(`Plus NO REM: ${fmtPesos(i.mOtrosHNoRem)}`);
         if($m(i.mSac))     desgloses.push(`SAC: ${fmtPesos(i.mSac)}`);
@@ -4921,7 +4929,7 @@ async function imprimirTodosRecibos(){
 // ── Exportar Excel (planilla liquidación) ──────────────────────────
 async function exportarExcelLiquidacion(){
   const liq=_liqActiva; if(!liq?.items?.length){ toast('⚠ Calculá primero la liquidación','var(--yellow)'); return; }
-  const cols=['Legajo','Apellido y Nombre','CUIL','Empresa','Área','Días Trab.','Básico',
+  const cols=['Legajo','Apellido y Nombre','CUIL','Empresa','Área','Días Trab.','Sueldo Base','Comp. Función',
     'HE 50%','HE 100%','Antigüedad','Presentismo','SAC','Vacaciones','Lic. Especiales','Ajuste','Otros Haberes Man.',
     'Subtotal Remun.','HE Exentas','Bono Exento','Indemnizaciones','Otros Exentos','TOTAL HABERES',
     'Jubilación','Obra Social','ANSSAL','PAMI emp.','Sindicato','Ganancias','Anticipos','Embargo judicial','Otros Desc.',
@@ -4929,7 +4937,7 @@ async function exportarExcelLiquidacion(){
   const esc=v=>{ const s=String(v??''); return s.includes(';')||s.includes('"')?`"${s.replace(/"/g,'""')}"`:`${s}`; };
   const rows=liq.items.map(i=>[
     i.leg,i.nom,i.cuil||'',i.empresa,i.lugar||'',i.diasTrab,
-    i.sueldoBasico.toFixed(2),i.mHsE50.toFixed(2),i.mHsE100.toFixed(2),
+    i.sueldoBasico.toFixed(2),$m(i.mCompFuncion).toFixed(2),i.mHsE50.toFixed(2),i.mHsE100.toFixed(2),
     i.mAntig.toFixed(2),i.mPres.toFixed(2),$m(i.mSac).toFixed(2),$m(i.mVac).toFixed(2),
     $m(i.mLicEspeciales).toFixed(2),$m(i.mAjuste).toFixed(2),$m(i.mOtrosH).toFixed(2),
     $m(i.totalHaberesRem || i.totalHaberes).toFixed(2),
