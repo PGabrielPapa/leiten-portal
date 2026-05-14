@@ -324,6 +324,21 @@ function _smvmParaPeriodo(anio, mes, params){
   return $m(params?.smvmMensual) || 0;
 }
 
+// ── NR de paritaria para el código de sindicato del empleado ─
+// Siempre prioriza el módulo de escalas (NR activo del sindicato).
+// Mapeo cod_sindicato → sindId del módulo de escalas.
+// Fallback a liqParams.asignacionNoRemPorSindicato si el módulo no cargó.
+const _COD_SIND_MAP = { SEC:'comercio', UOM:'uom', PLASTICO:'uoyep', ASIMRA:'asimra', UOCRA:'uocra', UECARA:'uecara' };
+function _nrParaCodSindicato(codSind, params){
+  if(typeof _getNRActivoSind === 'function'){
+    const sindId = _COD_SIND_MAP[String(codSind||'').toUpperCase()];
+    if(sindId) return _getNRActivoSind(sindId);
+    return 0; // FC u otros sin NR de paritaria
+  }
+  // Fallback: leer desde liqParams guardado
+  return $m((params?.asignacionNoRemPorSindicato||{})[codSind]) || 0;
+}
+
 // ─────────────────────────────────────────────────────────────
 // COMPLEMENTO FUNCIÓN — función pública, única fuente de verdad
 // Fórmula LEITEN: CF = escala(cat,tramo) − (básico + aCuenta) × (1 + %pres/100)
@@ -1038,15 +1053,12 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const mOtrosExentos       = $m(nov.otrosExentos);
 
   // ─── Asignación NO REMUNERATIVA por paritaria (CCT del empleado) ───────
-  // Monto pactado en acuerdo colectivo, definido por sindicato en params.
-  // Se prorratea por días trabajados Y al 50% en quincenales (igual que
-  // el sueldo básico). Empleados Fuera de Convenio usan la clave 'FC'.
-  // No paga aportes ni genera contribuciones patronales (es exento)
-  // EXCEPTO para SEC, que tiene reglas especiales (ver más abajo).
+  // Siempre se lee desde el módulo de escalas (NR activo del sindicato),
+  // sin necesidad de sincronización manual. Fallback a liqParams si el
+  // módulo de escalas no está disponible.
   // Cita legal: Art. 103 bis LCT — acuerdos paritarios.
   const _claveSindParitaria = emp.cod_sindicato || 'FC';
-  const _tablaParitaria = (params.asignacionNoRemPorSindicato || {});
-  const _montoParitariaPlena = $m(_tablaParitaria[_claveSindParitaria]);
+  const _montoParitariaPlena = _nrParaCodSindicato(_claveSindParitaria, params);
   const mAsigNoRem = _montoParitariaPlena * proporcion * _factorPeriodo;
 
   // ─── REGLAS ESPECIALES SEC (Empleados de Comercio) ─────────────────────

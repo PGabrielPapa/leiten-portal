@@ -3447,7 +3447,9 @@ function renderLiqSyncCard(sindId, paneEl){
     const noData=!r.escalaVal||r.escalaVal===0;
     return {...r, liqVal, sinc, noData, idx};
   });
-  const pendientes=enriched.filter(r=>!r.sinc&&!r.noData);
+  // Las filas NR ya son automáticas en la liquidación (via _nrParaCodSindicato).
+  // Solo se cuentan como "pendientes" las filas remunerativas (escalasParitaria).
+  const pendientes=enriched.filter(r=>!r.sinc&&!r.noData&&r.tipo!=='NR'&&r.tipo!=='REF');
   const hasPending=pendientes.length>0;
 
   // Agrupar por sección
@@ -3503,13 +3505,14 @@ function renderLiqSyncCard(sindId, paneEl){
                   ${r.liqVal!==null&&r.liqVal!==undefined&&r.liqVal!==0?fV(r.liqVal,r.fmt):'—'}
                 </td>
                 <td style="padding:9px 10px;text-align:center">
-                  ${r.noData?'<span style="font-size:10px;color:var(--t3)">—</span>'
+                  ${r.tipo==='NR'?'<span style="font-size:9px;padding:2px 7px;border-radius:8px;background:rgba(34,197,94,.1);color:rgb(34,197,94);border:1px solid rgba(34,197,94,.3);white-space:nowrap">⚡ Auto</span>'
+                  :r.noData?'<span style="font-size:10px;color:var(--t3)">—</span>'
                   :r.sinc?'<span style="font-size:11px;color:rgb(34,197,94)">✓</span>'
                   :'<span style="font-size:10px;font-family:var(--font-mono);padding:2px 6px;border-radius:6px;background:rgba(239,68,68,.1);color:rgb(239,68,68);border:1px solid rgba(239,68,68,.3)">⚠</span>'}
                 </td>
                 <td style="padding:9px 12px;font-size:9px;font-family:var(--font-mono);color:var(--t3)">${r.liqPath}</td>
                 <td style="padding:9px 10px;text-align:right">
-                  ${(!r.sinc&&!r.noData)?`<button class="btn btn-ghost" onclick="_syncOneRow('${sindId}',${r.idx},'${panelId}')" style="font-size:10px;padding:3px 9px">Sync</button>`:''}
+                  ${(r.tipo!=='NR'&&!r.sinc&&!r.noData)?`<button class="btn btn-ghost" onclick="_syncOneRow('${sindId}',${r.idx},'${panelId}')" style="font-size:10px;padding:3px 9px">Sync</button>`:''}
                 </td>
               </tr>`).join('')}
             </tbody>
