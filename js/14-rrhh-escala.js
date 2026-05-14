@@ -156,8 +156,8 @@ function _fechaBonita(isoDate){
 // ═══════════════════════════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════════════════════════
-function renderEscalaSalarial(){
-  const cont = document.getElementById('escala-content');
+function _renderEscalaInternaEnPaneMaster(){
+  const cont = document.getElementById('escala-pane-master-interna');
   if(!cont) return;
   const fN = n => (n===null||n===undefined||isNaN(n)) ? '—' : '$ '+Math.round(n).toLocaleString('es-AR');
   const pct = p => (p*100).toFixed(1).replace('.',',')+'%';
@@ -1042,6 +1042,968 @@ async function actualizarBadgesEvalRRHH(){
       pendBadge.style.display = 'inline-block';
       pendBadge.textContent = pendRRHH;
     } else pendBadge.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ESCALA SALARIAL — 4 PESTAÑAS MAESTRAS
+// ═══════════════════════════════════════════════════════════════
+
+function renderEscalaSalarial(){
+  const cont = document.getElementById('escala-content');
+  if(!cont) return;
+  const tabs = [
+    { id:'interna',  label:'🏢 Escala interna' },
+    { id:'uom',      label:'⚙️ UOM – Rama 17' },
+    { id:'comercio', label:'🛒 Comercio (SEC)' },
+    { id:'smvm',     label:'💰 S.M.V.M.' },
+  ];
+  cont.innerHTML = `
+    <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);flex-wrap:wrap" id="escala-master-tabbar">
+      ${tabs.map((t,i)=>`
+        <button id="escala-mtab-${t.id}" onclick="escalaMasterTab('${t.id}')"
+          style="background:none;border:none;padding:10px 18px;cursor:pointer;font-size:13px;
+                 font-weight:${i===0?'600':'400'};color:${i===0?'var(--t1)':'var(--t3)'};
+                 border-bottom:2px solid ${i===0?'var(--accent2)':'transparent'};margin-bottom:-2px">
+          ${t.label}
+        </button>`).join('')}
+    </div>
+    <div id="escala-pane-master-interna"></div>
+    <div id="escala-pane-master-uom" style="display:none"></div>
+    <div id="escala-pane-master-comercio" style="display:none"></div>
+    <div id="escala-pane-master-smvm" style="display:none"></div>`;
+  _renderEscalaInternaEnPaneMaster();
+}
+
+function escalaMasterTab(which){
+  ['interna','uom','comercio','smvm'].forEach(t=>{
+    const btn  = document.getElementById(`escala-mtab-${t}`);
+    const pane = document.getElementById(`escala-pane-master-${t}`);
+    const on   = (t===which);
+    if(btn){ btn.style.fontWeight=on?'600':'400'; btn.style.color=on?'var(--t1)':'var(--t3)'; btn.style.borderBottom=on?'2px solid var(--accent2)':'2px solid transparent'; }
+    if(pane) pane.style.display=on?'block':'none';
+  });
+  const lazyLoad = { uom: ()=>{ renderEscalaUOM(); }, comercio: ()=>{ renderEscalaComercio(); }, smvm: ()=>{ renderSMVM(); } };
+  const pane = document.getElementById(`escala-pane-master-${which}`);
+  if(lazyLoad[which] && pane && !pane.dataset.loaded){
+    lazyLoad[which]();
+    pane.dataset.loaded = '1';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SEEDS — UOM RAMA 17
+// ═══════════════════════════════════════════════════════════════
+
+const UOM_R17_SEED = {
+  id: 'uom_r17_may2026',
+  vigencia: '2026-05-01',
+  mesLabel: 'Mayo 2026',
+  origen: 'seed',
+  cct: 'CCT 260/75 – Rama 17 (Metalmecánica · Ascensores · Fundición · Herrería · Pulvimetalurgia)',
+  acuerdo: 'Disp. 207/2026 + base abr 2026 | Cámaras: ADIMRA, AFARTE, CAIAMA, FEDEHOGAR, AFAC, CAMIMA',
+  imgr: 1036390,
+  jornalizado: [
+    { cat:'ING',    label:'Ingresante',                       valorHora: 4313.43 },
+    { cat:'OPCA',   label:'Operario Calificado',              valorHora: 4672.74 },
+    { cat:'MEOF',   label:'Medio Oficial',                    valorHora: 5036.08 },
+    { cat:'OPESP',  label:'Operario Especializado',           valorHora: 5387.45 },
+    { cat:'OPESPM', label:'Operario Especializado Múltiple',  valorHora: 5695.63 },
+    { cat:'OF',     label:'Oficial',                          valorHora: 5958.84 },
+    { cat:'OFM',    label:'Oficial Múltiple / Sup. CNC',      valorHora: 6418.60 },
+    { cat:'OFMS',   label:'Oficial Múltiple Superior CNC',    valorHora: 6868.42 },
+  ],
+  mensualizado: [
+    { grupo:'A', label:'Administrativos', cats:[
+      { cat:'Cat. 1°', basico:833257.48,  ok:true },
+      { cat:'Cat. 2°', basico:null,       ok:false },
+      { cat:'Cat. 3°', basico:null,       ok:false },
+      { cat:'Cat. 4°', basico:1166170.85, ok:true },
+    ]},
+    { grupo:'B', label:'Técnicos', cats:[
+      { cat:'Cat. 1°', basico:833257.48,  ok:true },
+      { cat:'Cat. 2°', basico:null,       ok:false },
+      { cat:'Cat. 3°', basico:null,       ok:false },
+      { cat:'Cat. 4°', basico:null,       ok:false },
+      { cat:'Cat. 5°', basico:null,       ok:false },
+      { cat:'Cat. 6°', basico:1276880.99, ok:true },
+    ]},
+    { grupo:'C', label:'Auxiliares', cats:[
+      { cat:'Cat. 1°', basico:801577.24, ok:true },
+      { cat:'Cat. 2°', basico:null,      ok:false },
+      { cat:'Cat. 3°', basico:992754.70, ok:true },
+    ]},
+  ],
+  adicionales: [
+    { art:'Art. 53/54', concepto:'Título técnico o secundario', monto:22836.06,  per:'mensual',    rem:true  },
+    { art:'Art. 55',    concepto:'Idiomas',                     monto:12909.84,  per:'mensual',    rem:true  },
+    { art:'Art. 57',    concepto:'Subsidio padres incapacitados',monto:57089.72, per:'mensual',    rem:true  },
+    { art:'Art. 58',    concepto:'Fallecimiento de familiar',   monto:142723.51, per:'único',      rem:false },
+    { art:'Art. 63',    concepto:'Llamada fuera de horario',    monto:3348.30,   per:'por evento', rem:true  },
+    { art:'Art. 91',    concepto:'Viáticos viajante interior',  monto:37641.22,  per:'por viaje',  rem:false },
+  ],
+  noRemunerativos: [
+    { id:'uom_nr_oct25', mes:'2025-10', label:'Octubre 2025',   monto:35000, remPct:null, activo:false },
+    { id:'uom_nr_nov25', mes:'2025-11', label:'Noviembre 2025', monto:15000, remPct:4.2,  activo:false, nota:'+ 4,2% rem. sobre básicos' },
+    { id:'uom_nr_dic25', mes:'2025-12', label:'Diciembre 2025', monto:35000, remPct:null, activo:false },
+    { id:'uom_nr_ene26', mes:'2026-01', label:'Enero 2026',     monto:15000, remPct:4.2,  activo:false, nota:'+ 4,2% rem. sobre básicos' },
+    { id:'uom_nr_feb26', mes:'2026-02', label:'Febrero 2026',   monto:25000, remPct:null, activo:false },
+    { id:'uom_nr_mar26', mes:'2026-03', label:'Marzo 2026',     monto:35000, remPct:null, activo:false },
+  ],
+  antiguedad: { pct:1, base:'básico', nota:'1% por año, acumulativo' },
+  presentismo: null,
+};
+
+const UOM_R17_SK = 'lsg_escala_uom_versiones';
+function _getUOMVersionesUser(){ try{ return JSON.parse(localStorage.getItem(UOM_R17_SK)||'[]'); }catch(e){ return []; } }
+function _setUOMVersionesUser(a){ localStorage.setItem(UOM_R17_SK, JSON.stringify(a)); }
+function getUOMVersiones(){ return [UOM_R17_SEED, ..._getUOMVersionesUser()].sort((a,b)=>a.vigencia.localeCompare(b.vigencia)); }
+function saveUOMVersion(v){ const u=_getUOMVersionesUser(); u.push(v); _setUOMVersionesUser(u); }
+function eliminarUOMVersion(id){ if(id===UOM_R17_SEED.id) return false; _setUOMVersionesUser(_getUOMVersionesUser().filter(v=>v.id!==id)); return true; }
+function getUOMActivo(fechaRef){
+  const hoy = fechaRef||new Date().toISOString().slice(0,10);
+  const ap = getUOMVersiones().filter(v=>v.vigencia<=hoy);
+  return ap.length ? ap[ap.length-1] : getUOMVersiones()[0];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SEEDS — COMERCIO (CCT 130/75)
+// ═══════════════════════════════════════════════════════════════
+
+const COM_SEED = {
+  id: 'com_may2026',
+  vigencia: '2026-05-01',
+  mesLabel: 'Mayo 2026',
+  origen: 'seed',
+  cct: 'CCT 130/75 – Empleados de Comercio (FAECYS / SEC)',
+  acuerdo: 'Acuerdo abr–jun 2026: +5% escalonado (2% abr + 1,5% may + 1,5% jun) + bono $120.000 · CAC, CAME, UDECA',
+  categorias: [
+    { grupo:'Maestranza', cats:[
+      { cat:'Cat. A', basico:1196262, ok:true },
+      { cat:'Cat. B', basico:1203498, ok:true },
+    ]},
+    { grupo:'Administrativos', cats:[
+      { cat:'Cat. 1°', basico:1210613, ok:true  },
+      { cat:'Cat. 2°', basico:null,    ok:false },
+      { cat:'Cat. 3°', basico:null,    ok:false },
+      { cat:'Cat. 4°', basico:null,    ok:false },
+      { cat:'Cat. 5°', basico:1261221, ok:true  },
+    ]},
+    { grupo:'Cajeros', cats:[
+      { cat:'Cat. 1°', basico:1214566, ok:true  },
+      { cat:'Cat. 2°', basico:null,    ok:false },
+      { cat:'Cat. 3°', basico:1227579, ok:true  },
+    ]},
+    { grupo:'Personal Auxiliar', cats:[
+      { cat:'Cat. 1°', basico:1214566, ok:true  },
+      { cat:'Cat. 2°', basico:null,    ok:false },
+      { cat:'Cat. 3°', basico:null,    ok:false },
+      { cat:'Cat. 4°', basico:1246304, ok:true  },
+    ]},
+    { grupo:'Vendedores', cats:[
+      { cat:'Cat. 1°', basico:1214566, ok:true  },
+      { cat:'Cat. 2°', basico:null,    ok:false },
+      { cat:'Cat. 3°', basico:null,    ok:false },
+      { cat:'Cat. 4°', basico:null,    ok:false },
+      { cat:'Cat. 5°', basico:1262890, ok:true  },
+    ]},
+  ],
+  noRemunerativos: [
+    { id:'com_nr_bono26', mes:'2026-04', label:'Bono extraordinario abr–jun 2026', monto:120000, activo:true,
+      nota:'Incl. los $100.000 previos. Se abona abr/may/jun. En jul 2026 se incorporan $20.000 al básico.' },
+  ],
+  adicionales: [
+    { art:'Art. 40', concepto:'Presentismo', tipo:'pct', pct:8.33, base:'básico + NR', rem:true,
+      nota:'8,33% sobre básico + todos los rubros remunerativos y NR del acuerdo vigente' },
+    { art:'Art. 24', concepto:'Antigüedad',  tipo:'pct', pct:1.2,  base:'básico', rem:true,
+      nota:'1,20% por año de antigüedad, progresivo y acumulativo' },
+  ],
+};
+
+const COM_SK = 'lsg_escala_com_versiones';
+function _getCOMVersionesUser(){ try{ return JSON.parse(localStorage.getItem(COM_SK)||'[]'); }catch(e){ return []; } }
+function _setCOMVersionesUser(a){ localStorage.setItem(COM_SK, JSON.stringify(a)); }
+function getCOMVersiones(){ return [COM_SEED, ..._getCOMVersionesUser()].sort((a,b)=>a.vigencia.localeCompare(b.vigencia)); }
+function saveCOMVersion(v){ const u=_getCOMVersionesUser(); u.push(v); _setCOMVersionesUser(u); }
+function eliminarCOMVersion(id){ if(id===COM_SEED.id) return false; _setCOMVersionesUser(_getCOMVersionesUser().filter(v=>v.id!==id)); return true; }
+function getCOMActivo(fechaRef){
+  const hoy=fechaRef||new Date().toISOString().slice(0,10);
+  const ap=getCOMVersiones().filter(v=>v.vigencia<=hoy);
+  return ap.length ? ap[ap.length-1] : getCOMVersiones()[0];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SEEDS — S.M.V.M.
+// ═══════════════════════════════════════════════════════════════
+
+const SMVM_SEED = {
+  norma: 'Resolución 9/2025 del Consejo Nacional del Empleo, la Productividad y el SMVM',
+  cronograma: [
+    { mes:'2025-11', label:'Nov 2025', mensual:328400, horario:1642 },
+    { mes:'2025-12', label:'Dic 2025', mensual:334800, horario:1674 },
+    { mes:'2026-01', label:'Ene 2026', mensual:341000, horario:1705 },
+    { mes:'2026-02', label:'Feb 2026', mensual:346800, horario:1734 },
+    { mes:'2026-03', label:'Mar 2026', mensual:352400, horario:1762 },
+    { mes:'2026-04', label:'Abr 2026', mensual:357800, horario:1789 },
+    { mes:'2026-05', label:'May 2026', mensual:363000, horario:1815 },
+    { mes:'2026-06', label:'Jun 2026', mensual:367800, horario:1839 },
+    { mes:'2026-07', label:'Jul 2026', mensual:372400, horario:1862 },
+    { mes:'2026-08', label:'Ago 2026', mensual:376600, horario:1883 },
+  ],
+};
+
+const SMVM_USER_SK = 'lsg_smvm_user';
+function getSMVMData(){
+  try{ const u=JSON.parse(localStorage.getItem(SMVM_USER_SK)||'null'); return u||SMVM_SEED; }catch(e){ return SMVM_SEED; }
+}
+function saveSMVMData(d){ localStorage.setItem(SMVM_USER_SK, JSON.stringify(d)); }
+
+function getSMVMActual(){
+  const hoy=new Date().toISOString().slice(0,7); // YYYY-MM
+  const rows=[...getSMVMData().cronograma].sort((a,b)=>b.mes.localeCompare(a.mes));
+  return rows.find(r=>r.mes<=hoy) || rows[rows.length-1];
+}
+
+function syncSMVMaLiquidaciones(mensual){
+  if(typeof getLiqParams!=='function'||typeof saveLiqParams!=='function') return false;
+  const p=getLiqParams();
+  p.smvmMensual=mensual;
+  saveLiqParams(p);
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — UOM RAMA 17
+// ═══════════════════════════════════════════════════════════════
+
+function renderEscalaUOM(){
+  const pane=document.getElementById('escala-pane-master-uom');
+  if(!pane) return;
+  const fN=n=>(n===null||n===undefined||isNaN(n))
+    ? '<span style="color:var(--t3);font-size:10px">— ver planilla</span>'
+    : '$ '+Math.round(n).toLocaleString('es-AR');
+  const fH=n=>'$ '+n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const act=getUOMActivo();
+  const vers=getUOMVersiones();
+
+  let html=`
+    <div class="card" style="padding:16px 20px;margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:3px">⚙️ UOM – ${act.cct}</div>
+        <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono);margin-bottom:2px">Vigencia activa: <b style="color:var(--t2)">${act.mesLabel}</b> (${_fechaBonita(act.vigencia)}) · ${vers.length} versión${vers.length===1?'':'es'}</div>
+        <div style="font-size:10px;color:var(--t3)">${act.acuerdo}</div>
+      </div>
+      <button class="btn btn-primary" onclick="abrirModalActualizarSindicato('uom')" style="font-size:12px;padding:6px 14px;white-space:nowrap">⇡ Cargar paritaria</button>
+    </div>
+
+    <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+      <button id="uom-tab-jor" onclick="uomTab('jor')" style="background:none;border:none;padding:9px 16px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t1);border-bottom:2px solid var(--accent2);margin-bottom:-2px">📋 Jornalizado</button>
+      <button id="uom-tab-men" onclick="uomTab('men')" style="background:none;border:none;padding:9px 16px;cursor:pointer;font-size:12px;font-weight:400;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px">📁 Mensualizado</button>
+      <button id="uom-tab-adic" onclick="uomTab('adic')" style="background:none;border:none;padding:9px 16px;cursor:pointer;font-size:12px;font-weight:400;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px">➕ Adicionales</button>
+      <button id="uom-tab-nr" onclick="uomTab('nr')" style="background:none;border:none;padding:9px 16px;cursor:pointer;font-size:12px;font-weight:400;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px">📦 No Remunerativos</button>
+      <button id="uom-tab-hist" onclick="uomTab('hist')" style="background:none;border:none;padding:9px 16px;cursor:pointer;font-size:12px;font-weight:400;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px">📜 Historial (${vers.length})</button>
+    </div>
+
+    <div id="uom-pane-jor">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;gap:10px">
+          <span style="font-size:12px;font-weight:600;color:var(--t1)">Personal Jornalizado</span>
+          <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">CCT 260/75 · valor por hora · jornal = valor × 8hs</span>
+        </div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;font-weight:500;min-width:280px">Categoría</th>
+            <th style="padding:10px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:rgb(59,130,246);text-transform:uppercase">Valor hora</th>
+            <th style="padding:10px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:rgb(34,197,94);text-transform:uppercase">Jornal (×8hs)</th>
+            <th style="padding:10px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:rgb(251,191,36);text-transform:uppercase">Mensual (×200hs)</th>
+          </tr></thead>
+          <tbody>
+            ${act.jornalizado.map((c,i)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+              <td style="padding:11px 14px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:9px;font-family:var(--font-mono);padding:1px 6px;border-radius:8px;background:var(--bg2);color:var(--t3);border:1px solid var(--border)">${c.cat}</span>
+                  <span style="color:var(--t1);font-weight:500">${c.label}</span>
+                </div>
+              </td>
+              <td style="padding:11px 12px;text-align:right;font-family:var(--font-mono);color:rgb(59,130,246);font-weight:600">${fH(c.valorHora)}</td>
+              <td style="padding:11px 12px;text-align:right;font-family:var(--font-mono);color:rgb(34,197,94)">${fH(c.valorHora*8)}</td>
+              <td style="padding:11px 12px;text-align:right;font-family:var(--font-mono);color:rgb(251,191,36)">$ ${Math.round(c.valorHora*200).toLocaleString('es-AR')}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table></div>
+        <div style="padding:10px 16px;border-top:1px solid var(--border);background:var(--bg2);font-size:11px;color:var(--t3);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span>IMGR (piso garantizado, incl. NR, excl. HE): <b style="color:var(--t2);font-family:var(--font-mono)">$ ${act.imgr.toLocaleString('es-AR')}</b></span>
+          <span>Antigüedad: <b style="color:var(--t2)">${act.antiguedad?.nota||'1% anual/básico'}</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="uom-pane-men" style="display:none">
+      ${act.mensualizado.map(g=>`
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2)">
+          <span style="font-size:12px;font-weight:600;color:var(--t1)">Grupo ${g.grupo} — ${g.label}</span>
+          <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-left:10px">sueldo básico mensual</span>
+        </div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Categoría</th>
+            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Básico mensual</th>
+            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Valor hora equiv.</th>
+          </tr></thead>
+          <tbody>
+            ${g.cats.map((c,i)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+              <td style="padding:10px 14px;color:var(--t1)">${c.cat}</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:${c.ok?'var(--t1)':'var(--t3)'};font-weight:${c.ok?'500':'400'}">${c.ok&&c.basico ? '$ '+Math.round(c.basico).toLocaleString('es-AR') : '<span style="font-size:10px;font-style:italic">ver planilla oficial</span>'}</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:var(--t3);font-size:11px">${c.ok&&c.basico ? '$ '+(c.basico/200).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table></div>
+      </div>`).join('')}
+      <div style="font-size:11px;color:var(--t3);padding:6px 2px">⚠ Las categorías intermedias sin valor se completan desde la planilla oficial de ADIMRA/UOM. Podés actualizarlas usando "Cargar paritaria".</div>
+    </div>
+
+    <div id="uom-pane-adic" style="display:none">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2)">
+          <span style="font-size:12px;font-weight:600;color:var(--t1)">Adicionales del CCT 260/75</span>
+          <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-left:10px">vigentes · mayo 2026</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Artículo</th>
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;min-width:220px">Concepto</th>
+            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Monto vigente</th>
+            <th style="padding:9px 10px;text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Periodicidad</th>
+            <th style="padding:9px 10px;text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Tipo</th>
+          </tr></thead>
+          <tbody>
+            ${act.adicionales.map((a,i)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+              <td style="padding:10px 14px;font-size:10px;font-family:var(--font-mono);color:var(--t3)">${a.art}</td>
+              <td style="padding:10px 14px;color:var(--t1);font-weight:500">${a.concepto}</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:var(--t1);font-weight:600">$ ${a.monto.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+              <td style="padding:10px 10px;text-align:center;font-size:11px;color:var(--t3)">${a.per}</td>
+              <td style="padding:10px 10px;text-align:center">
+                <span style="font-size:9px;padding:2px 8px;border-radius:10px;${a.rem?'background:rgba(34,197,94,.1);color:rgb(34,197,94);border:1px solid rgba(34,197,94,.3)':'background:rgba(251,191,36,.1);color:rgb(251,191,36);border:1px solid rgba(251,191,36,.3)'}">
+                  ${a.rem?'REM':'NR'}
+                </span>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="uom-pane-nr" style="display:none">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div>
+            <span style="font-size:12px;font-weight:600;color:var(--t1)">Conceptos No Remunerativos (NR)</span>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">Cronograma del acuerdo oct 2025 – abr 2026 · No inciden en aportes previsionales (sí en sindicales)</div>
+          </div>
+          <button class="btn btn-ghost" onclick="abrirModalActualizarSindicato('uom','nr')" style="font-size:11px;padding:5px 12px">+ Agregar NR</button>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Período</th>
+            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Suma NR</th>
+            <th style="padding:9px 12px;text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">% Rem. adjunto</th>
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Nota</th>
+          </tr></thead>
+          <tbody>
+            ${act.noRemunerativos.map((r,i)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+              <td style="padding:10px 14px">
+                <span style="color:var(--t1);font-weight:500">${r.label}</span>
+                ${r.activo?'<span style="font-size:9px;font-family:var(--font-mono);padding:1px 6px;border-radius:8px;background:rgba(34,197,94,.1);color:rgb(34,197,94);border:1px solid rgba(34,197,94,.3);margin-left:6px">VIGENTE</span>':''}
+              </td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:rgb(251,191,36);font-weight:600">$ ${r.monto.toLocaleString('es-AR')}</td>
+              <td style="padding:10px 12px;text-align:center;font-family:var(--font-mono);color:${r.remPct?'rgb(34,197,94)':'var(--t3)'}">${r.remPct?'+'+r.remPct+'%':'—'}</td>
+              <td style="padding:10px 14px;font-size:11px;color:var(--t3)">${r.nota||'—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:var(--t3);padding:4px 2px">
+        💡 Para sincronizar el NR vigente con la liquidación: actualizá el campo <b>Asignaciones NR → UOM</b> en el módulo de Parámetros de Liquidación.
+      </div>
+    </div>
+
+    <div id="uom-pane-hist" style="display:none">
+      ${_renderHistorialSindicato(vers, 'uom')}
+    </div>`;
+
+  pane.innerHTML = html;
+}
+
+function uomTab(which){
+  ['jor','men','adic','nr','hist'].forEach(t=>{
+    const b=document.getElementById(`uom-tab-${t}`);
+    const p=document.getElementById(`uom-pane-${t}`);
+    const on=t===which;
+    if(b){ b.style.fontWeight=on?'600':'400'; b.style.color=on?'var(--t1)':'var(--t3)'; b.style.borderBottom=on?'2px solid var(--accent2)':'2px solid transparent'; }
+    if(p) p.style.display=on?'block':'none';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — COMERCIO (CCT 130/75)
+// ═══════════════════════════════════════════════════════════════
+
+function renderEscalaComercio(){
+  const pane=document.getElementById('escala-pane-master-comercio');
+  if(!pane) return;
+  const act=getCOMActivo();
+  const vers=getCOMVersiones();
+
+  let html=`
+    <div class="card" style="padding:16px 20px;margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:3px">🛒 ${act.cct}</div>
+        <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono);margin-bottom:2px">Vigencia activa: <b style="color:var(--t2)">${act.mesLabel}</b> (${_fechaBonita(act.vigencia)}) · ${vers.length} versión${vers.length===1?'':'es'}</div>
+        <div style="font-size:10px;color:var(--t3)">${act.acuerdo}</div>
+      </div>
+      <button class="btn btn-primary" onclick="abrirModalActualizarSindicato('com')" style="font-size:12px;padding:6px 14px;white-space:nowrap">⇡ Cargar paritaria</button>
+    </div>
+
+    <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+      <button id="com-tab-bas" onclick="comTab('bas')" style="background:none;border:none;padding:9px 16px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t1);border-bottom:2px solid var(--accent2);margin-bottom:-2px">📋 Sueldos básicos</button>
+      <button id="com-tab-adic" onclick="comTab('adic')" style="background:none;border:none;padding:9px 16px;cursor:pointer;font-size:12px;font-weight:400;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px">➕ Adicionales</button>
+      <button id="com-tab-nr" onclick="comTab('nr')" style="background:none;border:none;padding:9px 16px;cursor:pointer;font-size:12px;font-weight:400;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px">📦 No Remunerativos</button>
+      <button id="com-tab-hist" onclick="comTab('hist')" style="background:none;border:none;padding:9px 16px;cursor:pointer;font-size:12px;font-weight:400;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px">📜 Historial (${vers.length})</button>
+    </div>
+
+    <div id="com-pane-bas">
+      ${act.categorias.map(g=>`
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2)">
+          <span style="font-size:12px;font-weight:600;color:var(--t1)">${g.grupo}</span>
+          <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-left:10px">sueldo básico mensual · jornada legal 48hs</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Categoría</th>
+            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Básico</th>
+            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:rgb(34,197,94);text-transform:uppercase">+ Presentismo (8,33%)</th>
+            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:rgb(251,191,36);text-transform:uppercase">+ Bono NR $120k</th>
+          </tr></thead>
+          <tbody>
+            ${g.cats.map((c,i)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+              <td style="padding:10px 14px;color:var(--t1)">${c.cat}</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:${c.ok&&c.basico?'var(--t1)':'var(--t3)'};font-weight:${c.ok&&c.basico?'600':'400'}">
+                ${c.ok&&c.basico ? '$ '+Math.round(c.basico).toLocaleString('es-AR') : '<span style="font-size:10px;font-style:italic">ver planilla oficial</span>'}
+              </td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:rgb(34,197,94);font-size:11px">
+                ${c.ok&&c.basico ? '$ '+Math.round(c.basico*0.0833).toLocaleString('es-AR') : '—'}
+              </td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:rgb(251,191,36);font-size:11px">
+                ${c.ok&&c.basico ? '$ '+Math.round(c.basico + c.basico*0.0833 + 120000).toLocaleString('es-AR') : '—'}
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`).join('')}
+      <div style="font-size:11px;color:var(--t3);padding:4px 2px">⚠ El presentismo y la antigüedad se calculan también sobre los NR del acuerdo vigente (Art. 40 CCT 130/75). Las categorías intermedias sin valor se completan desde la planilla oficial de FAECYS.</div>
+    </div>
+
+    <div id="com-pane-adic" style="display:none">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2)">
+          <span style="font-size:12px;font-weight:600;color:var(--t1)">Adicionales del CCT 130/75</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Artículo</th>
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Concepto</th>
+            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Valor</th>
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Base de cálculo</th>
+          </tr></thead>
+          <tbody>
+            ${act.adicionales.map((a,i)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+              <td style="padding:10px 14px;font-size:10px;font-family:var(--font-mono);color:var(--t3)">${a.art}</td>
+              <td style="padding:10px 14px;color:var(--t1);font-weight:500">${a.concepto}</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:rgb(34,197,94);font-weight:600">${a.pct}%</td>
+              <td style="padding:10px 14px;font-size:11px;color:var(--t3)">${a.nota}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="com-pane-nr" style="display:none">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div>
+            <span style="font-size:12px;font-weight:600;color:var(--t1)">Conceptos No Remunerativos (NR)</span>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">Acuerdo abr–jun 2026 · Los NR inciden en presentismo y antigüedad</div>
+          </div>
+          <button class="btn btn-ghost" onclick="abrirModalActualizarSindicato('com','nr')" style="font-size:11px;padding:5px 12px">+ Agregar NR</button>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Concepto</th>
+            <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Monto</th>
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Nota</th>
+          </tr></thead>
+          <tbody>
+            ${act.noRemunerativos.map((r,i)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+              <td style="padding:10px 14px">
+                <span style="color:var(--t1);font-weight:500">${r.label}</span>
+                ${r.activo?'<span style="font-size:9px;font-family:var(--font-mono);padding:1px 6px;border-radius:8px;background:rgba(34,197,94,.1);color:rgb(34,197,94);border:1px solid rgba(34,197,94,.3);margin-left:6px">VIGENTE</span>':''}
+              </td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:rgb(251,191,36);font-weight:600">$ ${r.monto.toLocaleString('es-AR')}</td>
+              <td style="padding:10px 14px;font-size:11px;color:var(--t3)">${r.nota||'—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="com-pane-hist" style="display:none">
+      ${_renderHistorialSindicato(vers, 'com')}
+    </div>`;
+
+  pane.innerHTML = html;
+}
+
+function comTab(which){
+  ['bas','adic','nr','hist'].forEach(t=>{
+    const b=document.getElementById(`com-tab-${t}`);
+    const p=document.getElementById(`com-pane-${t}`);
+    const on=t===which;
+    if(b){ b.style.fontWeight=on?'600':'400'; b.style.color=on?'var(--t1)':'var(--t3)'; b.style.borderBottom=on?'2px solid var(--accent2)':'2px solid transparent'; }
+    if(p) p.style.display=on?'block':'none';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — S.M.V.M.
+// ═══════════════════════════════════════════════════════════════
+
+function renderSMVM(){
+  const pane=document.getElementById('escala-pane-master-smvm');
+  if(!pane) return;
+  const data=getSMVMData();
+  const actual=getSMVMActual();
+  const hoy=new Date().toISOString().slice(0,7);
+  const smvmEnLiq=(typeof getLiqParams==='function') ? (getLiqParams().smvmMensual||0) : 0;
+  const sincronizado = smvmEnLiq===actual.mensual;
+
+  pane.innerHTML=`
+    <div class="card" style="padding:16px 20px;margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:3px">💰 Salario Mínimo, Vital y Móvil</div>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:2px">${data.norma}</div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:10px">
+          <div>
+            <div style="font-size:11px;color:var(--t3);margin-bottom:2px">Valor vigente (${actual.label})</div>
+            <div style="font-size:26px;font-weight:700;color:var(--t1);font-family:var(--font-mono)">$ ${actual.mensual.toLocaleString('es-AR')}</div>
+            <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">horario: $ ${actual.horario.toLocaleString('es-AR')}/hora</div>
+          </div>
+          <div style="border-left:1px solid var(--border);padding-left:16px">
+            <div style="font-size:11px;color:var(--t3);margin-bottom:4px">En módulo de Liquidaciones</div>
+            <div style="font-size:14px;font-weight:600;font-family:var(--font-mono);color:${sincronizado?'rgb(34,197,94)':'rgb(239,68,68)'}">
+              ${smvmEnLiq>0 ? '$ '+smvmEnLiq.toLocaleString('es-AR') : 'No configurado'}
+            </div>
+            <div style="font-size:10px;color:${sincronizado?'rgb(34,197,94)':'rgb(239,68,68)'}">
+              ${sincronizado?'✓ Sincronizado':'⚠ Desactualizado'}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${!sincronizado?`<button class="btn btn-primary" onclick="sincronizarSMVM()" style="font-size:12px;padding:6px 14px">🔄 Sincronizar con liquidaciones</button>`:''}
+        <button class="btn btn-ghost" onclick="abrirModalNuevoPeriodoSMVM()" style="font-size:12px;padding:6px 14px">+ Agregar período</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2)">
+        <span style="font-size:12px;font-weight:600;color:var(--t1)">Cronograma vigente</span>
+        <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-left:10px">Res. 9/2025 · nov 2025 – ago 2026</span>
+      </div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+          <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Período</th>
+          <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Mensual</th>
+          <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Horario</th>
+          <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Var. s/ ant.</th>
+          <th style="padding:9px 10px;text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Estado</th>
+        </tr></thead>
+        <tbody>
+          ${data.cronograma.map((r,i)=>{
+            const esActual=r.mes===actual.mes;
+            const esFuturo=r.mes>hoy;
+            const prev=i>0?data.cronograma[i-1]:null;
+            const varPct=prev ? ((r.mensual/prev.mensual-1)*100).toFixed(1) : null;
+            return `
+            <tr style="border-bottom:1px solid var(--border);background:${esActual?'rgba(61,127,255,.07)':i%2?'rgba(255,255,255,.01)':'transparent'}">
+              <td style="padding:10px 14px;font-weight:${esActual?'600':'400'};color:${esActual?'var(--t1)':'var(--t2)'}">${r.label}</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:${esActual?'var(--accent2)':'var(--t1)'};font-weight:${esActual?'700':'500'}">$ ${r.mensual.toLocaleString('es-AR')}</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:var(--t3);font-size:11px">$ ${r.horario.toLocaleString('es-AR')}</td>
+              <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);font-size:11px;color:rgb(34,197,94)">${varPct?'+'+varPct+'%':'—'}</td>
+              <td style="padding:10px 10px;text-align:center">
+                ${esActual?'<span style="font-size:9px;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(61,127,255,.1);color:var(--accent2);border:1px solid rgba(61,127,255,.3)">● ACTUAL</span>':esFuturo?'<span style="font-size:9px;color:var(--t3)">próximo</span>':'<span style="font-size:9px;color:var(--t3)">histórico</span>'}
+              </td>
+            </tr>`; }).join('')}
+        </tbody>
+      </table></div>
+      <div style="padding:10px 16px;border-top:1px solid var(--border);background:var(--bg2);font-size:11px;color:var(--t3)">
+        Incremento total previsto: <b style="color:var(--t2)">+16,8%</b> entre nov 2025 y ago 2026 · Valor final agosto 2026: <b style="color:var(--t2)">$ 376.600</b>
+      </div>
+    </div>`;
+}
+
+function sincronizarSMVM(){
+  const actual=getSMVMActual();
+  const ok=syncSMVMaLiquidaciones(actual.mensual);
+  if(ok){
+    if(typeof toast==='function') toast(`✓ SMVM sincronizado: $ ${actual.mensual.toLocaleString('es-AR')} → módulo de liquidaciones`,'var(--green)',3500);
+    renderSMVM();
+    document.getElementById('escala-pane-master-smvm').dataset.loaded='1';
+  } else {
+    if(typeof showAlert==='function') showAlert('No se pudo acceder al módulo de liquidaciones.','warning');
+  }
+}
+
+function abrirModalNuevoPeriodoSMVM(){
+  const prev=document.getElementById('modal-smvm-periodo');
+  if(prev) prev.remove();
+  const modal=document.createElement('div');
+  modal.id='modal-smvm-periodo';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  modal.innerHTML=`
+    <div class="card" style="padding:0;max-width:460px;width:100%;border:1px solid var(--border)">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:14px;font-weight:600;color:var(--t1)">+ Agregar período SMVM</div>
+        <button onclick="document.getElementById('modal-smvm-periodo').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Período (AAAA-MM) *</label>
+          <input type="month" id="smvm-new-mes" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Valor mensual ($) *</label>
+          <input type="number" id="smvm-new-mensual" placeholder="Ej: 363000" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+        </div>
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Valor horario ($)</label>
+          <input type="number" id="smvm-new-horario" placeholder="Ej: 1815" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+        </div>
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Norma (opcional)</label>
+          <input type="text" id="smvm-new-norma" placeholder="Ej: Resolución X/2026" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+        </div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-smvm-periodo').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarNuevoPeriodoSMVM()" style="font-size:12px;padding:7px 16px">Guardar período</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
+}
+
+function confirmarNuevoPeriodoSMVM(){
+  const mes=(document.getElementById('smvm-new-mes')?.value||'').trim();
+  const mensual=parseFloat(document.getElementById('smvm-new-mensual')?.value||'');
+  const horario=parseFloat(document.getElementById('smvm-new-horario')?.value||'') || null;
+  if(!mes||isNaN(mensual)||mensual<=0){ if(typeof showAlert==='function') showAlert('Completá el período y el valor mensual.','warning'); return; }
+  const data=getSMVMData();
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const [anio,m]=mes.split('-');
+  const label=`${meses[parseInt(m)-1]} ${anio}`;
+  const idx=data.cronograma.findIndex(r=>r.mes===mes);
+  if(idx>=0) data.cronograma[idx]={ mes, label, mensual, horario: horario||data.cronograma[idx].horario };
+  else data.cronograma.push({ mes, label, mensual, horario: horario||0 });
+  data.cronograma.sort((a,b)=>a.mes.localeCompare(b.mes));
+  saveSMVMData(data);
+  document.getElementById('modal-smvm-periodo')?.remove();
+  renderSMVM();
+  document.getElementById('escala-pane-master-smvm').dataset.loaded='1';
+  if(typeof toast==='function') toast(`✓ Período ${label} guardado — $ ${mensual.toLocaleString('es-AR')}`,'var(--green)',3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODAL ACTUALIZACIÓN DE PARITARIA (UOM / COM)
+// ═══════════════════════════════════════════════════════════════
+
+function abrirModalActualizarSindicato(sind, tabDefault){
+  const prev=document.getElementById('modal-actualizar-sind');
+  if(prev) prev.remove();
+  const isUOM=sind==='uom';
+  const act=isUOM?getUOMActivo():getCOMActivo();
+  const nombre=isUOM?'UOM – Rama 17':'Comercio (SEC)';
+  const hoy=new Date();
+  const primDia=new Date(hoy.getFullYear(),hoy.getMonth(),1).toISOString().slice(0,10);
+
+  const modal=document.createElement('div');
+  modal.id='modal-actualizar-sind';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  modal.innerHTML=`
+    <div class="card" style="padding:0;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;border:1px solid var(--border)">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--t1)">⇡ Nueva paritaria — ${nombre}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">Base actual: <b>${act.mesLabel}</b> (${_fechaBonita(act.vigencia)})</div>
+        </div>
+        <button onclick="document.getElementById('modal-actualizar-sind').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase">Tipo de actualización *</label>
+          <select id="sind-tipo" onchange="previsualizarActualizacion('${sind}')"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--t1);font-size:13px;outline:none">
+            <option value="pct_basico">Incremento % sobre sueldos básicos</option>
+            <option value="monto_basico">Suma fija a sueldos básicos</option>
+            <option value="nr_mensual">Suma No Remunerativa mensual (nueva)</option>
+            <option value="nr_update">Actualizar NR vigente (cambiar monto)</option>
+          </select>
+        </div>
+
+        <div id="sind-row-pct">
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase">Porcentaje *</label>
+          <div style="position:relative">
+            <input type="number" id="sind-pct" step="0.01" placeholder="Ej: 7.5" oninput="previsualizarActualizacion('${sind}')"
+              style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 36px 9px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);font-family:var(--font-mono);font-size:13px">%</span>
+          </div>
+        </div>
+
+        <div id="sind-row-monto" style="display:none">
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase">Monto ($) *</label>
+          <input type="number" id="sind-monto" step="1" placeholder="Ej: 30000" oninput="previsualizarActualizacion('${sind}')"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+        </div>
+
+        <div id="sind-row-nr-label" style="display:none">
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase">Descripción del NR *</label>
+          <input type="text" id="sind-nr-label" placeholder="Ej: Agosto 2026"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--t1);font-size:13px;outline:none">
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase">Vigencia desde *</label>
+          <input type="date" id="sind-vigencia" value="${primDia}"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase">Acuerdo / observaciones</label>
+          <textarea id="sind-comentario" rows="2" placeholder="Ej: Paritaria UOM junio 2026"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--t1);font-size:12px;outline:none;resize:vertical;font-family:inherit"></textarea>
+        </div>
+
+        <div id="sind-preview" style="display:none"></div>
+      </div>
+
+      <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-actualizar-sind').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarActualizacionSindicato('${sind}')" style="font-size:12px;padding:7px 16px">Aplicar actualización</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
+}
+
+function previsualizarActualizacion(sind){
+  const tipo=document.getElementById('sind-tipo')?.value||'pct_basico';
+  const pctEl=document.getElementById('sind-pct');
+  const montoEl=document.getElementById('sind-monto');
+  const prev=document.getElementById('sind-preview');
+  const rowPct=document.getElementById('sind-row-pct');
+  const rowMonto=document.getElementById('sind-row-monto');
+  const rowNrLabel=document.getElementById('sind-row-nr-label');
+
+  // Mostrar/ocultar campos según tipo
+  rowPct.style.display=(tipo==='pct_basico')?'block':'none';
+  rowMonto.style.display=(tipo!=='pct_basico')?'block':'none';
+  rowNrLabel.style.display=(tipo==='nr_mensual')?'block':'none';
+  if(!prev) return;
+
+  if(tipo==='pct_basico'){
+    const pct=parseFloat(pctEl?.value||'');
+    if(isNaN(pct)||pct===0){ prev.style.display='none'; return; }
+    const act=sind==='uom'?getUOMActivo():getCOMActivo();
+    const factor=1+pct/100;
+    const fN=n=>n?'$ '+Math.round(n).toLocaleString('es-AR'):'—';
+    // Muestra 2-3 muestras representativas
+    let samples=[];
+    if(sind==='uom'){
+      samples=[
+        { label:'Ingresante (hora)', antes: act.jornalizado[0].valorHora, despues: act.jornalizado[0].valorHora*factor, isHora:true },
+        { label:'Oficial (hora)',    antes: act.jornalizado[5].valorHora, despues: act.jornalizado[5].valorHora*factor, isHora:true },
+      ];
+      const grpA=act.mensualizado[0].cats;
+      const cat1=grpA.find(c=>c.basico);
+      if(cat1) samples.push({ label:'Adm. Grupo A · Cat. 1°', antes:cat1.basico, despues:cat1.basico*factor });
+    } else {
+      const grp0=act.categorias[0].cats;
+      const c0=grp0.find(c=>c.basico);
+      const grp1=act.categorias[1].cats;
+      const c1=grp1.find(c=>c.basico);
+      if(c0) samples.push({ label:`${act.categorias[0].grupo} · ${c0.cat}`, antes:c0.basico, despues:c0.basico*factor });
+      if(c1) samples.push({ label:`${act.categorias[1].grupo} · ${c1.cat}`, antes:c1.basico, despues:c1.basico*factor });
+    }
+    const color=pct>=0?'rgb(34,197,94)':'rgb(239,68,68)';
+    const arrow=pct>=0?'↑':'↓';
+    prev.style.display='block';
+    prev.innerHTML=`<div style="padding:10px 12px;border-radius:var(--r);background:var(--bg2);border:1px solid var(--border)">
+      <div style="font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;margin-bottom:8px">Previsualización (${pct>0?'+':''}${pct}%)</div>
+      ${samples.map(s=>{
+        const aF=s.isHora ? '$ '+s.antes.toFixed(2) : '$ '+Math.round(s.antes).toLocaleString('es-AR');
+        const dF=s.isHora ? '$ '+s.despues.toFixed(2) : '$ '+Math.round(s.despues).toLocaleString('es-AR');
+        return `<div style="padding:4px 0;display:flex;justify-content:space-between;font-size:12px;font-family:var(--font-mono)">
+          <span style="color:var(--t2)">${s.label}</span>
+          <span style="color:var(--t3)">${aF} <span style="color:${color}">${arrow}</span> <b style="color:var(--t1)">${dF}</b></span>
+        </div>`;}).join('')}
+    </div>`;
+  } else {
+    prev.style.display='none';
+  }
+}
+
+async function confirmarActualizacionSindicato(sind){
+  const tipo=document.getElementById('sind-tipo')?.value||'pct_basico';
+  const vigencia=(document.getElementById('sind-vigencia')?.value||'').slice(0,10);
+  const comentario=(document.getElementById('sind-comentario')?.value||'').trim();
+  const pct=parseFloat(document.getElementById('sind-pct')?.value||'');
+  const monto=parseFloat(document.getElementById('sind-monto')?.value||'');
+  const nrLabel=(document.getElementById('sind-nr-label')?.value||'').trim();
+
+  if(!vigencia){ if(typeof showAlert==='function') showAlert('Ingresá la fecha de vigencia.','warning'); return; }
+  if(tipo==='pct_basico' && (isNaN(pct)||pct===0)){ if(typeof showAlert==='function') showAlert('Ingresá el porcentaje.','warning'); return; }
+  if(tipo!=='pct_basico' && (isNaN(monto)||monto<=0)){ if(typeof showAlert==='function') showAlert('Ingresá el monto.','warning'); return; }
+  if(tipo==='nr_mensual' && !nrLabel){ if(typeof showAlert==='function') showAlert('Ingresá la descripción del NR.','warning'); return; }
+
+  const isUOM=sind==='uom';
+  const actBase=isUOM?getUOMActivo():getCOMActivo();
+  const round2=v=>Math.round(v*100)/100;
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const p=vigencia.split('-');
+  const mesLabel=`${meses[parseInt(p[1])-1]} ${p[0]}`;
+
+  const nuevoId=sind+'_'+ Date.now()+'_'+Math.random().toString(36).slice(2,7);
+
+  if(tipo==='pct_basico'){
+    const factor=1+pct/100;
+    if(isUOM){
+      const nueva={
+        ...JSON.parse(JSON.stringify(actBase)),
+        id:nuevoId, vigencia, mesLabel, origen:'incremento', porcentaje:pct, comentario,
+        acuerdo: comentario||actBase.acuerdo,
+        jornalizado: actBase.jornalizado.map(c=>({...c, valorHora:round2(c.valorHora*factor)})),
+        mensualizado: actBase.mensualizado.map(g=>({...g, cats:g.cats.map(c=>({...c, basico:c.basico?round2(c.basico*factor):null}))})),
+      };
+      saveUOMVersion(nueva);
+    } else {
+      const nueva={
+        ...JSON.parse(JSON.stringify(actBase)),
+        id:nuevoId, vigencia, mesLabel, origen:'incremento', porcentaje:pct, comentario,
+        acuerdo: comentario||actBase.acuerdo,
+        categorias: actBase.categorias.map(g=>({...g, cats:g.cats.map(c=>({...c, basico:c.basico?round2(c.basico*factor):null}))})),
+      };
+      saveCOMVersion(nueva);
+    }
+  } else if(tipo==='monto_basico'){
+    if(isUOM){
+      const nueva={
+        ...JSON.parse(JSON.stringify(actBase)),
+        id:nuevoId, vigencia, mesLabel, origen:'suma_fija', comentario,
+        acuerdo: comentario||actBase.acuerdo,
+        jornalizado: actBase.jornalizado.map(c=>{
+          const jornalDia=c.valorHora*8;
+          const nuevaJornal=jornalDia+monto;
+          return {...c, valorHora:round2(nuevaJornal/8)};
+        }),
+        mensualizado: actBase.mensualizado.map(g=>({...g, cats:g.cats.map(c=>({...c, basico:c.basico?round2(c.basico+monto):null}))})),
+      };
+      saveUOMVersion(nueva);
+    } else {
+      const nueva={
+        ...JSON.parse(JSON.stringify(actBase)),
+        id:nuevoId, vigencia, mesLabel, origen:'suma_fija', comentario,
+        acuerdo: comentario||actBase.acuerdo,
+        categorias: actBase.categorias.map(g=>({...g, cats:g.cats.map(c=>({...c, basico:c.basico?round2(c.basico+monto):null}))})),
+      };
+      saveCOMVersion(nueva);
+    }
+  } else if(tipo==='nr_mensual'||tipo==='nr_update'){
+    // Solo agrega/actualiza el NR en la versión activa sin crear nueva versión de básicos
+    const dataCopy=JSON.parse(JSON.stringify(actBase));
+    const nrId=sind+'_nr_'+Date.now();
+    const newNR={ id:nrId, mes:vigencia.slice(0,7), label:nrLabel||`NR ${mesLabel}`, monto:Math.round(monto), activo:true, nota:comentario };
+    // Marcar anteriores como inactivos
+    dataCopy.noRemunerativos.forEach(r=>r.activo=false);
+    dataCopy.noRemunerativos.push(newNR);
+    dataCopy.id=nuevoId; dataCopy.vigencia=vigencia; dataCopy.mesLabel=mesLabel; dataCopy.comentario=comentario;
+    if(isUOM) saveUOMVersion(dataCopy);
+    else saveCOMVersion(dataCopy);
+  }
+
+  document.getElementById('modal-actualizar-sind')?.remove();
+  if(typeof toast==='function') toast(`✓ Paritaria ${sind.toUpperCase()} registrada — vigencia ${mesLabel}`,'var(--green)',3500);
+
+  // Re-render del tab correspondiente
+  if(sind==='uom'){ renderEscalaUOM(); document.getElementById('escala-pane-master-uom').dataset.loaded='1'; }
+  else { renderEscalaComercio(); document.getElementById('escala-pane-master-comercio').dataset.loaded='1'; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPER — Historial compartido (UOM / COM)
+// ═══════════════════════════════════════════════════════════════
+
+function _renderHistorialSindicato(versiones, sind){
+  if(!versiones.length) return '<div class="card" style="padding:20px;text-align:center;color:var(--t3)">Sin versiones.</div>';
+  const hoy=new Date().toISOString().slice(0,10);
+  const activaId=sind==='uom'?getUOMActivo().id:getCOMActivo().id;
+  const fN=n=>n?'$ '+Math.round(n).toLocaleString('es-AR'):'—';
+  const origenBadge=v=>{
+    if(v.origen==='seed') return `<span style="font-size:10px;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(168,85,247,.1);color:rgb(168,85,247);border:1px solid rgba(168,85,247,.3)">SEED</span>`;
+    if(v.origen==='incremento') return `<span style="font-size:10px;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(34,197,94,.1);color:rgb(34,197,94);border:1px solid rgba(34,197,94,.3)">+${v.porcentaje}%</span>`;
+    if(v.origen==='suma_fija') return `<span style="font-size:10px;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.1);color:rgb(59,130,246);border:1px solid rgba(59,130,246,.3)">Suma fija</span>`;
+    return `<span style="font-size:10px;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:var(--bg2);color:var(--t3);border:1px solid var(--border)">${v.origen}</span>`;
+  };
+  const seedId=sind==='uom'?UOM_R17_SEED.id:COM_SEED.id;
+
+  return [...versiones].reverse().map(v=>{
+    const esActiva=v.id===activaId;
+    const borde=esActiva?'border:2px solid var(--accent2)':'border:1px solid var(--border)';
+    return `<div class="card" style="padding:0;overflow:hidden;margin-bottom:14px;${borde}">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          ${origenBadge(v)}
+          <div>
+            <span style="font-size:13px;color:var(--t1);font-weight:600">${v.mesLabel}</span>
+            ${esActiva?'<span style="font-size:10px;color:var(--accent2);margin-left:6px;font-family:var(--font-mono)">● ACTIVA</span>':''}
+            <div style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">Vigencia: ${_fechaBonita(v.vigencia)}</div>
+          </div>
+        </div>
+        ${v.origen!=='seed'?`<button class="btn-blanquear" onclick="confirmarEliminarVersionSind('${v.id}','${sind}')" style="font-size:11px;padding:4px 10px">✕ Eliminar</button>`:''}
+      </div>
+      ${v.comentario?`<div style="padding:8px 16px;font-size:11px;color:var(--t2);border-bottom:1px solid var(--border)"><i>${v.comentario}</i></div>`:''}
+      <div style="padding:8px 16px;font-size:11px;color:var(--t3);font-family:var(--font-mono)">Acuerdo: ${v.acuerdo||'—'}</div>
+    </div>`;}).join('');
+}
+
+async function confirmarEliminarVersionSind(id, sind){
+  const vers=sind==='uom'?getUOMVersiones():getCOMVersiones();
+  const v=vers.find(x=>x.id===id);
+  if(!v) return;
+  const _cfm=await showConfirm({ titulo:'Eliminar versión', mensaje:`¿Eliminar la versión <b>${v.mesLabel}</b> del historial?<br><br>Esta acción no se puede deshacer.`, labelOk:'Eliminar', peligroso:true });
+  if(!_cfm) return;
+  const ok=sind==='uom'?eliminarUOMVersion(id):eliminarCOMVersion(id);
+  if(ok){
+    if(sind==='uom'){ renderEscalaUOM(); document.getElementById('escala-pane-master-uom').dataset.loaded='1'; uomTab('hist'); }
+    else { renderEscalaComercio(); document.getElementById('escala-pane-master-comercio').dataset.loaded='1'; comTab('hist'); }
   }
 }
 
