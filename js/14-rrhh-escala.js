@@ -190,6 +190,7 @@ function _renderEscalaInternaEnPaneMaster(){
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="abrirFormIncrementoEscala()" style="font-size:12px;padding:6px 14px">⇡ Cargar incremento</button>
+        <button class="btn btn-ghost" onclick="abrirEditorEscalaInterna()" style="font-size:12px;padding:6px 14px">✏ Editar valores</button>
         <button class="btn btn-ghost" onclick="exportarEscalaCSV()" style="font-size:12px;padding:6px 14px">⬇ CSV</button>
         <button class="btn btn-ghost" onclick="exportarEscalaXLSX()" style="font-size:12px;padding:6px 14px">⬇ Excel</button>
       </div>
@@ -718,6 +719,601 @@ async function confirmarIncremento(){
   cerrarFormIncremento();
   renderEscalaSalarial();
   escalaTab('hist');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDITOR DE VALORES — ESCALA INTERNA
+// Permite editar directamente cada valor de la tabla activa,
+// creando una nueva versión con vigencia configurable.
+// ═══════════════════════════════════════════════════════════════
+
+function abrirEditorEscalaInterna(){
+  const pane = document.getElementById('escala-pane-act');
+  if(!pane) return;
+  const escala = getEscalaActiva();
+  const t = ESCALA_TRAMOS;
+  const hoy = new Date();
+  const primDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
+  const iS = 'width:100%;background:var(--bg3);border:1px solid rgba(61,127,255,.4);border-radius:4px;padding:5px 8px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)';
+  const iSR = iS+';text-align:right';
+  const iSC = iS+';text-align:center';
+
+  pane.innerHTML = `
+    <div style="padding:10px 16px;background:rgba(61,127,255,.08);border:1px solid rgba(61,127,255,.3);border-radius:var(--r);margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--accent2);font-weight:500">✏ Modo edición — modificá los valores directamente</span>
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div>
+          <label style="font-size:10px;color:var(--t3);font-family:var(--font-mono);display:block;margin-bottom:3px;text-transform:uppercase">Vigencia de la nueva versión *</label>
+          <input type="date" id="editor-esc-vig" value="${primDia}" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--t3);font-family:var(--font-mono);display:block;margin-bottom:3px;text-transform:uppercase">Comentario</label>
+          <input type="text" id="editor-esc-com" placeholder="Ej: Paritaria junio 2026" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--t1);font-size:12px;outline:none;min-width:220px">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+      <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;gap:10px">
+        <span style="font-size:13px;font-weight:600;color:var(--t1)">📊 Categorías generales</span>
+        <span style="font-size:11px;color:var(--t3)">Código · Nombre · Nota opcional · % Dif. mes ant. · Valores por tramo</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;min-width:960px;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;min-width:280px">Categoría</th>
+              <th style="padding:10px 8px;text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;width:90px">% Dif.</th>
+              ${t.map(tr=>`<th style="padding:10px 8px;text-align:right;font-size:10px;font-family:var(--font-mono);color:${tr.color};text-transform:uppercase;min-width:155px">${tr.label}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${escala.categorias.map((c,i)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+              <td style="padding:10px 12px">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                  <input type="text" id="ec-cod-${c.cat}" value="${c.cat}"
+                    style="width:52px;${iSC};color:var(--accent2);font-weight:600">
+                  <input type="text" id="ec-lbl-${c.cat}" value="${c.label}"
+                    style="flex:1;${iS}">
+                </div>
+                <input type="text" id="ec-nota-${c.cat}" value="${c.nota||''}" placeholder="nota opcional"
+                  style="width:100%;${iS};color:var(--t3);font-size:10px;border-style:dashed">
+              </td>
+              <td style="padding:8px;text-align:center">
+                <div style="display:flex;align-items:center;gap:3px;justify-content:center">
+                  <input type="number" id="ec-dif-${c.cat}" value="${(c.difMesAnt*100).toFixed(2)}" step="0.01"
+                    style="width:62px;${iSC};font-size:11px">
+                  <span style="font-size:10px;color:var(--t3)">%</span>
+                </div>
+              </td>
+              ${t.map(tr=>`
+              <td style="padding:8px">
+                <input type="number" id="ec-val-${c.cat}-${tr.key}" value="${c.tramos[tr.key]!=null?c.tramos[tr.key]:''}" step="0.01"
+                  style="${iSR};min-width:140px">
+              </td>`).join('')}
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+      <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg2)">
+        <span style="font-size:13px;font-weight:600;color:var(--t1)">🌎 Gerentes regionales</span>
+      </div>
+      <div style="padding:4px 0">
+        ${escala.regionales.map((r,idx)=>`
+        <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 170px 90px;gap:10px;align-items:center">
+          <input type="text" id="er-lbl-${r.key}" value="${r.label}" style="${iS}">
+          <input type="text" id="er-desc-${r.key}" value="${r.desc}" style="${iS};color:var(--t3);font-size:11px">
+          <input type="number" id="er-monto-${r.key}" value="${r.monto}" step="0.01" style="${iSR}">
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="number" id="er-dif-${r.key}" value="${(r.difMesAnt*100).toFixed(2)}" step="0.01"
+              style="width:60px;${iSC};font-size:11px">
+            <span style="font-size:10px;color:var(--t3)">%</span>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;padding-bottom:16px">
+      <button class="btn btn-ghost" onclick="_cancelarEditorEscala()" style="font-size:13px;padding:8px 16px">✕ Cancelar</button>
+      <button class="btn btn-primary" onclick="_guardarEditorEscala()" style="font-size:13px;padding:8px 20px">✓ Guardar como nueva versión</button>
+    </div>`;
+}
+
+function _cancelarEditorEscala(){
+  const escala = getEscalaActiva();
+  const conteo = {};
+  const nomina = typeof getNomina==='function' ? getNomina().filter(e=>!e._deBaja&&!e.egreso) : [];
+  nomina.forEach(e=>{ if(e.cat&&e.tramo){ const k=`${e.cat}__${e.tramo}`; conteo[k]=(conteo[k]||0)+1; }});
+  _renderEscalaPaneActiva(escala, conteo, nomina);
+}
+
+async function _guardarEditorEscala(){
+  const vig = document.getElementById('editor-esc-vig')?.value;
+  const com = (document.getElementById('editor-esc-com')?.value||'').trim();
+  if(!vig){ if(typeof showAlert==='function') showAlert('Ingresá la vigencia de la nueva versión.','warning'); return; }
+  const t = ESCALA_TRAMOS;
+  const activa = getEscalaActiva();
+  const round2 = v => Math.round(v*100)/100;
+
+  const categorias = activa.categorias.map(c=>{
+    const cod   = (document.getElementById(`ec-cod-${c.cat}`)?.value||c.cat).trim().toUpperCase();
+    const label = (document.getElementById(`ec-lbl-${c.cat}`)?.value||c.label).trim();
+    const nota  = (document.getElementById(`ec-nota-${c.cat}`)?.value||'').trim();
+    const dif   = parseFloat(document.getElementById(`ec-dif-${c.cat}`)?.value);
+    const tramos = {};
+    t.forEach(tr=>{
+      const v = parseFloat(document.getElementById(`ec-val-${c.cat}-${tr.key}`)?.value);
+      tramos[tr.key] = isNaN(v) ? c.tramos[tr.key] : round2(v);
+    });
+    return { cat:cod, label, nota, difMesAnt:isNaN(dif)?c.difMesAnt:dif/100, tramos };
+  });
+
+  const regionales = activa.regionales.map(r=>{
+    const label  = (document.getElementById(`er-lbl-${r.key}`)?.value||r.label).trim();
+    const desc   = (document.getElementById(`er-desc-${r.key}`)?.value||r.desc).trim();
+    const monto  = parseFloat(document.getElementById(`er-monto-${r.key}`)?.value);
+    const dif    = parseFloat(document.getElementById(`er-dif-${r.key}`)?.value);
+    return { key:r.key, label, desc, monto:isNaN(monto)?r.monto:round2(monto), difMesAnt:isNaN(dif)?r.difMesAnt:dif/100 };
+  });
+
+  const nueva = {
+    id: 'esc_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+    vigencia: vig, mesLabel: _formatMesLabel(vig),
+    origen: 'manual', porcentaje: null, alcance: 'todas',
+    comentario: com || 'Edición manual de valores',
+    creado: new Date().toISOString(),
+    creadoPor: (typeof currentUser!=='undefined'&&currentUser?.emp?.leg)||null,
+    baseVersionId: activa.id,
+    categorias, regionales
+  };
+  saveEscalaVersion(nueva);
+  renderEscalaSalarial();
+  escalaTab('act');
+  if(typeof toast==='function') toast(`✓ Nueva versión guardada — ${_formatMesLabel(vig)}`,'var(--green)',3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDITOR DE VALORES — UOM R.17 y COMERCIO
+// Modal con edición directa de cada valor de la paritaria activa
+// ═══════════════════════════════════════════════════════════════
+
+function abrirEditorValoresUOM(){ _abrirEditorSind('uom'); }
+function abrirEditorValoresCOM(){ _abrirEditorSind('com'); }
+
+function _abrirEditorSind(sind){
+  const prev = document.getElementById('modal-editor-sind');
+  if(prev) prev.remove();
+  const isUOM = sind==='uom';
+  const act   = isUOM ? getUOMActivo() : getCOMActivo();
+  const nombre = isUOM ? 'UOM – Rama 17' : 'Comercio (SEC)';
+  const hoy = new Date();
+  const primDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
+  const iS = 'width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)';
+  const fN = n => n!=null ? String(n) : '';
+
+  let camposBody = '';
+
+  if(isUOM){
+    // Jornalizado
+    camposBody += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Jornalizado — valor hora ($/h)</div>`;
+    camposBody += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">`;
+    (act.jornalizado||[]).forEach((cat,i)=>{
+      camposBody += `
+        <div>
+          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono)">${cat.label} (${cat.cat})</label>
+          <input type="number" id="ed-jor-${i}" value="${fN(cat.valorHora)}" step="0.01" style="${iS}">
+        </div>`;
+    });
+    camposBody += `</div>`;
+
+    // Mensualizado
+    camposBody += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;margin-top:4px">Mensualizado — básico ($)</div>`;
+    (act.mensualizado||[]).forEach((grp,gi)=>{
+      camposBody += `<div style="font-size:10px;color:var(--t2);margin-bottom:4px;font-weight:500">Grupo ${grp.grupo} — ${grp.label}</div>`;
+      camposBody += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">`;
+      (grp.cats||[]).forEach((cat,ci)=>{
+        camposBody += `
+          <div>
+            <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono)">${cat.cat}</label>
+            <input type="number" id="ed-men-${gi}-${ci}" value="${fN(cat.basico)}" step="0.01" style="${iS}">
+          </div>`;
+      });
+      camposBody += `</div>`;
+    });
+
+    // IMGR
+    camposBody += `<div style="margin-bottom:12px">
+      <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">IMGR ($)</label>
+      <input type="number" id="ed-imgr" value="${fN(act.imgr||act.IMGR)}" step="1" style="${iS}">
+    </div>`;
+
+    // Adicionales
+    camposBody += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;margin-top:4px">Adicionales — monto ($)</div>`;
+    camposBody += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">`;
+    (act.adicionales||[]).forEach((a,ai)=>{
+      camposBody += `
+        <div>
+          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono)">${a.art} — ${a.concepto.slice(0,30)}</label>
+          <input type="number" id="ed-adic-${ai}" value="${fN(a.monto)}" step="0.01" style="${iS}">
+        </div>`;
+    });
+    camposBody += `</div>`;
+
+  } else {
+    // Comercio — grupos de categorías
+    (act.categorias||[]).forEach((grp,gi)=>{
+      camposBody += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t2);font-weight:500;margin-bottom:6px;margin-top:${gi>0?'14px':'0'}">${grp.grupo} — básico ($)</div>`;
+      camposBody += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">`;
+      (grp.cats||[]).forEach((cat,ci)=>{
+        camposBody += `
+          <div>
+            <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono)">${cat.cat}</label>
+            <input type="number" id="ed-cat-${gi}-${ci}" value="${fN(cat.basico)}" step="0.01" style="${iS}">
+          </div>`;
+      });
+      camposBody += `</div>`;
+    });
+
+    // Adicionales COM
+    camposBody += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;margin-top:14px">Adicionales — porcentaje (%)</div>`;
+    camposBody += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">`;
+    (act.adicionales||[]).forEach((a,ai)=>{
+      camposBody += `
+        <div>
+          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono)">${a.art} — ${a.concepto.slice(0,28)}</label>
+          <input type="number" id="ed-adic-${ai}" value="${fN(a.pct)}" step="0.01" style="${iS}">
+        </div>`;
+    });
+    camposBody += `</div>`;
+  }
+
+  // NR section (common)
+  camposBody += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;margin-top:14px">No Remunerativos vigentes</div>`;
+  (act.noRemunerativos||[]).forEach((nr,ni)=>{
+    camposBody += `
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px">
+        <div style="display:grid;grid-template-columns:1fr 140px auto;gap:8px;align-items:center">
+          <input type="text" id="ed-nr-lbl-${ni}" value="${nr.label}" style="${iS}">
+          <input type="number" id="ed-nr-monto-${ni}" value="${fN(nr.monto)}" step="1" style="${iS}">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--t2);white-space:nowrap">
+            <input type="checkbox" id="ed-nr-activo-${ni}" ${nr.activo?'checked':''} style="width:14px;height:14px">
+            Activo
+          </label>
+        </div>
+        <input type="text" id="ed-nr-nota-${ni}" value="${nr.nota||''}" placeholder="nota"
+          style="${iS};margin-top:6px;color:var(--t3);font-size:10px;border-style:dashed">
+      </div>`;
+  });
+
+  // Vigencia y acuerdo
+  camposBody += `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+      <div>
+        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">Vigencia nueva versión *</label>
+        <input type="date" id="ed-vigencia" value="${primDia}" style="${iS}">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">Texto del acuerdo</label>
+        <input type="text" id="ed-acuerdo" value="${act.acuerdo||''}" style="${iS}">
+      </div>
+    </div>`;
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-editor-sind';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div class="card" style="padding:0;max-width:640px;width:100%;max-height:92vh;overflow-y:auto;border:1px solid var(--border)">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg1);z-index:1">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--t1)">✏ Editar valores — ${nombre}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">Base: <b>${act.mesLabel}</b> · Los cambios crean una nueva versión</div>
+        </div>
+        <button onclick="document.getElementById('modal-editor-sind').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:2px">${camposBody}</div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-editor-sind').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
+        <button class="btn btn-primary" onclick="_guardarEditorSind('${sind}')" style="font-size:12px;padding:7px 16px">✓ Guardar nueva versión</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+}
+
+function _guardarEditorSind(sind){
+  const vig  = document.getElementById('ed-vigencia')?.value;
+  if(!vig){ if(typeof showAlert==='function') showAlert('Ingresá la vigencia.','warning'); return; }
+  const acuerdo = document.getElementById('ed-acuerdo')?.value||'';
+  const isUOM = sind==='uom';
+  const act   = isUOM ? getUOMActivo() : getCOMActivo();
+  const round2 = v => Math.round(v*100)/100;
+
+  let nueva;
+  if(isUOM){
+    const jornalizado = (act.jornalizado||[]).map((cat,i)=>{
+      const v = parseFloat(document.getElementById(`ed-jor-${i}`)?.value);
+      return { ...cat, valorHora: isNaN(v)?cat.valorHora:round2(v), ok:true };
+    });
+    const mensualizado = (act.mensualizado||[]).map((grp,gi)=>({
+      ...grp,
+      cats: (grp.cats||[]).map((cat,ci)=>{
+        const v = parseFloat(document.getElementById(`ed-men-${gi}-${ci}`)?.value);
+        return { ...cat, basico:isNaN(v)?cat.basico:round2(v), ok:true };
+      })
+    }));
+    const imgr = parseFloat(document.getElementById('ed-imgr')?.value);
+    const adicionales = (act.adicionales||[]).map((a,ai)=>{
+      const v = parseFloat(document.getElementById(`ed-adic-${ai}`)?.value);
+      return { ...a, monto:isNaN(v)?a.monto:round2(v) };
+    });
+    const noRemunerativos = (act.noRemunerativos||[]).map((nr,ni)=>({
+      ...nr,
+      label:  document.getElementById(`ed-nr-lbl-${ni}`)?.value||nr.label,
+      monto:  parseFloat(document.getElementById(`ed-nr-monto-${ni}`)?.value)||nr.monto,
+      activo: document.getElementById(`ed-nr-activo-${ni}`)?.checked??nr.activo,
+      nota:   document.getElementById(`ed-nr-nota-${ni}`)?.value||nr.nota||''
+    }));
+    nueva = { ...act, id:'uom_'+Date.now(), vigencia:vig, mesLabel:_formatMesLabel(vig),
+      acuerdo, origen:'manual', jornalizado, mensualizado,
+      imgr:isNaN(imgr)?act.imgr:imgr, noRemunerativos, adicionales };
+    saveUOMVersion(nueva);
+    document.getElementById('escala-pane-master-uom').dataset.loaded='';
+    renderEscalaUOM();
+  } else {
+    const categorias = (act.categorias||[]).map((grp,gi)=>({
+      ...grp,
+      cats: (grp.cats||[]).map((cat,ci)=>{
+        const v = parseFloat(document.getElementById(`ed-cat-${gi}-${ci}`)?.value);
+        return { ...cat, basico:isNaN(v)?cat.basico:round2(v), ok:true };
+      })
+    }));
+    const adicionales = (act.adicionales||[]).map((a,ai)=>{
+      const v = parseFloat(document.getElementById(`ed-adic-${ai}`)?.value);
+      return { ...a, pct:isNaN(v)?a.pct:round2(v) };
+    });
+    const noRemunerativos = (act.noRemunerativos||[]).map((nr,ni)=>({
+      ...nr,
+      label:  document.getElementById(`ed-nr-lbl-${ni}`)?.value||nr.label,
+      monto:  parseFloat(document.getElementById(`ed-nr-monto-${ni}`)?.value)||nr.monto,
+      activo: document.getElementById(`ed-nr-activo-${ni}`)?.checked??nr.activo,
+      nota:   document.getElementById(`ed-nr-nota-${ni}`)?.value||nr.nota||''
+    }));
+    nueva = { ...act, id:'com_'+Date.now(), vigencia:vig, mesLabel:_formatMesLabel(vig),
+      acuerdo, origen:'manual', categorias, noRemunerativos, adicionales };
+    saveCOMVersion(nueva);
+    document.getElementById('escala-pane-master-comercio').dataset.loaded='';
+    renderEscalaComercio();
+  }
+  document.getElementById('modal-editor-sind')?.remove();
+  if(typeof toast==='function') toast(`✓ ${sind==='uom'?'UOM':'Comercio'} actualizado — ${_formatMesLabel(vig)}`,'var(--green)',3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDITOR DE VALORES — SINDICATOS GENÉRICOS (UOCRA, UOYEP, etc.)
+// ═══════════════════════════════════════════════════════════════
+
+function abrirEditorValoresSindGenerico(sindId){
+  const prev = document.getElementById('modal-editor-sind-gen');
+  if(prev) prev.remove();
+  const sind = getSindById(sindId);
+  if(!sind){ if(typeof toast==='function') toast('Sindicato no encontrado','var(--red)'); return; }
+  const hoy = new Date();
+  const primDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
+  const iS = 'width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)';
+  const iSR = iS+';text-align:right';
+  const fN = n => n!=null ? String(n) : '';
+
+  let body = '';
+
+  // Tablas (jornalizado/mensual)
+  (sind.tablas||[]).forEach((tabla,ti)=>{
+    body += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t2);font-weight:500;margin-bottom:8px;margin-top:${ti>0?'14px':'0'}">${tabla.titulo}</div>`;
+    body += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">`;
+    (tabla.cats||[]).forEach((cat,ci)=>{
+      const esHora = tabla.tipo==='hora' || cat.valorHora!=null;
+      const val = esHora ? fN(cat.valorHora) : fN(cat.basico);
+      const sufijo = esHora ? '$/h' : '$/mes';
+      body += `
+        <div>
+          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono)">${cat.cat} — ${sufijo}</label>
+          <input type="number" id="sg-val-${ti}-${ci}" value="${val}" step="0.01" style="${esHora?iSR:iSR}">
+        </div>`;
+    });
+    body += `</div>`;
+  });
+
+  // NR
+  body += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;margin-top:14px">No Remunerativos</div>`;
+  (sind.noRemunerativos||[]).forEach((nr,ni)=>{
+    body += `
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px">
+        <div style="display:grid;grid-template-columns:1fr 140px auto;gap:8px;align-items:center">
+          <input type="text" id="sg-nr-lbl-${ni}" value="${nr.label||''}" style="${iS}">
+          <input type="number" id="sg-nr-monto-${ni}" value="${fN(nr.monto)}" step="1" style="${iSR}">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--t2);white-space:nowrap">
+            <input type="checkbox" id="sg-nr-activo-${ni}" ${nr.activo?'checked':''} style="width:14px;height:14px">
+            Activo
+          </label>
+        </div>
+        <input type="text" id="sg-nr-nota-${ni}" value="${nr.nota||''}" placeholder="nota"
+          style="${iS};margin-top:6px;color:var(--t3);font-size:10px;border-style:dashed">
+      </div>`;
+  });
+
+  // Adicionales (%)
+  if((sind.adicionales||[]).length){
+    body += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;margin-top:14px">Adicionales (%)</div>`;
+    body += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">`;
+    (sind.adicionales||[]).forEach((a,ai)=>{
+      body += `
+        <div>
+          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono)">${a.concepto}</label>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="number" id="sg-adic-${ai}" value="${fN(a.valor??a.pct)}" step="0.01" style="${iS}">
+            <span style="font-size:11px;color:var(--t3)">%</span>
+          </div>
+        </div>`;
+    });
+    body += `</div>`;
+  }
+
+  // Vigencia y acuerdo
+  body += `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+      <div>
+        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">Vigencia nueva versión *</label>
+        <input type="date" id="sg-vigencia" value="${primDia}" style="${iS}">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">Texto del acuerdo</label>
+        <input type="text" id="sg-acuerdo" value="${sind.acuerdo||''}" style="${iS}">
+      </div>
+    </div>`;
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-editor-sind-gen';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div class="card" style="padding:0;max-width:600px;width:100%;max-height:92vh;overflow-y:auto;border:1px solid var(--border)">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg1);z-index:1">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--t1)">✏ Editar valores — ${sind.icon||''} ${sind.nombre}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">${sind.cct} · Los cambios guardan una nueva versión</div>
+        </div>
+        <button onclick="document.getElementById('modal-editor-sind-gen').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:18px 20px">${body}</div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-editor-sind-gen').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
+        <button class="btn btn-primary" onclick="_guardarEditorSindGen('${sindId}')" style="font-size:12px;padding:7px 16px">✓ Guardar nueva versión</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+}
+
+function _guardarEditorSindGen(sindId){
+  const vig = document.getElementById('sg-vigencia')?.value;
+  if(!vig){ if(typeof showAlert==='function') showAlert('Ingresá la vigencia.','warning'); return; }
+  const acuerdo = document.getElementById('sg-acuerdo')?.value||'';
+  const sind = getSindById(sindId);
+  if(!sind) return;
+  const round2 = v => Math.round(v*100)/100;
+
+  const tablas = (sind.tablas||[]).map((tabla,ti)=>({
+    ...tabla,
+    cats: (tabla.cats||[]).map((cat,ci)=>{
+      const v = parseFloat(document.getElementById(`sg-val-${ti}-${ci}`)?.value);
+      const esHora = tabla.tipo==='hora' || cat.valorHora!=null;
+      if(esHora) return { ...cat, valorHora:isNaN(v)?cat.valorHora:round2(v), ok:!isNaN(v) };
+      else       return { ...cat, basico:isNaN(v)?cat.basico:round2(v),       ok:!isNaN(v) };
+    })
+  }));
+
+  const noRemunerativos = (sind.noRemunerativos||[]).map((nr,ni)=>({
+    ...nr,
+    label:  document.getElementById(`sg-nr-lbl-${ni}`)?.value||nr.label,
+    monto:  parseFloat(document.getElementById(`sg-nr-monto-${ni}`)?.value)||nr.monto,
+    activo: document.getElementById(`sg-nr-activo-${ni}`)?.checked??nr.activo,
+    nota:   document.getElementById(`sg-nr-nota-${ni}`)?.value||nr.nota||''
+  }));
+
+  const adicionales = (sind.adicionales||[]).map((a,ai)=>{
+    const v = parseFloat(document.getElementById(`sg-adic-${ai}`)?.value);
+    return { ...a, valor:isNaN(v)?a.valor:round2(v), pct:isNaN(v)?a.pct:round2(v) };
+  });
+
+  const nueva = { ...sind, vigencia:vig, mesLabel:_formatMesLabel(vig),
+    acuerdo, tablas, noRemunerativos, adicionales };
+
+  // Guardar: si es builtin → no se puede sobrescribir el builtin, se guarda como user
+  // Si ya existe como user → actualizar
+  const userSinds = getSindsUser();
+  const idx = userSinds.findIndex(s=>s.id===sindId);
+  if(idx>=0){ userSinds[idx]=nueva; } else { userSinds.push({...nueva, builtin:false}); }
+  saveSindsUser(userSinds);
+
+  // Re-renderizar el pane
+  const paneId = `escala-pane-master-sind_${sindId}`;
+  const pane = document.getElementById(paneId);
+  if(pane){ pane.dataset.loaded=''; renderEscalaSindGenerico(getSindById(sindId)||nueva, pane); }
+  document.getElementById('modal-editor-sind-gen')?.remove();
+  if(typeof toast==='function') toast(`✓ ${sind.codigo} actualizado — ${_formatMesLabel(vig)}`,'var(--green)',3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDITOR DE PERÍODOS — SMVM
+// Edición inline de cada período existente
+// ═══════════════════════════════════════════════════════════════
+
+function abrirEditorPeriodoSMVM(mesKey){
+  const prev = document.getElementById('modal-editor-smvm-periodo');
+  if(prev) prev.remove();
+  const data = getSMVMData();
+  const idx  = data.cronograma.findIndex(r=>r.mes===mesKey);
+  if(idx<0) return;
+  const r = data.cronograma[idx];
+  const iS = 'width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)';
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-editor-smvm-periodo';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div class="card" style="padding:0;max-width:440px;width:100%;border:1px solid var(--border)">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:14px;font-weight:600;color:var(--t1)">✏ Editar período SMVM — ${r.label}</div>
+        <button onclick="document.getElementById('modal-editor-smvm-periodo').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px;font-family:var(--font-mono);text-transform:uppercase">Período (AAAA-MM)</label>
+          <input type="month" id="smvm-ed-mes" value="${r.mes}" style="${iS}">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px;font-family:var(--font-mono);text-transform:uppercase">Mensual ($)</label>
+          <input type="number" id="smvm-ed-mensual" value="${r.mensual}" step="100" style="${iS}">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px;font-family:var(--font-mono);text-transform:uppercase">Horario ($/h)</label>
+          <input type="number" id="smvm-ed-horario" value="${r.horario}" step="1" style="${iS}">
+        </div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-editor-smvm-periodo').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
+        <button class="btn btn-primary" onclick="_guardarEditorSMVMPeriodo('${mesKey}')" style="font-size:12px;padding:7px 16px">✓ Guardar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+}
+
+function _guardarEditorSMVMPeriodo(mesKeyAnterior){
+  const mes     = document.getElementById('smvm-ed-mes')?.value;
+  const mensual = parseFloat(document.getElementById('smvm-ed-mensual')?.value);
+  const horario = parseFloat(document.getElementById('smvm-ed-horario')?.value);
+  if(!mes||isNaN(mensual)){ if(typeof showAlert==='function') showAlert('Completá el período y el monto mensual.','warning'); return; }
+
+  const data = getSMVMData();
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const [y,m] = mes.split('-');
+  const label = `${meses[parseInt(m)-1]} ${y}`;
+
+  // Eliminar el período original si el mes cambió
+  data.cronograma = data.cronograma.filter(r=>r.mes!==mesKeyAnterior);
+  // Eliminar también si ya existe el nuevo mes (para no duplicar)
+  data.cronograma = data.cronograma.filter(r=>r.mes!==mes);
+  data.cronograma.push({ mes, label, mensual, horario:isNaN(horario)?Math.round(mensual/200):horario });
+  data.cronograma.sort((a,b)=>a.mes.localeCompare(b.mes));
+  saveSMVMData(data);
+
+  document.getElementById('modal-editor-smvm-periodo')?.remove();
+  const smvmPane = document.getElementById('escala-pane-master-smvm');
+  if(smvmPane){ smvmPane.dataset.loaded=''; renderSMVM(); }
+  if(typeof toast==='function') toast(`✓ Período ${label} actualizado`,'var(--green)',2500);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1250,7 +1846,10 @@ function renderEscalaUOM(){
         <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono);margin-bottom:2px">Vigencia activa: <b style="color:var(--t2)">${act.mesLabel}</b> (${_fechaBonita(act.vigencia)}) · ${vers.length} versión${vers.length===1?'':'es'}</div>
         <div style="font-size:10px;color:var(--t3)">${act.acuerdo}</div>
       </div>
-      <button class="btn btn-primary" onclick="abrirModalActualizarSindicato('uom')" style="font-size:12px;padding:6px 14px;white-space:nowrap">⇡ Cargar paritaria</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="abrirModalActualizarSindicato('uom')" style="font-size:12px;padding:6px 14px;white-space:nowrap">⇡ Cargar paritaria</button>
+        <button class="btn btn-ghost" onclick="abrirEditorValoresUOM()" style="font-size:12px;padding:6px 14px;white-space:nowrap">✏ Editar valores</button>
+      </div>
     </div>
 
     <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
@@ -1425,7 +2024,10 @@ function renderEscalaComercio(){
         <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono);margin-bottom:2px">Vigencia activa: <b style="color:var(--t2)">${act.mesLabel}</b> (${_fechaBonita(act.vigencia)}) · ${vers.length} versión${vers.length===1?'':'es'}</div>
         <div style="font-size:10px;color:var(--t3)">${act.acuerdo}</div>
       </div>
-      <button class="btn btn-primary" onclick="abrirModalActualizarSindicato('com')" style="font-size:12px;padding:6px 14px;white-space:nowrap">⇡ Cargar paritaria</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="abrirModalActualizarSindicato('com')" style="font-size:12px;padding:6px 14px;white-space:nowrap">⇡ Cargar paritaria</button>
+        <button class="btn btn-ghost" onclick="abrirEditorValoresCOM()" style="font-size:12px;padding:6px 14px;white-space:nowrap">✏ Editar valores</button>
+      </div>
     </div>
 
     <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
@@ -1596,6 +2198,7 @@ function renderSMVM(){
           <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Horario</th>
           <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Var. s/ ant.</th>
           <th style="padding:9px 10px;text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Estado</th>
+          <th style="padding:9px 8px;text-align:center;width:40px"></th>
         </tr></thead>
         <tbody>
           ${data.cronograma.map((r,i)=>{
@@ -1611,6 +2214,9 @@ function renderSMVM(){
               <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);font-size:11px;color:rgb(34,197,94)">${varPct?'+'+varPct+'%':'—'}</td>
               <td style="padding:10px 10px;text-align:center">
                 ${esActual?'<span style="font-size:9px;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(61,127,255,.1);color:var(--accent2);border:1px solid rgba(61,127,255,.3)">● ACTUAL</span>':esFuturo?'<span style="font-size:9px;color:var(--t3)">próximo</span>':'<span style="font-size:9px;color:var(--t3)">histórico</span>'}
+              </td>
+              <td style="padding:8px 10px;text-align:center">
+                <button onclick="abrirEditorPeriodoSMVM('${r.mes}')" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;color:var(--t3);font-size:10px;cursor:pointer">✏</button>
               </td>
             </tr>`; }).join('')}
         </tbody>
@@ -2174,6 +2780,7 @@ function renderEscalaSindGenerico(sind, paneEl){
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="abrirModalActualizarSindGenerico('${sind.id}')" style="font-size:11px;padding:5px 12px;white-space:nowrap">⇡ Cargar paritaria</button>
+        <button class="btn btn-ghost" onclick="abrirEditorValoresSindGenerico('${sind.id}')" style="font-size:11px;padding:5px 12px;white-space:nowrap">✏ Editar valores</button>
         ${isUser?`<button class="btn-blanquear" onclick="confirmarEliminarSindUser('${sind.id}')" style="font-size:11px;padding:5px 12px">✕ Eliminar</button>`:''}
       </div>
     </div>
