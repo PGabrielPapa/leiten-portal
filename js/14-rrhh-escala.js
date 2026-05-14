@@ -721,6 +721,91 @@ async function confirmarIncremento(){
   escalaTab('hist');
 }
 
+// ── Constantes de estilo compartidas por los editores ─────────
+const _ED_IS  = 'width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)';
+const _ED_ISR = _ED_IS+';text-align:right';
+const _ED_ISC = _ED_IS+';text-align:center';
+// Variante para el editor inline de la tabla interna (fondo bg3 + borde accent)
+const _ED_IS3  = 'width:100%;background:var(--bg3);border:1px solid rgba(61,127,255,.4);border-radius:4px;padding:5px 8px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)';
+const _ED_IS3R = _ED_IS3+';text-align:right';
+const _ED_IS3C = _ED_IS3+';text-align:center';
+
+// ── Helper: crea un modal editor estándar ─────────────────────
+// Devuelve el elemento DOM ya appendado al body.
+function _crearModalEditor(id, titulo, subtitulo, bodyHtml, onSaveCall, maxWidth){
+  const prev = document.getElementById(id);
+  if(prev) prev.remove();
+  const mw = maxWidth || '640px';
+  const modal = document.createElement('div');
+  modal.id = id;
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  modal.innerHTML = `
+    <div class="card" style="padding:0;max-width:${mw};width:100%;max-height:92vh;overflow-y:auto;border:1px solid var(--border)">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg1);z-index:1">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--t1)">${titulo}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">${subtitulo}</div>
+        </div>
+        <button onclick="document.getElementById('${id}').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:18px 20px">${bodyHtml}</div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0">
+        <button class="btn btn-ghost" onclick="document.getElementById('${id}').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
+        <button class="btn btn-primary" onclick="${onSaveCall}" style="font-size:12px;padding:7px 16px">✓ Guardar nueva versión</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+  return modal;
+}
+
+// ── Helper: genera HTML del bloque de NR editables ────────────
+function _renderNREditorHTML(nrs, pfx, iS, iSR){
+  iS  = iS  || _ED_IS;
+  iSR = iSR || _ED_ISR;
+  if(!nrs || !nrs.length) return '<p style="font-size:11px;color:var(--t3)">Sin NR configurados.</p>';
+  return nrs.map((nr,ni)=>`
+    <div style="border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 140px auto;gap:8px;align-items:center">
+        <input type="text"   id="${pfx}-lbl-${ni}"    value="${nr.label||''}" style="${iS}">
+        <input type="number" id="${pfx}-monto-${ni}"  value="${nr.monto!=null?nr.monto:''}" step="1" style="${iSR}">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--t2);white-space:nowrap">
+          <input type="checkbox" id="${pfx}-activo-${ni}" ${nr.activo?'checked':''} style="width:14px;height:14px"> Activo
+        </label>
+      </div>
+      <input type="text" id="${pfx}-nota-${ni}" value="${nr.nota||''}" placeholder="nota"
+        style="${iS};margin-top:6px;color:var(--t3);font-size:10px;border-style:dashed">
+    </div>`).join('');
+}
+
+// ── Helper: lee NR editados desde el DOM ──────────────────────
+function _leerNRsDesdeDOM(nrs, pfx){
+  return (nrs||[]).map((nr,ni)=>({
+    ...nr,
+    label:  document.getElementById(`${pfx}-lbl-${ni}`)?.value    || nr.label,
+    monto:  parseFloat(document.getElementById(`${pfx}-monto-${ni}`)?.value) || nr.monto,
+    activo: document.getElementById(`${pfx}-activo-${ni}`)?.checked ?? nr.activo,
+    nota:   document.getElementById(`${pfx}-nota-${ni}`)?.value    || nr.nota || ''
+  }));
+}
+
+// ── Helper: HTML de fila vigencia + acuerdo ───────────────────
+function _renderVigAcuerdoHTML(vigDef, acuerdoVal, iS){
+  iS = iS || _ED_IS;
+  return `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+      <div>
+        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">Vigencia nueva versión *</label>
+        <input type="date" id="ed-vigencia" value="${vigDef}" style="${iS}">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">Texto del acuerdo</label>
+        <input type="text" id="ed-acuerdo" value="${acuerdoVal||''}" style="${iS}">
+      </div>
+    </div>`;
+}
+
+
 // ═══════════════════════════════════════════════════════════════
 // EDITOR DE VALORES — ESCALA INTERNA
 // Permite editar directamente cada valor de la tabla activa,
@@ -734,9 +819,7 @@ function abrirEditorEscalaInterna(){
   const t = ESCALA_TRAMOS;
   const hoy = new Date();
   const primDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
-  const iS = 'width:100%;background:var(--bg3);border:1px solid rgba(61,127,255,.4);border-radius:4px;padding:5px 8px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)';
-  const iSR = iS+';text-align:right';
-  const iSC = iS+';text-align:center';
+  const iS = _ED_IS3; const iSR = _ED_IS3R; const iSC = _ED_IS3C;
 
   pane.innerHTML = `
     <div style="padding:10px 16px;background:rgba(61,127,255,.08);border:1px solid rgba(61,127,255,.3);border-radius:var(--r);margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -892,8 +975,7 @@ function _abrirEditorSind(sind){
   const nombre = isUOM ? 'UOM – Rama 17' : 'Comercio (SEC)';
   const hoy = new Date();
   const primDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
-  const iS = 'width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)';
-  const fN = n => n!=null ? String(n) : '';
+  const iS = _ED_IS; const fN = n => n!=null ? String(n) : '';
 
   let camposBody = '';
 
@@ -973,55 +1055,13 @@ function _abrirEditorSind(sind){
 
   // NR section (common)
   camposBody += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;margin-top:14px">No Remunerativos vigentes</div>`;
-  (act.noRemunerativos||[]).forEach((nr,ni)=>{
-    camposBody += `
-      <div style="border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px">
-        <div style="display:grid;grid-template-columns:1fr 140px auto;gap:8px;align-items:center">
-          <input type="text" id="ed-nr-lbl-${ni}" value="${nr.label}" style="${iS}">
-          <input type="number" id="ed-nr-monto-${ni}" value="${fN(nr.monto)}" step="1" style="${iS}">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--t2);white-space:nowrap">
-            <input type="checkbox" id="ed-nr-activo-${ni}" ${nr.activo?'checked':''} style="width:14px;height:14px">
-            Activo
-          </label>
-        </div>
-        <input type="text" id="ed-nr-nota-${ni}" value="${nr.nota||''}" placeholder="nota"
-          style="${iS};margin-top:6px;color:var(--t3);font-size:10px;border-style:dashed">
-      </div>`;
-  });
+  camposBody += _renderNREditorHTML(act.noRemunerativos, 'ed-nr');
 
-  // Vigencia y acuerdo
-  camposBody += `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
-      <div>
-        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">Vigencia nueva versión *</label>
-        <input type="date" id="ed-vigencia" value="${primDia}" style="${iS}">
-      </div>
-      <div>
-        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">Texto del acuerdo</label>
-        <input type="text" id="ed-acuerdo" value="${act.acuerdo||''}" style="${iS}">
-      </div>
-    </div>`;
-
-  const modal = document.createElement('div');
-  modal.id = 'modal-editor-sind';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
-  modal.innerHTML = `
-    <div class="card" style="padding:0;max-width:640px;width:100%;max-height:92vh;overflow-y:auto;border:1px solid var(--border)">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg1);z-index:1">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--t1)">✏ Editar valores — ${nombre}</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:2px">Base: <b>${act.mesLabel}</b> · Los cambios crean una nueva versión</div>
-        </div>
-        <button onclick="document.getElementById('modal-editor-sind').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
-      </div>
-      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:2px">${camposBody}</div>
-      <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0">
-        <button class="btn btn-ghost" onclick="document.getElementById('modal-editor-sind').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
-        <button class="btn btn-primary" onclick="_guardarEditorSind('${sind}')" style="font-size:12px;padding:7px 16px">✓ Guardar nueva versión</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+  camposBody += _renderVigAcuerdoHTML(primDia, act.acuerdo||'');
+  _crearModalEditor('modal-editor-sind',
+    `✏ Editar valores — ${nombre}`,
+    `Base: ${act.mesLabel} · Los cambios crean una nueva versión`,
+    camposBody, `_guardarEditorSind('${sind}')`, '640px');
 }
 
 function _guardarEditorSind(sind){
@@ -1050,13 +1090,7 @@ function _guardarEditorSind(sind){
       const v = parseFloat(document.getElementById(`ed-adic-${ai}`)?.value);
       return { ...a, monto:isNaN(v)?a.monto:round2(v) };
     });
-    const noRemunerativos = (act.noRemunerativos||[]).map((nr,ni)=>({
-      ...nr,
-      label:  document.getElementById(`ed-nr-lbl-${ni}`)?.value||nr.label,
-      monto:  parseFloat(document.getElementById(`ed-nr-monto-${ni}`)?.value)||nr.monto,
-      activo: document.getElementById(`ed-nr-activo-${ni}`)?.checked??nr.activo,
-      nota:   document.getElementById(`ed-nr-nota-${ni}`)?.value||nr.nota||''
-    }));
+    const noRemunerativos = _leerNRsDesdeDOM(act.noRemunerativos, 'ed-nr');
     nueva = { ...act, id:'uom_'+Date.now(), vigencia:vig, mesLabel:_formatMesLabel(vig),
       acuerdo, origen:'manual', jornalizado, mensualizado,
       imgr:isNaN(imgr)?act.imgr:imgr, noRemunerativos, adicionales };
@@ -1075,13 +1109,7 @@ function _guardarEditorSind(sind){
       const v = parseFloat(document.getElementById(`ed-adic-${ai}`)?.value);
       return { ...a, pct:isNaN(v)?a.pct:round2(v) };
     });
-    const noRemunerativos = (act.noRemunerativos||[]).map((nr,ni)=>({
-      ...nr,
-      label:  document.getElementById(`ed-nr-lbl-${ni}`)?.value||nr.label,
-      monto:  parseFloat(document.getElementById(`ed-nr-monto-${ni}`)?.value)||nr.monto,
-      activo: document.getElementById(`ed-nr-activo-${ni}`)?.checked??nr.activo,
-      nota:   document.getElementById(`ed-nr-nota-${ni}`)?.value||nr.nota||''
-    }));
+    const noRemunerativos = _leerNRsDesdeDOM(act.noRemunerativos, 'ed-nr');
     nueva = { ...act, id:'com_'+Date.now(), vigencia:vig, mesLabel:_formatMesLabel(vig),
       acuerdo, origen:'manual', categorias, noRemunerativos, adicionales };
     saveCOMVersion(nueva);
@@ -1103,9 +1131,7 @@ function abrirEditorValoresSindGenerico(sindId){
   if(!sind){ if(typeof toast==='function') toast('Sindicato no encontrado','var(--red)'); return; }
   const hoy = new Date();
   const primDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
-  const iS = 'width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono)';
-  const iSR = iS+';text-align:right';
-  const fN = n => n!=null ? String(n) : '';
+  const iS = _ED_IS; const iSR = _ED_ISR; const fN = n => n!=null ? String(n) : '';
 
   let body = '';
 
@@ -1128,21 +1154,7 @@ function abrirEditorValoresSindGenerico(sindId){
 
   // NR
   body += `<div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;margin-top:14px">No Remunerativos</div>`;
-  (sind.noRemunerativos||[]).forEach((nr,ni)=>{
-    body += `
-      <div style="border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px">
-        <div style="display:grid;grid-template-columns:1fr 140px auto;gap:8px;align-items:center">
-          <input type="text" id="sg-nr-lbl-${ni}" value="${nr.label||''}" style="${iS}">
-          <input type="number" id="sg-nr-monto-${ni}" value="${fN(nr.monto)}" step="1" style="${iSR}">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--t2);white-space:nowrap">
-            <input type="checkbox" id="sg-nr-activo-${ni}" ${nr.activo?'checked':''} style="width:14px;height:14px">
-            Activo
-          </label>
-        </div>
-        <input type="text" id="sg-nr-nota-${ni}" value="${nr.nota||''}" placeholder="nota"
-          style="${iS};margin-top:6px;color:var(--t3);font-size:10px;border-style:dashed">
-      </div>`;
-  });
+  body += _renderNREditorHTML(sind.noRemunerativos, 'sg-nr');
 
   // Adicionales (%)
   if((sind.adicionales||[]).length){
@@ -1161,39 +1173,11 @@ function abrirEditorValoresSindGenerico(sindId){
     body += `</div>`;
   }
 
-  // Vigencia y acuerdo
-  body += `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
-      <div>
-        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">Vigencia nueva versión *</label>
-        <input type="date" id="sg-vigencia" value="${primDia}" style="${iS}">
-      </div>
-      <div>
-        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-family:var(--font-mono);text-transform:uppercase">Texto del acuerdo</label>
-        <input type="text" id="sg-acuerdo" value="${sind.acuerdo||''}" style="${iS}">
-      </div>
-    </div>`;
-
-  const modal = document.createElement('div');
-  modal.id = 'modal-editor-sind-gen';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
-  modal.innerHTML = `
-    <div class="card" style="padding:0;max-width:600px;width:100%;max-height:92vh;overflow-y:auto;border:1px solid var(--border)">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg1);z-index:1">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--t1)">✏ Editar valores — ${sind.icon||''} ${sind.nombre}</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:2px">${sind.cct} · Los cambios guardan una nueva versión</div>
-        </div>
-        <button onclick="document.getElementById('modal-editor-sind-gen').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
-      </div>
-      <div style="padding:18px 20px">${body}</div>
-      <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0">
-        <button class="btn btn-ghost" onclick="document.getElementById('modal-editor-sind-gen').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
-        <button class="btn btn-primary" onclick="_guardarEditorSindGen('${sindId}')" style="font-size:12px;padding:7px 16px">✓ Guardar nueva versión</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+  body += _renderVigAcuerdoHTML(primDia, sind.acuerdo||'');
+  _crearModalEditor('modal-editor-sind-gen',
+    `✏ Editar valores — ${sind.icon||''} ${sind.nombre}`,
+    `${sind.cct} · Los cambios guardan una nueva versión`,
+    body, `_guardarEditorSindGen('${sindId}')`, '600px');
 }
 
 function _guardarEditorSindGen(sindId){
@@ -1214,13 +1198,7 @@ function _guardarEditorSindGen(sindId){
     })
   }));
 
-  const noRemunerativos = (sind.noRemunerativos||[]).map((nr,ni)=>({
-    ...nr,
-    label:  document.getElementById(`sg-nr-lbl-${ni}`)?.value||nr.label,
-    monto:  parseFloat(document.getElementById(`sg-nr-monto-${ni}`)?.value)||nr.monto,
-    activo: document.getElementById(`sg-nr-activo-${ni}`)?.checked??nr.activo,
-    nota:   document.getElementById(`sg-nr-nota-${ni}`)?.value||nr.nota||''
-  }));
+  const noRemunerativos = _leerNRsDesdeDOM(sind.noRemunerativos, 'sg-nr');
 
   const adicionales = (sind.adicionales||[]).map((a,ai)=>{
     const v = parseFloat(document.getElementById(`sg-adic-${ai}`)?.value);
@@ -1251,44 +1229,29 @@ function _guardarEditorSindGen(sindId){
 // ═══════════════════════════════════════════════════════════════
 
 function abrirEditorPeriodoSMVM(mesKey){
-  const prev = document.getElementById('modal-editor-smvm-periodo');
-  if(prev) prev.remove();
   const data = getSMVMData();
   const idx  = data.cronograma.findIndex(r=>r.mes===mesKey);
   if(idx<0) return;
-  const r = data.cronograma[idx];
-  const iS = 'width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)';
-
-  const modal = document.createElement('div');
-  modal.id = 'modal-editor-smvm-periodo';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
-  modal.innerHTML = `
-    <div class="card" style="padding:0;max-width:440px;width:100%;border:1px solid var(--border)">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:14px;font-weight:600;color:var(--t1)">✏ Editar período SMVM — ${r.label}</div>
-        <button onclick="document.getElementById('modal-editor-smvm-periodo').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+  const r    = data.cronograma[idx];
+  const iS   = _ED_IS;
+  const body = `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px;font-family:var(--font-mono);text-transform:uppercase">Período (AAAA-MM)</label>
+        <input type="month" id="smvm-ed-mes" value="${r.mes}" style="${iS}">
       </div>
-      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px">
-        <div>
-          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px;font-family:var(--font-mono);text-transform:uppercase">Período (AAAA-MM)</label>
-          <input type="month" id="smvm-ed-mes" value="${r.mes}" style="${iS}">
-        </div>
-        <div>
-          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px;font-family:var(--font-mono);text-transform:uppercase">Mensual ($)</label>
-          <input type="number" id="smvm-ed-mensual" value="${r.mensual}" step="100" style="${iS}">
-        </div>
-        <div>
-          <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px;font-family:var(--font-mono);text-transform:uppercase">Horario ($/h)</label>
-          <input type="number" id="smvm-ed-horario" value="${r.horario}" step="1" style="${iS}">
-        </div>
+      <div>
+        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px;font-family:var(--font-mono);text-transform:uppercase">Mensual ($)</label>
+        <input type="number" id="smvm-ed-mensual" value="${r.mensual}" step="100" style="${iS}">
       </div>
-      <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn btn-ghost" onclick="document.getElementById('modal-editor-smvm-periodo').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
-        <button class="btn btn-primary" onclick="_guardarEditorSMVMPeriodo('${mesKey}')" style="font-size:12px;padding:7px 16px">✓ Guardar</button>
+      <div>
+        <label style="font-size:10px;color:var(--t3);display:block;margin-bottom:4px;font-family:var(--font-mono);text-transform:uppercase">Horario ($/h)</label>
+        <input type="number" id="smvm-ed-horario" value="${r.horario}" step="1" style="${iS}">
       </div>
     </div>`;
-  document.body.appendChild(modal);
-  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+  _crearModalEditor('modal-editor-smvm-periodo',
+    `✏ Editar período SMVM — ${r.label}`, '',
+    body, `_guardarEditorSMVMPeriodo('${mesKey}')`, '440px');
 }
 
 function _guardarEditorSMVMPeriodo(mesKeyAnterior){
