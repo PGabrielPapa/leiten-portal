@@ -2007,3 +2007,628 @@ async function confirmarEliminarVersionSind(id, sind){
   }
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// SISTEMA GENÉRICO DE SINDICATOS — UOCRA, UECARA, ASIMRA, UOYEP
+// + posibilidad de cargar nuevos sindicatos
+// ═══════════════════════════════════════════════════════════════
+
+const SINDS_GENERICOS_SK = 'lsg_sinds_user';
+
+const SINDS_BUILTINS = [
+  {
+    id:'uocra', builtin:true, codigo:'UOCRA', icon:'🏗️',
+    nombre:'Unión Obrera de la Construcción de la República Argentina',
+    cct:'CCT 76/75 y 577/10', vigencia:'2026-05-01', mesLabel:'Mayo 2026',
+    acuerdo:'Acuerdo mar–may 2026: +2%+1,9%+1,8% acumulativos | CAMARCO y FAEC',
+    tablas:[{
+      titulo:'Personal de Obra — Jornalizado (valor hora, Zona A)',
+      subtitulo:'Zona A: CABA, BsAs, Santa Fe, Córdoba, Mendoza, Salta, Tucumán, Corrientes, Jujuy y más',
+      tipo:'hora',
+      cats:[
+        { cat:'Oficial Especializado', valorHora:6011,   ok:true },
+        { cat:'Oficial',              valorHora:5142,   ok:true },
+        { cat:'Medio Oficial',        valorHora:4752,   ok:true },
+        { cat:'Ayudante',             valorHora:null,   ok:false, nota:'ver planilla oficial UOCRA' },
+        { cat:'Sereno (mensual)',      basico:808877,    ok:true,  nota:'valor mensual, Zona A' },
+      ]
+    }],
+    noRemunerativos:[
+      { id:'uocra_nr_may26_oe', mes:'2026-05', label:'NR Oficial Especializado Zona A', monto:125400, activo:true },
+      { id:'uocra_nr_may26_of', mes:'2026-05', label:'NR Oficial Zona A',               monto:114400, activo:true },
+      { id:'uocra_nr_may26_mo', mes:'2026-05', label:'NR Medio Oficial Zona A',         monto:104900, activo:true },
+      { id:'uocra_nr_may26_ay', mes:'2026-05', label:'NR Ayudante / Sereno Zona A',     monto:98500,  activo:true, nota:'Zonas B/C/Austral aplican coeficiente adicional' },
+    ],
+    adicionales:[
+      { concepto:'Zona B (Neuquén, Río Negro, Chubut)',       tipo:'pct', valor:11,  base:'básico Zona A', rem:true,  nota:'coeficiente aproximado +11%' },
+      { concepto:'Zona C (Santa Cruz)',                       tipo:'pct', valor:38,  base:'básico Zona A', rem:true,  nota:'coeficiente aproximado +38%' },
+      { concepto:'Zona C Austral (Tierra del Fuego)',         tipo:'pct', valor:100, base:'básico Zona A', rem:true,  nota:'coeficiente ~×2' },
+      { concepto:'Aporte solidario extraordinario (no afil.)',tipo:'pct', valor:2,   base:'remuneración',  rem:false, nota:'Desde abr 2026, 12 meses. Afiliados exentos.' },
+    ],
+    antiguedad:{ pct:1, nota:'1% por año acumulativo' },
+  },
+  {
+    id:'uecara', builtin:true, codigo:'UECARA', icon:'🏛️',
+    nombre:'Unión Empleados de la Construcción y Afines de la República Argentina',
+    cct:'CCT 660/13 (Nacional) — CCT 735/15 (Córdoba)',
+    vigencia:'2026-05-01', mesLabel:'Mayo 2026',
+    acuerdo:'Acuerdo mar–may 2026: +2%+1,9%+1,8% acum. (~5,78%) + NR por cat. y zona | CAMARCO y FAEC',
+    tablas:[{
+      titulo:'Grupos del CCT 660/13',
+      subtitulo:'Personal administrativo, técnico, capataces y maestranza de constructoras — montos ver planilla oficial',
+      tipo:'mensual',
+      cats:[
+        { cat:'Grupo I — Capataces de Obra', basico:null, ok:false, nota:'ver planilla UECARA vigente' },
+        { cat:'Grupo II — Administrativos',  basico:null, ok:false, nota:'ver planilla UECARA vigente' },
+        { cat:'Grupo III — Técnicos',        basico:null, ok:false, nota:'ver planilla UECARA vigente' },
+        { cat:'Grupo IV — Sistemas',         basico:null, ok:false, nota:'ver planilla UECARA vigente' },
+        { cat:'Grupo V — Maestranza',        basico:null, ok:false, nota:'ver planilla UECARA vigente' },
+      ]
+    }],
+    noRemunerativos:[
+      { id:'uecara_nr_may26', mes:'2026-05', label:'NR mayo 2026 (por categoría y zona)', monto:null, activo:true,
+        nota:'Monto variable por grupo y zona (Norte / Centro / Norpatagonia / Patagonia Sur). Ver planilla oficial.' },
+    ],
+    adicionales:[
+      { concepto:'Aporte solidario extraordinario (no afil.)', tipo:'pct', valor:1.5, base:'salarios sujetos a aportes', rem:false, nota:'Desde abr 2026, 6 meses. Afiliados exentos.' },
+    ],
+    antiguedad:{ pct:1, nota:'1% por año acumulativo' },
+  },
+  {
+    id:'asimra', builtin:true, codigo:'ASIMRA', icon:'🔩',
+    nombre:'Asoc. de Supervisores de la Industria Metalmecánica (ASIMRA)',
+    cct:'CCT 246/94 Rama 16 · CCTs 233/94, 237/94, 247/95, 248/95, 249/95, 251/95–253/95, 266/95, 275/75',
+    vigencia:'2026-04-01', mesLabel:'Abril 2026',
+    acuerdo:'Acuerdo sep 2025–mar 2026: 4,2% nov + 4,2% ene (14% acum.) + NR 6 cuotas | ADIMRA, AFARTE, CAJAMA, FEDEHOGAR, AFAC, CAMIMA',
+    tablas:[{
+      titulo:'Supervisores — CCT 246/94 Rama 16 (Mecánica y Electrónica)',
+      subtitulo:'Categoría de referencia del acuerdo. Resto de categorías y ramas: ajuste proporcional.',
+      tipo:'mensual',
+      cats:[
+        { cat:'Supervisor de Fábrica de 1° (ref. Rama 16)', basico:1112823, ok:true, nota:'Desde 1/4/2026. Base de cálculo del acuerdo.' },
+        { cat:'Demás categorías por Rama',                  basico:null,    ok:false, nota:'Ajuste proporcional — ver planilla ADIMRA/ASIMRA por Rama' },
+      ]
+    }],
+    noRemunerativos:[
+      { id:'asimra_nr_oct25', mes:'2025-10', label:'Gratif. NR oct 2025',  monto:43050, activo:false },
+      { id:'asimra_nr_nov25', mes:'2025-11', label:'Gratif. NR nov 2025',  monto:18450, activo:false },
+      { id:'asimra_nr_dic25', mes:'2025-12', label:'Gratif. NR dic 2025',  monto:43050, activo:false },
+      { id:'asimra_nr_ene26', mes:'2026-01', label:'Gratif. NR ene 2026',  monto:18450, activo:false },
+      { id:'asimra_nr_feb26', mes:'2026-02', label:'Gratif. NR feb 2026',  monto:30750, activo:false },
+      { id:'asimra_nr_mar26', mes:'2026-03', label:'Gratif. NR mar 2026',  monto:43050, activo:false, nota:'Última cuota del acuerdo sep 2025–mar 2026' },
+    ],
+    adicionales:[
+      { concepto:'Cuota sindical ASIMRA', tipo:'pct', valor:3, base:'remuneración bruta', rem:false, nota:'Aprox. 3% — verificar % vigente en tu seccional' },
+    ],
+    antiguedad:{ pct:1, nota:'1% por año acumulativo' },
+  },
+  {
+    id:'uoyep', builtin:true, codigo:'UOYEP', icon:'🏭',
+    nombre:'Unión Obreros y Empleados Plásticos (UOYEP)',
+    cct:'CCT 797/22',
+    vigencia:'2026-05-01', mesLabel:'Mayo 2026',
+    acuerdo:'Acuerdo mar–ago 2026: +16,83% total en 6 meses + NR $65.000 para todas las categorías | CAIP',
+    tablas:[
+      {
+        titulo:'Producción y Mantenimiento (jornalizado, por hora)',
+        subtitulo:'CCT 797/22 — Operarios de planta, jornada legal',
+        tipo:'hora',
+        cats:[
+          { cat:'Operario (inicio)',     valorHora:null, ok:false, nota:'Feb 2026: $5.643,3/h — mayo: consultar planilla UOYEP/CAIP' },
+          { cat:'Medio Oficial',         valorHora:null, ok:false, nota:'ver planilla oficial UOYEP' },
+          { cat:'Oficial',               valorHora:null, ok:false, nota:'ver planilla oficial UOYEP' },
+          { cat:'Oficial Especializado', valorHora:null, ok:false, nota:'ver planilla oficial UOYEP' },
+        ]
+      },
+      {
+        titulo:'Personal Administrativo (mensual)',
+        subtitulo:'Categorías administrativas del CCT 797/22',
+        tipo:'mensual',
+        cats:[
+          { cat:'Categoría inicial', basico:null, ok:false, nota:'ver planilla oficial UOYEP' },
+          { cat:'Categoría máxima', basico:null, ok:false, nota:'ver planilla oficial UOYEP' },
+        ]
+      }
+    ],
+    noRemunerativos:[
+      { id:'uoyep_nr_marabr26', mes:'2026-04', label:'NR todas las categorías (mar–ago 2026)',
+        monto:65000, activo:true, nota:'$65.000 fija para todas las categorías. Vigencia mar–ago 2026.' },
+    ],
+    adicionales:[
+      { concepto:'Presentismo',  tipo:'pct', valor:0, base:'básico', rem:true,  nota:'Verificar % vigente en CCT 797/22' },
+      { concepto:'Antigüedad',   tipo:'pct', valor:1, base:'básico', rem:true,  nota:'1% por año acumulativo' },
+    ],
+    antiguedad:{ pct:1, nota:'1% por año acumulativo' },
+  },
+];
+
+function getSindsUser(){ try{ return JSON.parse(localStorage.getItem(SINDS_GENERICOS_SK)||'[]'); }catch(e){ return []; } }
+function saveSindsUser(arr){ localStorage.setItem(SINDS_GENERICOS_SK, JSON.stringify(arr)); }
+function getAllSindGenericos(){ return [...SINDS_BUILTINS, ...getSindsUser()]; }
+function getSindById(id){ return getAllSindGenericos().find(s=>s.id===id)||null; }
+
+// Historial por sindicato genérico
+function getSindHist(id){ try{ return JSON.parse(localStorage.getItem(`lsg_sinh_${id}`)||'[]'); }catch(e){ return []; } }
+function saveSindHist(id, arr){ localStorage.setItem(`lsg_sinh_${id}`, JSON.stringify(arr)); }
+function pushSindHist(id, entry){ const h=getSindHist(id); h.push(entry); saveSindHist(id, h); }
+
+// ── Nueva renderEscalaSalarial con tabs dinámicos ──────────────
+function renderEscalaSalarial(){
+  const cont=document.getElementById('escala-content');
+  if(!cont) return;
+  const genericos=getAllSindGenericos();
+  const tabs=[
+    { id:'interna',   label:'🏢 Escala interna' },
+    { id:'uom',       label:'⚙️ UOM R.17' },
+    { id:'comercio',  label:'🛒 Comercio' },
+    ...genericos.map(s=>({ id:`sind_${s.id}`, label:`${s.icon||'🔧'} ${s.codigo}` })),
+    { id:'smvm',      label:'💰 SMVM' },
+    { id:'__nuevo__', label:'＋ Nuevo' },
+  ];
+  cont.innerHTML=`
+    <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);flex-wrap:wrap;overflow-x:auto" id="escala-master-tabbar">
+      ${tabs.map((t,i)=>`
+        <button id="escala-mtab-${t.id}" onclick="escalaMasterTab('${t.id}')"
+          style="background:none;border:none;padding:9px 15px;cursor:pointer;font-size:12px;white-space:nowrap;
+                 font-weight:${i===0?'600':'400'};color:${i===0?'var(--t1)':t.id==='__nuevo__'?'var(--accent2)':'var(--t3)'};
+                 border-bottom:2px solid ${i===0?'var(--accent2)':'transparent'};margin-bottom:-2px">
+          ${t.label}
+        </button>`).join('')}
+    </div>
+    <div id="escala-pane-master-interna"></div>
+    <div id="escala-pane-master-uom"      style="display:none"></div>
+    <div id="escala-pane-master-comercio" style="display:none"></div>
+    ${genericos.map(s=>`<div id="escala-pane-master-sind_${s.id}" style="display:none"></div>`).join('')}
+    <div id="escala-pane-master-smvm"     style="display:none"></div>`;
+  _renderEscalaInternaEnPaneMaster();
+}
+
+function escalaMasterTab(which){
+  // Si es acción Nueva, abrir modal directamente
+  if(which==='__nuevo__'){ abrirModalNuevoSindicato(); return; }
+  // Actualizar styles de todas las tabs
+  document.querySelectorAll('[id^="escala-mtab-"]').forEach(btn=>{
+    const id=btn.id.replace('escala-mtab-','');
+    const on=id===which;
+    btn.style.fontWeight=on?'600':'400';
+    btn.style.color=on?'var(--t1)':id==='__nuevo__'?'var(--accent2)':'var(--t3)';
+    btn.style.borderBottom=on?'2px solid var(--accent2)':'2px solid transparent';
+  });
+  // Ocultar todos los panes, mostrar el seleccionado
+  document.querySelectorAll('[id^="escala-pane-master-"]').forEach(p=>p.style.display='none');
+  const pane=document.getElementById(`escala-pane-master-${which}`);
+  if(pane){ pane.style.display='block'; }
+  // Lazy render
+  if(!pane || pane.dataset.loaded) return;
+  if(which==='uom')     { renderEscalaUOM(); }
+  else if(which==='comercio') { renderEscalaComercio(); }
+  else if(which==='smvm')     { renderSMVM(); }
+  else if(which.startsWith('sind_')){
+    const id=which.slice(5);
+    const sind=getSindById(id);
+    if(sind) renderEscalaSindGenerico(sind, pane);
+  }
+  pane.dataset.loaded='1';
+}
+
+// ── Render genérico de sindicato ───────────────────────────────
+function renderEscalaSindGenerico(sind, paneEl){
+  const pane=paneEl||document.getElementById(`escala-pane-master-sind_${sind.id}`);
+  if(!pane) return;
+  const fN=n=>(n===null||n===undefined||isNaN(n))
+    ?'<span style="font-size:10px;font-style:italic;color:var(--t3)">ver planilla</span>'
+    :'$ '+Math.round(n).toLocaleString('es-AR');
+  const fH=n=>'$ '+n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const hist=getSindHist(sind.id);
+  const isUser=!sind.builtin;
+
+  const subTabs=['cat','adic','nr','hist'];
+  let html=`
+    <div class="card" style="padding:14px 18px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px">${sind.icon||'🔧'} ${sind.nombre}</div>
+        <div style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-bottom:2px">${sind.cct}</div>
+        <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Vigencia: <b style="color:var(--t2)">${sind.mesLabel}</b> (${_fechaBonita(sind.vigencia)})</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px">${sind.acuerdo}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="abrirModalActualizarSindGenerico('${sind.id}')" style="font-size:11px;padding:5px 12px;white-space:nowrap">⇡ Cargar paritaria</button>
+        ${isUser?`<button class="btn-blanquear" onclick="confirmarEliminarSindUser('${sind.id}')" style="font-size:11px;padding:5px 12px">✕ Eliminar</button>`:''}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+      <button id="sg-${sind.id}-tab-cat"  onclick="sgTab('${sind.id}','cat')"  style="background:none;border:none;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t1);border-bottom:2px solid var(--accent2);margin-bottom:-2px">📋 Categorías</button>
+      <button id="sg-${sind.id}-tab-adic" onclick="sgTab('${sind.id}','adic')" style="background:none;border:none;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:400;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px">➕ Adicionales</button>
+      <button id="sg-${sind.id}-tab-nr"   onclick="sgTab('${sind.id}','nr')"   style="background:none;border:none;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:400;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px">📦 No Rem.</button>
+      <button id="sg-${sind.id}-tab-hist" onclick="sgTab('${sind.id}','hist')" style="background:none;border:none;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:400;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-2px">📜 Historial (${hist.length})</button>
+    </div>
+
+    <div id="sg-${sind.id}-pane-cat">
+      ${(sind.tablas||[]).map(tabla=>`
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+          <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2)">
+            <span style="font-size:12px;font-weight:600;color:var(--t1)">${tabla.titulo}</span>
+            ${tabla.subtitulo?`<div style="font-size:10px;color:var(--t3);margin-top:2px">${tabla.subtitulo}</div>`:''}
+          </div>
+          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+              <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;min-width:260px">Categoría</th>
+              ${tabla.tipo==='hora'
+                ? `<th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:rgb(59,130,246);text-transform:uppercase">Valor hora</th>
+                   <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:rgb(34,197,94);text-transform:uppercase">Jornal (×8hs)</th>
+                   <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:rgb(251,191,36);text-transform:uppercase">Mensual (×200hs)</th>`
+                : `<th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Básico mensual</th>`
+              }
+              <th style="padding:9px 12px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Nota</th>
+            </tr></thead>
+            <tbody>
+              ${tabla.cats.map((c,i)=>`
+              <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+                <td style="padding:10px 14px;color:var(--t1);font-weight:500">${c.cat}</td>
+                ${tabla.tipo==='hora'
+                  ? `<td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:${c.ok&&c.valorHora?'rgb(59,130,246)':'var(--t3)'};font-weight:600">${c.valorHora?fH(c.valorHora):'—'}</td>
+                     <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:rgb(34,197,94);font-size:11px">${c.valorHora?fH(c.valorHora*8):'—'}</td>
+                     <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:rgb(251,191,36);font-size:11px">${c.valorHora?'$ '+Math.round(c.valorHora*200).toLocaleString('es-AR'):(c.basico?fN(c.basico)+'<span style="font-size:9px;color:var(--t3);margin-left:3px">mensual</span>':'—')}</td>`
+                  : `<td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:${c.ok&&c.basico?'var(--t1)':'var(--t3)'};font-weight:${c.ok?'600':'400'}">${c.ok&&c.basico?fN(c.basico):'<span style="font-size:10px;font-style:italic">ver planilla</span>'}</td>`
+                }
+                <td style="padding:10px 12px;font-size:10px;color:var(--t3)">${c.nota||''}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table></div>
+        </div>`).join('')}
+      ${sind.antiguedad?`<div style="font-size:11px;color:var(--t3);padding:2px 2px">Antigüedad: ${sind.antiguedad.nota}</div>`:''}
+    </div>
+
+    <div id="sg-${sind.id}-pane-adic" style="display:none">
+      ${(sind.adicionales||[]).length===0
+        ? `<div class="card" style="padding:20px;text-align:center;color:var(--t3);font-size:12px">Sin adicionales definidos.</div>`
+        : `<div class="card" style="padding:0;overflow:hidden">
+            <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2)">
+              <span style="font-size:12px;font-weight:600;color:var(--t1)">Adicionales y descuentos</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+                <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;min-width:220px">Concepto</th>
+                <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Valor</th>
+                <th style="padding:9px 12px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Base</th>
+                <th style="padding:9px 10px;text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Tipo</th>
+                <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Nota</th>
+              </tr></thead>
+              <tbody>
+                ${sind.adicionales.map((a,i)=>`
+                <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+                  <td style="padding:10px 14px;color:var(--t1);font-weight:500">${a.concepto}</td>
+                  <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:${a.tipo==='pct'?'rgb(34,197,94)':'var(--t1)'};font-weight:600">${a.tipo==='pct'?a.valor+'%':'$ '+a.valor.toLocaleString('es-AR')}</td>
+                  <td style="padding:10px 12px;font-size:11px;color:var(--t3)">${a.base||'—'}</td>
+                  <td style="padding:10px 10px;text-align:center">
+                    <span style="font-size:9px;padding:2px 7px;border-radius:10px;${a.rem?'background:rgba(34,197,94,.1);color:rgb(34,197,94);border:1px solid rgba(34,197,94,.3)':'background:rgba(251,191,36,.1);color:rgb(251,191,36);border:1px solid rgba(251,191,36,.3)'}">
+                      ${a.rem?'REM':'NR'}
+                    </span>
+                  </td>
+                  <td style="padding:10px 14px;font-size:10px;color:var(--t3)">${a.nota||''}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`}
+    </div>
+
+    <div id="sg-${sind.id}-pane-nr" style="display:none">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <span style="font-size:12px;font-weight:600;color:var(--t1)">Conceptos No Remunerativos</span>
+          <button class="btn btn-ghost" onclick="abrirModalActualizarSindGenerico('${sind.id}','nr')" style="font-size:11px;padding:4px 10px">+ Agregar NR</button>
+        </div>
+        ${(sind.noRemunerativos||[]).length===0
+          ? `<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">Sin NR registrados.</div>`
+          : `<table style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead><tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+                <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Concepto</th>
+                <th style="padding:9px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Monto</th>
+                <th style="padding:9px 14px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Nota</th>
+              </tr></thead>
+              <tbody>
+                ${sind.noRemunerativos.map((r,i)=>`
+                <tr style="border-bottom:1px solid var(--border);background:${i%2?'rgba(255,255,255,.01)':'transparent'}">
+                  <td style="padding:10px 14px">
+                    <span style="color:var(--t1);font-weight:500">${r.label}</span>
+                    ${r.activo?'<span style="font-size:9px;font-family:var(--font-mono);padding:1px 6px;border-radius:8px;background:rgba(34,197,94,.1);color:rgb(34,197,94);border:1px solid rgba(34,197,94,.3);margin-left:6px">VIGENTE</span>':''}
+                    <div style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-top:1px">${r.mes||''}</div>
+                  </td>
+                  <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:rgb(251,191,36);font-weight:600">${r.monto?'$ '+r.monto.toLocaleString('es-AR'):'(variable)'}</td>
+                  <td style="padding:10px 14px;font-size:10px;color:var(--t3)">${r.nota||'—'}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>`}
+      </div>
+    </div>
+
+    <div id="sg-${sind.id}-pane-hist" style="display:none">
+      ${hist.length===0
+        ? `<div class="card" style="padding:20px;text-align:center;color:var(--t3);font-size:12px">Sin actualizaciones registradas todavía.</div>`
+        : [...hist].reverse().map(h=>`
+          <div class="card" style="padding:14px 18px;margin-bottom:10px;border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+              <div>
+                <span style="font-size:13px;font-weight:600;color:var(--t1)">${h.mesLabel}</span>
+                <span style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-left:8px">${_fechaBonita(h.vigencia)}</span>
+                <div style="font-size:11px;color:var(--t3);margin-top:3px">${h.descripcion||'—'}</div>
+              </div>
+              <div style="font-family:var(--font-mono);font-size:13px;color:${h.tipo==='pct'?'rgb(34,197,94)':'rgb(59,130,246)'};font-weight:600">
+                ${h.tipo==='pct'?(h.valor>0?'+':'')+h.valor+'%':'$ '+Math.round(h.valor).toLocaleString('es-AR')+' fijo'}
+              </div>
+            </div>
+          </div>`).join('')}
+    </div>`;
+
+  pane.innerHTML=html;
+}
+
+function sgTab(id, which){
+  ['cat','adic','nr','hist'].forEach(t=>{
+    const b=document.getElementById(`sg-${id}-tab-${t}`);
+    const p=document.getElementById(`sg-${id}-pane-${t}`);
+    const on=t===which;
+    if(b){ b.style.fontWeight=on?'600':'400'; b.style.color=on?'var(--t1)':'var(--t3)'; b.style.borderBottom=on?'2px solid var(--accent2)':'2px solid transparent'; }
+    if(p) p.style.display=on?'block':'none';
+  });
+}
+
+// ── Modal actualización genérico ───────────────────────────────
+function abrirModalActualizarSindGenerico(id, tabDefault){
+  const sind=getSindById(id);
+  if(!sind) return;
+  const prev=document.getElementById('modal-upd-sind-gen');
+  if(prev) prev.remove();
+  const hoy=new Date();
+  const primDia=new Date(hoy.getFullYear(),hoy.getMonth(),1).toISOString().slice(0,10);
+  const modal=document.createElement('div');
+  modal.id='modal-upd-sind-gen';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  modal.innerHTML=`
+    <div class="card" style="padding:0;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;border:1px solid var(--border)">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--t1)">⇡ Cargar paritaria — ${sind.icon} ${sind.codigo}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">Vigencia actual: <b>${sind.mesLabel}</b></div>
+        </div>
+        <button onclick="document.getElementById('modal-upd-sind-gen').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:13px">
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Tipo de actualización</label>
+          <select id="upd-gen-tipo" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"
+            onchange="document.getElementById('upd-gen-row-pct').style.display=this.value==='pct'?'block':'none';document.getElementById('upd-gen-row-monto').style.display=this.value!=='pct'?'block':'none';">
+            <option value="pct">Incremento % sobre básicos</option>
+            <option value="fijo">Suma fija a básicos</option>
+            <option value="nr">Suma No Remunerativa mensual (nueva)</option>
+          </select>
+        </div>
+        <div id="upd-gen-row-pct">
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Porcentaje *</label>
+          <div style="position:relative">
+            <input type="number" id="upd-gen-pct" step="0.01" placeholder="Ej: 5.8"
+              style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 34px 8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+            <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--t3);font-family:var(--font-mono)">%</span>
+          </div>
+        </div>
+        <div id="upd-gen-row-monto" style="display:none">
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Monto ($) *</label>
+          <input type="number" id="upd-gen-monto" step="1" placeholder="Ej: 65000"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+        </div>
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Vigencia desde *</label>
+          <input type="date" id="upd-gen-vigencia" value="${primDia}"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+        </div>
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Descripción / acuerdo *</label>
+          <input type="text" id="upd-gen-desc" placeholder="Ej: Paritaria UOCRA junio 2026"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+        </div>
+      </div>
+      <div style="padding:12px 18px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-upd-sind-gen').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarActualizacionSindGenerico('${id}')" style="font-size:12px;padding:7px 16px">Registrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
+}
+
+function confirmarActualizacionSindGenerico(id){
+  const tipo=document.getElementById('upd-gen-tipo')?.value||'pct';
+  const pct=parseFloat(document.getElementById('upd-gen-pct')?.value||'');
+  const monto=parseFloat(document.getElementById('upd-gen-monto')?.value||'');
+  const vigencia=(document.getElementById('upd-gen-vigencia')?.value||'').slice(0,10);
+  const desc=(document.getElementById('upd-gen-desc')?.value||'').trim();
+  const valor=tipo==='pct'?pct:monto;
+  if(!vigencia){ if(typeof showAlert==='function') showAlert('Ingresá la fecha de vigencia.','warning'); return; }
+  if(isNaN(valor)||valor===0){ if(typeof showAlert==='function') showAlert('Ingresá el porcentaje o monto.','warning'); return; }
+  if(!desc){ if(typeof showAlert==='function') showAlert('Ingresá una descripción.','warning'); return; }
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const p=vigencia.split('-');
+  const mesLabel=`${meses[parseInt(p[1])-1]} ${p[0]}`;
+  // Actualizar la versión en el sind (para user-created) o solo en historial (builtin)
+  const sind=getSindById(id);
+  if(!sind) return;
+  if(!sind.builtin){
+    // Para sindicatos de usuario, actualizamos la estructura
+    const users=getSindsUser();
+    const idx=users.findIndex(s=>s.id===id);
+    if(idx>=0){
+      const s=users[idx];
+      s.vigencia=vigencia; s.mesLabel=mesLabel; s.acuerdo=desc;
+      if(tipo==='pct' && pct!==0){
+        const factor=1+pct/100;
+        (s.tablas||[]).forEach(t=>t.cats.forEach(c=>{ if(c.basico) c.basico=Math.round(c.basico*factor); if(c.valorHora) c.valorHora=Math.round(c.valorHora*factor*100)/100; }));
+      } else if(tipo==='fijo' && monto!==0){
+        (s.tablas||[]).forEach(t=>t.cats.forEach(c=>{ if(c.basico) c.basico=Math.round(c.basico+monto); }));
+      }
+      users[idx]=s;
+      saveSindsUser(users);
+    }
+  }
+  // Para todos: registrar en historial
+  pushSindHist(id, { vigencia, mesLabel, tipo, valor, descripcion: desc, ts: new Date().toISOString() });
+  document.getElementById('modal-upd-sind-gen')?.remove();
+  if(typeof toast==='function') toast(`✓ Actualización ${mesLabel} registrada en ${id.toUpperCase()}`,'var(--green)',3000);
+  // Re-render del pane
+  const pane=document.getElementById(`escala-pane-master-sind_${id}`);
+  if(pane){ pane.dataset.loaded=''; const sindActualizado=getSindById(id); if(sindActualizado) renderEscalaSindGenerico(sindActualizado, pane); pane.dataset.loaded='1'; }
+}
+
+// ── Modal nuevo sindicato ──────────────────────────────────────
+function abrirModalNuevoSindicato(){
+  const prev=document.getElementById('modal-nuevo-sind');
+  if(prev) prev.remove();
+  const modal=document.createElement('div');
+  modal.id='modal-nuevo-sind';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  modal.innerHTML=`
+    <div class="card" style="padding:0;max-width:560px;width:100%;max-height:92vh;overflow-y:auto;border:1px solid var(--border)">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:13px;font-weight:600;color:var(--t1)">＋ Nuevo sindicato</div>
+        <button onclick="document.getElementById('modal-nuevo-sind').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:13px">
+        <div style="display:grid;grid-template-columns:60px 1fr;gap:10px">
+          <div>
+            <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Ícono</label>
+            <input type="text" id="ns-icon" value="🔧" maxlength="4"
+              style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px;color:var(--t1);font-size:20px;text-align:center;outline:none">
+          </div>
+          <div>
+            <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Código (sigla) *</label>
+            <input type="text" id="ns-codigo" placeholder="Ej: SMATA" maxlength="20"
+              style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono);text-transform:uppercase">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Nombre completo *</label>
+          <input type="text" id="ns-nombre" placeholder="Ej: Sindicato de Mecánicos y Afines del Transporte Automotor"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">CCT / Convenio</label>
+          <input type="text" id="ns-cct" placeholder="Ej: CCT 594/10"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Vigencia desde *</label>
+            <input type="date" id="ns-vigencia"
+              style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+          </div>
+          <div>
+            <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">% Antigüedad/año</label>
+            <input type="number" id="ns-antig" value="1" step="0.1" min="0"
+              style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">Acuerdo / descripción</label>
+          <textarea id="ns-acuerdo" rows="2" placeholder="Ej: Paritaria 2026: +8% semestral | Cámara XYZ"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:12px;outline:none;resize:vertical;font-family:inherit"></textarea>
+        </div>
+        <div>
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;margin-bottom:8px">Categorías (una por línea)</div>
+          <div style="font-size:10px;color:var(--t3);margin-bottom:6px">Formato: <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">Nombre categoría | tipo | valor</code> — tipo: <b>hora</b> o <b>mensual</b> · valor: número o vacío</div>
+          <textarea id="ns-cats" rows="6" placeholder="Ingresante | hora | 4313.43&#10;Operario Calificado | hora | 4672.74&#10;Oficial | hora | 5958.84&#10;Cat. 1° Administrativos | mensual | 833257&#10;Cat. 4° Administrativos | mensual | 1166170"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:12px;outline:none;resize:vertical;font-family:var(--font-mono)"></textarea>
+        </div>
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase">% Presentismo (0 = no aplica)</label>
+          <input type="number" id="ns-present" value="0" step="0.1" min="0"
+            style="width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+        </div>
+      </div>
+      <div style="padding:12px 18px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-nuevo-sind').remove()" style="font-size:12px;padding:7px 14px">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarNuevoSindicato()" style="font-size:12px;padding:7px 16px">Crear sindicato</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
+  // Setear fecha por defecto
+  const hoy=new Date();
+  const prim=new Date(hoy.getFullYear(),hoy.getMonth(),1).toISOString().slice(0,10);
+  const el=document.getElementById('ns-vigencia');
+  if(el) el.value=prim;
+}
+
+function confirmarNuevoSindicato(){
+  const codigo=(document.getElementById('ns-codigo')?.value||'').trim().toUpperCase();
+  const nombre=(document.getElementById('ns-nombre')?.value||'').trim();
+  const icon=(document.getElementById('ns-icon')?.value||'🔧').trim()||'🔧';
+  const cct=(document.getElementById('ns-cct')?.value||'').trim();
+  const vigencia=(document.getElementById('ns-vigencia')?.value||'').slice(0,10);
+  const acuerdo=(document.getElementById('ns-acuerdo')?.value||'').trim();
+  const antigPct=parseFloat(document.getElementById('ns-antig')?.value||'1')||1;
+  const presentPct=parseFloat(document.getElementById('ns-present')?.value||'0')||0;
+  const catsRaw=(document.getElementById('ns-cats')?.value||'').trim();
+
+  if(!codigo){ if(typeof showAlert==='function') showAlert('Ingresá el código del sindicato.','warning'); return; }
+  if(!nombre){ if(typeof showAlert==='function') showAlert('Ingresá el nombre.','warning'); return; }
+  if(!vigencia){ if(typeof showAlert==='function') showAlert('Ingresá la fecha de vigencia.','warning'); return; }
+
+  // Verificar que el id no exista ya
+  const id=codigo.toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(getSindById(id)){ if(typeof showAlert==='function') showAlert(`Ya existe un sindicato con código "${codigo}".`,'warning'); return; }
+
+  // Parsear categorías
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const p=vigencia.split('-');
+  const mesLabel=`${meses[parseInt(p[1])-1]} ${p[0]}`;
+
+  const horaLines=[], mensualLines=[];
+  catsRaw.split('\n').forEach(l=>{
+    const parts=l.split('|').map(x=>x.trim());
+    if(!parts[0]) return;
+    const catNom=parts[0];
+    const tipo=(parts[1]||'mensual').toLowerCase();
+    const val=parseFloat(parts[2])||null;
+    if(tipo==='hora') horaLines.push({ cat:catNom, valorHora:val, ok:val!==null });
+    else mensualLines.push({ cat:catNom, basico:val, ok:val!==null });
+  });
+
+  const tablas=[];
+  if(horaLines.length) tablas.push({ titulo:'Personal jornalizado (por hora)', subtitulo:'', tipo:'hora', cats:horaLines });
+  if(mensualLines.length) tablas.push({ titulo:'Personal mensualizado', subtitulo:'', tipo:'mensual', cats:mensualLines });
+  if(!tablas.length) tablas.push({ titulo:'Categorías', subtitulo:'', tipo:'mensual', cats:[] });
+
+  const adicionales=[];
+  if(presentPct>0) adicionales.push({ concepto:'Presentismo', tipo:'pct', valor:presentPct, base:'básico', rem:true, nota:'' });
+  if(antigPct>0)   adicionales.push({ concepto:'Antigüedad',  tipo:'pct', valor:antigPct,  base:'básico', rem:true, nota:`${antigPct}% por año acumulativo` });
+
+  const nuevoSind={
+    id, builtin:false, codigo, icon, nombre, cct, vigencia, mesLabel, acuerdo,
+    tablas, adicionales, noRemunerativos:[],
+    antiguedad:{ pct:antigPct, nota:`${antigPct}% por año acumulativo` },
+  };
+
+  const users=getSindsUser();
+  users.push(nuevoSind);
+  saveSindsUser(users);
+  document.getElementById('modal-nuevo-sind')?.remove();
+  if(typeof toast==='function') toast(`✓ Sindicato ${codigo} creado — recargando módulo...`,'var(--green)',3000);
+  // Recargar el módulo para que aparezca la nueva tab
+  setTimeout(()=>{
+    renderEscalaSalarial();
+    setTimeout(()=>escalaMasterTab(`sind_${id}`), 100);
+  }, 300);
+}
+
+async function confirmarEliminarSindUser(id){
+  const sind=getSindById(id);
+  if(!sind||sind.builtin) return;
+  const _cfm=await showConfirm({ titulo:'Eliminar sindicato', mensaje:`¿Eliminar el sindicato <b>${sind.codigo} — ${sind.nombre}</b>?<br><br>Se borrarán también sus datos de historial. Esta acción no se puede deshacer.`, labelOk:'Eliminar', peligroso:true });
+  if(!_cfm) return;
+  const users=getSindsUser().filter(s=>s.id!==id);
+  saveSindsUser(users);
+  localStorage.removeItem(`lsg_sinh_${id}`);
+  if(typeof toast==='function') toast(`✓ Sindicato ${sind.codigo} eliminado`,'var(--green)',2500);
+  setTimeout(()=>{ renderEscalaSalarial(); }, 200);
+}
+
