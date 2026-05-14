@@ -790,12 +790,44 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   const diasBaseDescripcion = _esUocra ? 'hábiles' : 'calendario (30)';
   const diasTrab=$m(nov.diasTrabajados ?? diasBase);
   const ausentismo=Math.max(0, diasBase - diasTrab);
-  const bruto=$m(emp.bruto);
+  const _basicoEmp   = $m(emp.basico);
+  const _aCuentaEmp  = $m(emp.a_cuenta) || 0;
+
+  // ── Complemento Función ──────────────────────────────────────
+  // Si el empleado tiene básico y tramo asignados: calcula complemento
+  // dinámicamente desde la fórmula LEITEN.
+  //   CF = escala(cat,tramo) - (básico + aCuenta) × (1 + %pres/100)
+  // Si no: usa el campo emp.complemento guardado (legacy/manual).
+  let _cfMensual = 0;
+  let bruto;
+  if(_basicoEmp > 0 && emp.cat && emp.tramo && typeof getMontoEscala === 'function'){
+    const _escalaEmp = getMontoEscala(emp.cat, emp.tramo);
+    if(_escalaEmp && _escalaEmp > 0){
+      const _base = _basicoEmp + _aCuentaEmp;
+      _cfMensual = Math.max(0, Math.round((_escalaEmp - _base*(1 + params.pctPresentismo/100))*100)/100);
+      bruto = _basicoEmp + _aCuentaEmp + _cfMensual;
+    } else {
+      bruto = $m(emp.bruto);    // sin asignación de escala → bruto manual
+    }
+  } else {
+    bruto = $m(emp.bruto);
+    // Puede tener complemento guardado manualmente (datos históricos)
+    if(_basicoEmp > 0) _cfMensual = $m(emp.complemento) || 0;
+  }
   const proporcion = diasBase > 0 ? diasTrab/diasBase : 1;
 
   // ─ Sueldo básico proporcional a días trabajados ─
-  // En quincenales se paga la MITAD del bruto mensual prorrateado.
-  const sueldoBasico=bruto*proporcion*_factorPeriodo;
+  // Si hay complemento función calculado: sueldoBasico = solo la parte base
+  // (básico + a_cuenta). Complemento va como concepto separado mCompFuncion.
+  // Esto garantiza que todos los demás cálculos (HE, antigüedad, etc.) sigan
+  // usando el bruto completo como base.
+  const _tieneCompFuncion = _cfMensual > 0 && _basicoEmp > 0;
+  const sueldoBasico = _tieneCompFuncion
+    ? (_basicoEmp + _aCuentaEmp) * proporcion * _factorPeriodo
+    : bruto * proporcion * _factorPeriodo;
+  const mCompFuncion = _tieneCompFuncion
+    ? _cfMensual * proporcion * _factorPeriodo
+    : 0;
 
   // ─ Horas extras ─
   // Valor hora extra = bruto / 173
@@ -1029,7 +1061,8 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
                         + mSac + mVac + mLicEspeciales + mOtrosHRem + mAjuste + mCumpObj
                         + mPreaviso + mSacProporcional + mFeriadosNoTrab
                         // Liq. final — conceptos REMUNERATIVOS
-                        + mMultaCert + mSancion132bis;
+                        + mMultaCert + mSancion132bis
+                        + mCompFuncion;                     // complemento función (escala - base)
 
   // TOTAL HABERES = remunerativos + no remunerativos exentos (lo que cobra el empleado)
   let totalHaberes = totalHaberesRem + totalExentos;
@@ -1064,7 +1097,7 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
     const ctxConceptos = {
       // Haberes base
       sueldoBasico, mAntig, mPres, mHsE50, mHsE100, mSac, mVac, mAjuste, mCumpObj,
-      mLicEspeciales, mOtrosHRem,
+      mLicEspeciales, mOtrosHRem, mCompFuncion,
       // Totales (los descuentos/neto se completan en segunda pasada)
       totalHaberesRem, totalExentos, totalHaberes,
       totalDescuentos: 0, netoAPagar: 0,
@@ -1387,6 +1420,7 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
     mOtrosHRem, mOtrosHNoRem,
     // Cumplimiento de objetivos (concepto remunerativo)
     mCumpObj, cumplimientoObjetivos: mCumpObj,
+    mCompFuncion, basicoEmp: _basicoEmp, aCuentaEmp: _aCuentaEmp,
     // Liquidación final (conceptos por baja)
     mPreaviso, mSacProporcional, mVacNoGozadas, mIntegrMesDesp, mIndemAntig,
     liqFinalDatos: lf,
@@ -4363,6 +4397,7 @@ function buildConceptRows(item, params){
 
   // HABERES
   pH('Sueldo',             1,     item.diasTrab,              item.sueldoBasico);
+  pH('Complemento Función',1010,  '',                         $m(item.mCompFuncion));
   pH('Antigüedad',         100,   '',                         item.mAntig);
   pH('Horas Extras 50%',   2,     item.hsE50||'',             item.mHsE50);
   pH('Horas Extras 100%',  3,     item.hsE100||'',            item.mHsE100);

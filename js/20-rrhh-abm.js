@@ -1166,6 +1166,8 @@ async function abmEditarEmpleado(leg){
   setVal('abm-e-telefono', e.telefono||'');
   setVal('abm-e-tarea', e.tarea||'');
   setVal('abm-e-basico', e.basico||'');
+  setVal('abm-e-acuenta', e.a_cuenta||'');
+  setTimeout(abmRecalcComplemento, 50);
   // Fecha ingreso → YYYY-MM-DD
   let ing=e.ing||'';
   if(ing&&ing.includes('/')){const p=ing.split('/');ing=p.length===3?`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`:''}
@@ -1462,6 +1464,57 @@ async function ejecutarInicializarHistorial(){
 function gV(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
 
 
+// ── Complemento Función — recálculo en tiempo real en el formulario ABM ──────
+// Fórmula LEITEN: CF = escala(cat,tramo) − (básico + aCuenta) × (1 + %pres/100)
+function _abmComplementoCalculado(){
+  const basico   = parseFloat(document.getElementById('abm-e-basico')?.value)  || 0;
+  const aCuenta  = parseFloat(document.getElementById('abm-e-acuenta')?.value) || 0;
+  if(!basico) return null;
+  const cat   = (document.getElementById('abm-e-cat')?.value   || '').trim().toUpperCase();
+  const tramo = (document.getElementById('abm-e-tramo')?.value || '').trim().toUpperCase();
+  if(!cat && !tramo) return null;
+  const escala = (typeof getMontoEscala === 'function') ? getMontoEscala(cat, tramo) : null;
+  if(!escala || escala <= 0) return null;
+  const liqParams  = (typeof getLiqParams === 'function') ? getLiqParams() : null;
+  const pctPres    = liqParams?.pctPresentismo ?? 5;
+  const base       = basico + aCuenta;
+  const comp       = Math.round((escala - base * (1 + pctPres / 100)) * 100) / 100;
+  return Math.max(0, comp);
+}
+
+function abmRecalcComplemento(){
+  const el = document.getElementById('abm-e-comp-calc');
+  if(!el) return;
+  const basico  = parseFloat(document.getElementById('abm-e-basico')?.value)  || 0;
+  const aCuenta = parseFloat(document.getElementById('abm-e-acuenta')?.value) || 0;
+  const cat     = (document.getElementById('abm-e-cat')?.value   || '').trim().toUpperCase();
+  const tramo   = (document.getElementById('abm-e-tramo')?.value || '').trim().toUpperCase();
+  const fmt = n => '$ ' + Math.round(n).toLocaleString('es-AR');
+
+  if(!basico){ el.textContent = '— (cargá básico)'; el.style.color='var(--t3)'; return; }
+  if(!cat && !tramo){ el.textContent = '— (cargá categoría / tramo)'; el.style.color='var(--t3)'; return; }
+
+  const escala = (typeof getMontoEscala === 'function') ? getMontoEscala(cat, tramo) : null;
+  if(!escala || escala <= 0){
+    el.textContent = `— (sin escala asignada para ${cat}${tramo?' / '+tramo:''})`;
+    el.style.color = 'var(--t3)'; return;
+  }
+
+  const liqParams = (typeof getLiqParams === 'function') ? getLiqParams() : null;
+  const pctPres   = liqParams?.pctPresentismo ?? 5;
+  const base      = basico + aCuenta;
+  const comp      = Math.round((escala - base * (1 + pctPres / 100)) * 100) / 100;
+
+  if(comp <= 0){
+    el.innerHTML = `<span style="color:var(--yellow)">⚠ Básico + A Cuenta supera la escala (${fmt(escala)}). Verificar.</span>`;
+  } else {
+    const brutoCalc = base + comp;
+    el.innerHTML = `${fmt(comp)}<span style="font-size:10px;color:var(--t3);margin-left:10px">` +
+      `Escala: ${fmt(escala)} · Bruto resultante: ${fmt(brutoCalc)} · Presentismo aplicado: ${pctPres}%</span>`;
+    el.style.color = 'var(--accent2)';
+  }
+}
+
 function abmAltaEmpleado(){
   const leg=gV('abm-n-leg').padStart(6,'0'), dni=gV('abm-n-dni'), cuil=gV('abm-n-cuil');
   const nom=gV('abm-n-nom').toUpperCase(), emp=gV('abm-n-emp');
@@ -1516,7 +1569,10 @@ async function abmGuardarEdicion(){
     lim:(parseFloat(gV('abm-e-neto'))||0)*0.5, mail:gV('abm-e-mail'),
     dni:gV('abm-e-dni'), cuil:gV('abm-e-cuil'),
     telefono: gV('abm-e-telefono'), tarea: gV('abm-e-tarea'), estado_civil: gV('abm-e-estado-civil'),
-    basico: parseFloat(gV('abm-e-basico'))||0, condicion: gV('abm-e-condicion'),
+    basico: parseFloat(gV('abm-e-basico'))||0,
+    a_cuenta: parseFloat(gV('abm-e-acuenta'))||0,
+    complemento: _abmComplementoCalculado()||0,
+    condicion: gV('abm-e-condicion'),
     cod_sindicato: gV('abm-e-sindicato') || '',
     validador: gV('abm-e-validador') || null, areaOrg: gV('abm-e-area') || null};
   saveAbmOverrides(ov);
@@ -1558,6 +1614,8 @@ async function abmGuardarEdicion(){
     mail: gV('abm-e-mail'),
     telefono: gV('abm-e-telefono'),
     basico: parseFloat(gV('abm-e-basico'))||0,
+    a_cuenta: parseFloat(gV('abm-e-acuenta'))||0,
+    complemento: _abmComplementoCalculado()||0,
     condicion: gV('abm-e-condicion'),
     cod_convenio: empAntes.cod_convenio, // no editables en este form
     cod_os: empAntes.cod_os, cod_sindicato: empAntes.cod_sindicato,
