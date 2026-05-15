@@ -1018,26 +1018,27 @@ async function publicarGananciasPDF(){
       try {
         const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
         const canvas = await window.html2canvas(tempDiv, { scale:1.5, useCORS:true, backgroundColor:'#ffffff' });
-        const imgData = canvas.toDataURL('image/jpeg', 0.82);
+        if(!canvas.width || !canvas.height) throw new Error('html2canvas devolvió canvas vacío');
         const pageW = 210, pageH = 297, margin = 8;
         const drawW = pageW - margin * 2;
-        const drawH = (canvas.height * drawW) / canvas.width;
-        // Si excede la página, dividir en páginas adicionales
-        let yPos = margin;
+        // Altura de un "slice" de canvas que cabe en una página A4 (en píxeles de canvas)
+        const pxPorPagina = Math.floor(canvas.width * (pageH - margin*2) / drawW);
         let srcY = 0;
+        let pagina = 0;
         while(srcY < canvas.height){
-          const sliceH = Math.min(canvas.height - srcY, canvas.height * (pageH - margin*2) / drawH);
+          const sliceH = Math.min(pxPorPagina, canvas.height - srcY);
+          if(sliceH <= 0) break;
           const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = canvas.width;
+          sliceCanvas.width  = canvas.width;
           sliceCanvas.height = sliceH;
           const ctx = sliceCanvas.getContext('2d');
           ctx.drawImage(canvas, 0, -srcY);
           const sliceImg = sliceCanvas.toDataURL('image/jpeg', 0.82);
           const sliceDrawH = (sliceH * drawW) / canvas.width;
-          if(srcY > 0) pdf.addPage();
+          if(pagina > 0) pdf.addPage();
           pdf.addImage(sliceImg, 'JPEG', margin, margin, drawW, sliceDrawH);
           srcY += sliceH;
-          if(srcY >= canvas.height) break;
+          pagina++;
         }
         const blob = pdf.output('blob');
         sizeKB = Math.round(blob.size / 1024);

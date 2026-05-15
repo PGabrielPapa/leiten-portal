@@ -748,8 +748,9 @@ async function renderReadLog(){
     div.innerHTML='<div style="padding:16px 18px;color:var(--t3);font-size:13px">Sin lecturas registradas</div>';
     return;
   }
-  div.innerHTML = `<div class="log-row log-header"><span>Período</span><span>Empleado</span><span>Empresa</span><span>Fecha/Hora</span></div>` +
+  div.innerHTML = `<div class="log-row log-header"><span>Tipo</span><span>Período</span><span>Empleado</span><span>Empresa</span><span>Fecha/Hora</span></div>` +
     lista.map(r=>`<div class="log-row">
+      <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${r.tipo==='ganancia'?'rgba(251,191,36,.12)':'rgba(61,127,255,.1)'};color:${r.tipo==='ganancia'?'rgb(251,191,36)':'var(--accent2)'};">${r.tipo==='ganancia'?'🧾 Gan.':'📄 Rec.'}</span>
       <span style="color:var(--accent2)">${r.periodoLabel||r.periodo}</span>
       <span>${r.nom} <span style="color:var(--t3)">(${r.leg})</span></span>
       <span style="color:var(--t3)">${r.emp||''}</span>
@@ -760,12 +761,12 @@ async function renderReadLog(){
 async function exportarLog(){
   const log = await getReadLog();
   if(!log.length){ toast('⚠ El log está vacío','var(--yellow)'); return; }
-  const header = 'Legajo;DNI;Nombre;Empresa;Período;Fecha;Hora\r\n';
-  const rows = log.map(r=>`${r.leg};${r.dni};${r.nom};${r.emp||''};${r.periodoLabel||r.periodo};${r.fecha};${r.hora}`).join('\r\n');
+  const header = 'Tipo;Legajo;DNI;Nombre;Empresa;Período;Fecha;Hora\r\n';
+  const rows = log.map(r=>`${r.tipo||'recibo'};${r.leg};${r.dni||''};${r.nom};${r.emp||''};${r.periodoLabel||r.periodo};${r.fecha};${r.hora}`).join('\r\n');
   const blob = new Blob([header+rows],{type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href=url;
-  a.download=`log_recibos_${new Date().toISOString().split('T')[0]}.csv`;
+  a.download=`log_documentos_${new Date().toISOString().split('T')[0]}.csv`;
   a.click(); URL.revokeObjectURL(url);
   toast('✓ Log exportado como CSV','var(--green)');
 }
@@ -954,8 +955,9 @@ async function deleteGanancia(key){
 async function renderGanancias(){
   if(!currentUser) return;
   const leg = currentUser.emp.leg;
-  const todos = await getGanancias();
+  const [todos, readLog] = await Promise.all([getGanancias(), getReadLog()]);
   const div = document.getElementById('list-ganancias');
+  if(!div) return;
   const propios = Object.entries(todos)
     .filter(([k]) => k.startsWith(leg+'_'))
     .sort((a,b) => b[0].localeCompare(a[0]));
@@ -963,74 +965,72 @@ async function renderGanancias(){
     div.innerHTML='<div class="empty"><div class="empty-icon">🧾</div><div class="empty-text">No tenés cálculos de ganancias disponibles aún</div></div>';
     return;
   }
+  const leidos = new Set(readLog.filter(r=>r.leg===leg && r.tipo==='ganancia').map(r=>r.periodo));
   div.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` +
-    propios.map(([key,rec])=>`
-      <div class="rec-row">
+    propios.map(([key,rec])=>{
+      const leidoFlag = leidos.has(rec.periodo);
+      return `<div class="rec-row">
         <div style="font-size:22px;margin-right:4px">🧾</div>
         <div style="flex:1">
           <div class="rec-periodo">Período: ${periodoLabel(rec.periodo)||rec.periodo}</div>
           <div class="rec-meta">${rec.nom} · ${rec.emp} · Cargado: ${rec.uploadedAt}</div>
         </div>
-        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;margin-right:8px" onclick="verGanancia('${key}')">Ver</button>
+        <span class="${leidoFlag?'rec-badge-leido':'rec-badge-nuevo'}">${leidoFlag?'✓ Leído':'● Nuevo'}</span>
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;margin-left:8px" onclick="verGanancia('${key}')">Ver</button>
         <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="downloadGanancia('${key}')">↓ Descargar</button>
-      </div>`).join('') + `</div>`;
+      </div>`;
+    }).join('') + `</div>`;
 }
 
-function verGanancia(key){
-  getGanancias().then(async todos=>{
+async function verGanancia(key){
+  try {
+    const todos = await getGanancias();
     const rec = todos[key];
     if(!rec){ toast('⚠ Documento no encontrado','var(--yellow)'); return; }
-    // Log de lectura (igual que verRecibo)
     if(currentUser){
       const log = await getReadLog();
-      const yaLeido = log.some(r=>r.leg===currentUser.emp.leg && r.tipo==='ganancia' && r.periodo===rec.periodo);
-      if(!yaLeido){
+      if(!log.some(r=>r.leg===currentUser.emp.leg && r.tipo==='ganancia' && r.periodo===rec.periodo)){
         const now = new Date();
-        await addReadLog({
-          leg: currentUser.emp.leg, dni: currentUser.emp.dni,
-          nom: currentUser.emp.nom, emp: currentUser.emp.emp,
-          tipo: 'ganancia',
-          periodo: rec.periodo, periodoLabel: periodoLabel(rec.periodo),
-          fecha: now.toLocaleDateString('es-AR'),
-          hora: now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
-        });
+        await addReadLog({ leg:currentUser.emp.leg, dni:currentUser.emp.dni,
+          nom:currentUser.emp.nom, emp:currentUser.emp.emp, tipo:'ganancia',
+          periodo:rec.periodo, periodoLabel:periodoLabel(rec.periodo),
+          fecha:now.toLocaleDateString('es-AR'),
+          hora:now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) });
+        renderGanancias();
       }
     }
     const blob = b64toBlob(rec.data,'application/pdf');
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url,'_blank');
+    const url  = URL.createObjectURL(blob);
+    const win  = window.open(url,'_blank');
     if(!win||win.closed) mostrarReciboEnModal(rec, url);
     else setTimeout(()=>URL.revokeObjectURL(url),60000);
-  });
+  } catch(e){ toast('⚠ Error al abrir el documento','var(--red)'); console.error(e); }
 }
 
 async function downloadGanancia(key){
-  getGanancias().then(async todos=>{
+  try {
+    const todos = await getGanancias();
     const rec = todos[key];
-    if(!rec) return;
-    // Log de descarga
+    if(!rec){ toast('⚠ Documento no encontrado','var(--yellow)'); return; }
     if(currentUser){
       const log = await getReadLog();
-      const yaLogueado = log.some(r=>r.leg===currentUser.emp.leg && r.tipo==='ganancia' && r.periodo===rec.periodo);
-      if(!yaLogueado){
+      if(!log.some(r=>r.leg===currentUser.emp.leg && r.tipo==='ganancia' && r.periodo===rec.periodo)){
         const now = new Date();
-        await addReadLog({
-          leg: currentUser.emp.leg, dni: currentUser.emp.dni,
-          nom: currentUser.emp.nom, emp: currentUser.emp.emp,
-          tipo: 'ganancia',
-          periodo: rec.periodo, periodoLabel: periodoLabel(rec.periodo),
-          fecha: now.toLocaleDateString('es-AR'),
-          hora: now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
-        });
+        await addReadLog({ leg:currentUser.emp.leg, dni:currentUser.emp.dni,
+          nom:currentUser.emp.nom, emp:currentUser.emp.emp, tipo:'ganancia',
+          periodo:rec.periodo, periodoLabel:periodoLabel(rec.periodo),
+          fecha:now.toLocaleDateString('es-AR'),
+          hora:now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) });
+        renderGanancias();
       }
     }
     const blob = b64toBlob(rec.data,'application/pdf');
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
     a.href=url; a.download=`ganancias_${rec.leg}_${rec.periodo}.pdf`;
     a.click(); URL.revokeObjectURL(url);
     toast('✓ Documento descargado','var(--green)');
-  });
+  } catch(e){ toast('⚠ Error al descargar','var(--red)'); console.error(e); }
 }
 
 // ── RR.HH.: buscar empleado para ganancias ──
