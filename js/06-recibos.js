@@ -977,9 +977,25 @@ async function renderGanancias(){
 }
 
 function verGanancia(key){
-  getGanancias().then(todos=>{
+  getGanancias().then(async todos=>{
     const rec = todos[key];
     if(!rec){ toast('⚠ Documento no encontrado','var(--yellow)'); return; }
+    // Log de lectura (igual que verRecibo)
+    if(currentUser){
+      const log = await getReadLog();
+      const yaLeido = log.some(r=>r.leg===currentUser.emp.leg && r.tipo==='ganancia' && r.periodo===rec.periodo);
+      if(!yaLeido){
+        const now = new Date();
+        await addReadLog({
+          leg: currentUser.emp.leg, dni: currentUser.emp.dni,
+          nom: currentUser.emp.nom, emp: currentUser.emp.emp,
+          tipo: 'ganancia',
+          periodo: rec.periodo, periodoLabel: periodoLabel(rec.periodo),
+          fecha: now.toLocaleDateString('es-AR'),
+          hora: now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
+        });
+      }
+    }
     const blob = b64toBlob(rec.data,'application/pdf');
     const url = URL.createObjectURL(blob);
     const win = window.open(url,'_blank');
@@ -989,9 +1005,25 @@ function verGanancia(key){
 }
 
 async function downloadGanancia(key){
-  getGanancias().then(todos=>{
+  getGanancias().then(async todos=>{
     const rec = todos[key];
     if(!rec) return;
+    // Log de descarga
+    if(currentUser){
+      const log = await getReadLog();
+      const yaLogueado = log.some(r=>r.leg===currentUser.emp.leg && r.tipo==='ganancia' && r.periodo===rec.periodo);
+      if(!yaLogueado){
+        const now = new Date();
+        await addReadLog({
+          leg: currentUser.emp.leg, dni: currentUser.emp.dni,
+          nom: currentUser.emp.nom, emp: currentUser.emp.emp,
+          tipo: 'ganancia',
+          periodo: rec.periodo, periodoLabel: periodoLabel(rec.periodo),
+          fecha: now.toLocaleDateString('es-AR'),
+          hora: now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
+        });
+      }
+    }
     const blob = b64toBlob(rec.data,'application/pdf');
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

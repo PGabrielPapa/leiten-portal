@@ -4291,20 +4291,26 @@ function renderListaRecibos(items){
   const q=(document.getElementById('liq-rec-search')?.value||'').toLowerCase();
   const lista=(items||liq?.items||[]).filter(i=>!q||i.nom.toLowerCase().includes(q)||(i.leg||'').includes(q));
 
-  // Cabecera con botón "Publicar PDFs a Mis Recibos" (solo cuando no es borrador)
+  // Cabecera con botones de publicación (solo cuando no es borrador)
   const _puedePublicar = liq && liq.estado && liq.estado !== 'borrador';
   const _pub = liq?._recibosPublicados;
+  const _pubGan = liq?._gananciaPublicadas;
   const cabecera = liq ? `
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-      <div style="font-size:11px;color:var(--t2);line-height:1.5">
-        <strong style="color:var(--t1)">📄 Publicar PDFs a empleados</strong>
-        ${_pub
-          ? `<div style="font-size:10px;color:var(--green);margin-top:3px;font-family:var(--font-mono)">✓ Última publicación: ${new Date(_pub.fecha).toLocaleString('es-AR')} por ${_pub.por} · ${_pub.exitos} OK${_pub.fallas?', '+_pub.fallas+' fallas':''}</div>`
-          : `<div style="font-size:10px;color:var(--t3);margin-top:3px">Genera PDFs firmables y los publica en "Mis Recibos" de cada empleado.</div>`}
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:12px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="font-size:11px;color:var(--t2);line-height:1.5;flex:1">
+        <strong style="color:var(--t1)">📄 Publicar documentos a empleados</strong>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px">Los empleados pueden ver y descargar desde su portal. Los accesos quedan registrados en el log de lectura.</div>
+        ${_pub ? `<div style="font-size:10px;color:var(--green);margin-top:4px;font-family:var(--font-mono)">✓ Recibos: ${new Date(_pub.fecha).toLocaleString('es-AR')} por ${_pub.por} · ${_pub.exitos} OK${_pub.fallas?', '+_pub.fallas+' fallas':''}</div>` : ''}
+        ${_pubGan ? `<div style="font-size:10px;color:var(--green);margin-top:2px;font-family:var(--font-mono)">✓ Ganancias: ${new Date(_pubGan.fecha).toLocaleString('es-AR')} por ${_pubGan.por} · ${_pubGan.exitos} OK${_pubGan.fallas?', '+_pubGan.fallas+' fallas':''}</div>` : ''}
       </div>
-      <button class="btn btn-primary" onclick="publicarRecibosPDF()" style="font-size:12px;padding:7px 14px${_puedePublicar?'':';opacity:.5;cursor:not-allowed'}" ${_puedePublicar?'':'disabled title="Aprobá la liquidación primero"'}>
-        ${_pub ? '🔁 Republicar PDFs' : '📤 Publicar PDFs'}
-      </button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="publicarRecibosPDF()" style="font-size:12px;padding:7px 14px${_puedePublicar?'':';opacity:.5;cursor:not-allowed'}" ${_puedePublicar?'':'disabled title="Aprobá la liquidación primero"'}>
+          ${_pub ? '🔁 Republicar recibos' : '📤 Publicar recibos'}
+        </button>
+        <button class="btn btn-ghost" onclick="publicarGananciasPDF()" style="font-size:12px;padding:7px 14px${_puedePublicar?'':';opacity:.5;cursor:not-allowed'}" ${_puedePublicar?'':'disabled title="Aprobá la liquidación primero"'}>
+          ${_pubGan ? '🔁 Republicar ganancias' : '🧾 Publicar ganancias'}
+        </button>
+      </div>
     </div>` : '';
 
   div.innerHTML=cabecera+`<div class="card" style="padding:0;overflow:hidden">`+

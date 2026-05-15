@@ -941,3 +941,149 @@ function abrirReportesLiq(id){
   });
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// PUBLICACIÓN DE GANANCIAS AL PORTAL DEL EMPLEADO
+// Genera PDF de la planilla de retención de cada empleado y lo
+// guarda en el IDB (store 'ganancias') para que el empleado lo
+// vea y descargue desde "Mis Documentos".
+// Requiere: liq aprobada, jsPDF, html2canvas.
+// ═══════════════════════════════════════════════════════════════
+async function publicarGananciasPDF(){
+  const liq = liqReporteContext ? liqReporteContext() : _liqActiva;
+  if(!liq){ toast('⚠ Sin liquidación activa','var(--yellow)'); return; }
+  if(liq.estado === 'borrador'){
+    toast('⚠ Aprobá la liquidación antes de publicar','var(--yellow)'); return;
+  }
+  if(currentUser?.role !== 'rrhh'){ toast('⚠ Solo RR.HH.','var(--red)'); return; }
+  if(typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined'){
+    toast('⚠ jsPDF no disponible — recargá la página','var(--yellow)'); return;
+  }
+  if(typeof window.html2canvas !== 'function'){
+    toast('⚠ html2canvas no disponible — recargá la página','var(--yellow)'); return;
+  }
+
+  const params  = getLiqParams();
+  const novsMap = _novedadesActuales || {};
+  const items   = (liq.items || []).filter(i => ($m(i.totalHaberes)||0) > 0);
+  if(!items.length){ toast('⚠ Sin empleados en la liquidación','var(--yellow)'); return; }
+
+  const _cfm = await showConfirm({ titulo:'Confirmar', labelOk:'Confirmar',
+    mensaje:`¿Publicar planilla de retención de ganancias para <strong>${items.length}</strong> empleado${items.length!==1?'s':''} del período <strong>${liq.periodo}</strong>?<br><br>Cada empleado podrá verla y descargarla desde su portal.`, peligroso:false });
+  if(!_cfm) return;
+
+  // Modal de progreso (mismo patrón que publicarRecibosPDF)
+  const overlay = document.createElement('div');
+  overlay.id = 'modal-publicar-ganancias';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  overlay.innerHTML = `
+    <div class="card" style="background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);padding:0;max-width:560px;width:100%">
+      <div style="padding:16px 22px;border-bottom:1px solid var(--border);background:var(--bg2)">
+        <div style="font-size:14px;font-weight:600;color:var(--t1)">🧾 Publicando planillas de ganancias</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">Período ${liq.periodo} · ${items.length} empleados</div>
+      </div>
+      <div style="padding:22px">
+        <div id="pub-gan-progress" style="font-size:12px;color:var(--t1);margin-bottom:10px;font-family:var(--font-mono)">Iniciando...</div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:99px;height:10px;overflow:hidden">
+          <div id="pub-gan-bar" style="background:linear-gradient(90deg,var(--accent),var(--accent2));height:100%;width:0%;transition:width .2s"></div>
+        </div>
+        <div id="pub-gan-detail" style="font-size:10px;color:var(--t3);margin-top:8px;font-family:var(--font-mono);min-height:14px"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const elProg   = document.getElementById('pub-gan-progress');
+  const elBar    = document.getElementById('pub-gan-bar');
+  const elDetail = document.getElementById('pub-gan-detail');
+
+  const { jsPDF } = window.jspdf || window;
+  let exitos = 0, fallas = 0;
+  const errores = [];
+
+  for(let i = 0; i < items.length; i++){
+    const item = items[i];
+    elBar.style.width = Math.round((i / items.length) * 100) + '%';
+    elProg.textContent = `${i+1} / ${items.length} · ${item.nom?.split(',')[0] || item.leg}`;
+
+    try {
+      const html = await planillaGananciasHTML(item, liq, params, novsMap[item.leg] || {});
+
+      // Render off-screen
+      const tempDiv = document.createElement('div');
+      tempDiv.style.cssText = 'position:fixed;left:-99999px;top:0;width:900px;background:#fff;padding:12px;font-family:Arial,sans-serif;font-size:11px';
+      tempDiv.innerHTML = html;
+      document.body.appendChild(tempDiv);
+
+      let base64, sizeKB;
+      try {
+        const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+        const canvas = await window.html2canvas(tempDiv, { scale:1.5, useCORS:true, backgroundColor:'#ffffff' });
+        const imgData = canvas.toDataURL('image/jpeg', 0.82);
+        const pageW = 210, pageH = 297, margin = 8;
+        const drawW = pageW - margin * 2;
+        const drawH = (canvas.height * drawW) / canvas.width;
+        // Si excede la página, dividir en páginas adicionales
+        let yPos = margin;
+        let srcY = 0;
+        while(srcY < canvas.height){
+          const sliceH = Math.min(canvas.height - srcY, canvas.height * (pageH - margin*2) / drawH);
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = sliceH;
+          const ctx = sliceCanvas.getContext('2d');
+          ctx.drawImage(canvas, 0, -srcY);
+          const sliceImg = sliceCanvas.toDataURL('image/jpeg', 0.82);
+          const sliceDrawH = (sliceH * drawW) / canvas.width;
+          if(srcY > 0) pdf.addPage();
+          pdf.addImage(sliceImg, 'JPEG', margin, margin, drawW, sliceDrawH);
+          srcY += sliceH;
+          if(srcY >= canvas.height) break;
+        }
+        const blob = pdf.output('blob');
+        sizeKB = Math.round(blob.size / 1024);
+        base64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); });
+      } finally {
+        tempDiv.remove();
+      }
+
+      const key = `${item.leg}_${liq.periodo}`;
+      await setGanancia(key, {
+        key, leg: item.leg, nom: item.nom || '', emp: item.empresa || '',
+        periodo: liq.periodo, data: base64,
+        uploadedAt: new Date().toLocaleString('es-AR'),
+        uploadedBy: currentUser?.emp?.nom || 'RRHH',
+        liqId: liq.id
+      });
+
+      exitos++;
+      elDetail.textContent = `✓ ${item.leg} (${sizeKB} KB)`;
+    } catch(err){
+      fallas++;
+      errores.push(`${item.leg} ${item.nom?.split(',')[0]||''}: ${err.message||String(err)}`);
+      elDetail.textContent = `✕ ${item.leg}: ${err.message||String(err)}`;
+    }
+
+    if(i % 3 === 0) await new Promise(res => setTimeout(res, 30));
+  }
+
+  elBar.style.width = '100%';
+  elProg.innerHTML = `<strong style="color:${fallas?'var(--yellow)':'var(--green)'}">${fallas?'⚠':'✓'}</strong> ${exitos} de ${items.length} publicados${fallas?` · ${fallas} fallaron`:''}`;
+  elDetail.innerHTML = '';
+
+  // Persistir flag en la liquidación
+  liq._gananciaPublicadas = { exitos, fallas, fecha: new Date().toISOString(), por: currentUser?.emp?.nom || 'RRHH' };
+  if(typeof updateLiquidacion === 'function') await updateLiquidacion(liq);
+
+  // Audit
+  if(typeof logAuditX === 'function'){
+    logAuditX('liquidacion', 'ganancias_publicadas', { liqId: liq.id, periodo: liq.periodo, exitos, fallas, por: currentUser?.emp?.nom });
+  }
+
+  const card = overlay.querySelector('.card');
+  const footer = document.createElement('div');
+  footer.style.cssText = 'padding:14px 22px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end';
+  footer.innerHTML = `
+    ${errores.length ? `<button class="btn btn-ghost" onclick="showAlert('Errores:\\n\\n'+${JSON.stringify(errores)}.join('\\n'),'error')" style="font-size:12px;padding:7px 14px;color:var(--yellow);border-color:rgba(234,179,8,.3)">Ver ${errores.length} error${errores.length!==1?'es':''}</button>` : ''}
+    <button class="btn btn-primary" onclick="document.getElementById('modal-publicar-ganancias').remove()" style="font-size:13px;padding:8px 18px">Listo</button>`;
+  card.appendChild(footer);
+}
