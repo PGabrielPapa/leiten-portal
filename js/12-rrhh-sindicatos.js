@@ -262,9 +262,9 @@ async function cerrarFormSindicato(){
 async function guardarSindicato(codigoOriginal){
   const codigo = (document.getElementById('sind-codigo').value || '').trim().toUpperCase();
   const nombre = (document.getElementById('sind-nombre').value || '').trim();
-  const pctEmp = parseFloat(document.getElementById('sind-pct-emp').value);
-  const pctPat = parseFloat(document.getElementById('sind-pct-pat').value);
-  const pctAnt = parseFloat(document.getElementById('sind-pct-ant').value);
+  const pctEmp = parseFloat(document.getElementById('sind-pct-emp')?.value || '0');
+  const pctPat = parseFloat(document.getElementById('sind-pct-pat')?.value || '0');
+  const pctAnt = parseFloat(document.getElementById('sind-pct-ant')?.value || '0');
   const nota = (document.getElementById('sind-nota').value || '').trim();
 
   if(!codigo){ showAlert('El código es obligatorio.', 'warning'); return; }

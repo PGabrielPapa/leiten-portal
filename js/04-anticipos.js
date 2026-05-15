@@ -380,7 +380,7 @@ function selectEmp(){
 
 function actualizarBarra(){
   if(!empActual) return;
-  const monto=parseFloat(document.getElementById('f-monto').value)||0;
+  const monto=parseFloat(document.getElementById('f-monto')?.value || '0')||0;
   const pct=(monto/empActual.lim)*100;
   const fill=document.getElementById('limit-fill');
   fill.style.width=Math.min(pct,100)+'%';
@@ -394,7 +394,7 @@ function toggleExceso(){ /* ya no se usa desde el formulario */ }
 
 // ─── ENVIAR ───
 function enviarSolicitud(){
-  const monto=parseFloat(document.getElementById('f-monto').value);
+  const monto=parseFloat(document.getElementById('f-monto')?.value || '0');
   const motivo=document.getElementById('f-motivo').value.trim();
   if(!monto||monto<=0){ toast('⚠ Ingresá un monto válido','var(--yellow)'); return; }
   if(!motivo){ toast('⚠ Ingresá el motivo','var(--yellow)'); return; }

@@ -2588,8 +2588,8 @@ function _renderLiqFinalContenido(leg, emp){
 
 function _actualizarLiqFinal(leg){
   const motivo = document.getElementById('lf-motivo')?.value || '';
-  const mejorRem = parseFloat(document.getElementById('lf-mejorrem')?.value);
-  const topeCCT = parseFloat(document.getElementById('lf-topecct')?.value);
+  const mejorRem = parseFloat(document.getElementById('lf-mejorrem')?.value || '0');
+  const topeCCT = parseFloat(document.getElementById('lf-topecct')?.value || '0');
   const diasGozados = parseInt(document.getElementById('lf-vac-gozados')?.value) || 0;
   const nov = _novedadesActuales[leg];
   if(!nov.liqFinalDatos) nov.liqFinalDatos = {};
@@ -2814,13 +2814,13 @@ async function agregarEmbargo(leg){
   const motivo = (document.getElementById('emb-add-motivo')?.value || '').trim();
   let nuevo;
   if(tipo === 'alimentos'){
-    const pct = parseFloat(document.getElementById('emb-add-pct')?.value);
+    const pct = parseFloat(document.getElementById('emb-add-pct')?.value || '0');
     if(!isFinite(pct) || pct <= 0 || pct > 100){
       toast('⚠ Indicá un porcentaje válido (0-100)','var(--yellow)'); return;
     }
     nuevo = { id:_genEmbId(), tipo:'alimentos', pct, motivo };
   } else {
-    const monto = parseFloat(document.getElementById('emb-add-monto')?.value);
+    const monto = parseFloat(document.getElementById('emb-add-monto')?.value || '0');
     if(!isFinite(monto) || monto <= 0){
       toast('⚠ Indicá un monto válido','var(--yellow)'); return;
     }

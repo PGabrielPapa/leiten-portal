@@ -46,6 +46,15 @@ function _certFechaHoy(){
   return { iso: h.toISOString().slice(0,10), dia: h.getDate(), mes: h.getMonth()+1, anio: h.getFullYear() };
 }
 
+// ─── Helper: parsear fecha de ingreso del empleado ────────────────────────
+function _certParsearFechaIng(ing){
+  if(!ing) return null;
+  if(ing.includes('/')) { const [d,m,y] = ing.split('/'); return new Date(+y,+m-1,+d); }
+  if(ing.includes('-')) { const [y,m,d] = ing.split('-'); return new Date(+y,+m-1,+d); }
+  return null;
+}
+
+
 // ─── Badge para el panel RRHH ────────────────────────────────────────────
 function _certActualizarBadge(){
   const pedidos = _certLeer();
@@ -570,13 +579,7 @@ function _certAbrirPrevistaEditable(p, fechaIsoOverride){
   const dirEmp  = edatos ? `${edatos.dir} ${edatos.nro}${edatos.piso?' P'+edatos.piso:''}, ${edatos.loc||edatos.cp}` : '—';
 
   // Fecha de ingreso del empleado en texto corrido
-  const ingDate = (() => {
-    const s = emp.ing;
-    if(!s) return null;
-    if(s.includes('/')) { const [d,m,y] = s.split('/'); return new Date(+y,+m-1,+d); }
-    if(s.includes('-')) { const [y,m,d] = s.split('-'); return new Date(+y,+m-1,+d); }
-    return null;
-  })();
+  const ingDate = _certParsearFechaIng(emp.ing);
   const hoyDate = new Date(fy, fm-1, fd);
   const antiguAnios = ingDate ? Math.floor((hoyDate - ingDate)/(365.25*86400000)) : null;
 

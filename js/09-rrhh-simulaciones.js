@@ -113,8 +113,8 @@ function renderSimMensual(){
 }
 
 function ejecutarSimMensual(){
-  const mes = parseInt(document.getElementById('sim-mes').value);
-  const anio = parseInt(document.getElementById('sim-anio').value);
+  const mes = parseInt(document.getElementById('sim-mes')?.value || '1');
+  const anio = parseInt(document.getElementById('sim-anio')?.value || new Date().getFullYear());
   const empFiltro = document.getElementById('sim-emp').value;
   const pctInc = parseFloat(document.getElementById('sim-pct-inc').value) || 0;
   const montoInc = parseFloat(document.getElementById('sim-monto-inc').value) || 0;

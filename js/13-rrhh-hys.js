@@ -1620,7 +1620,7 @@ function hysCatTipoAbrirForm(idx){
 async function hysCatTipoGuardar(idx){
   const codigo = (document.getElementById('ct-codigo').value||'').trim().toUpperCase();
   const nombre = (document.getElementById('ct-nombre').value||'').trim();
-  const vig = parseInt(document.getElementById('ct-vigencia').value,10);
+  const vig = parseInt(document.getElementById('ct-vigencia')?.value || '0', 10);
   const obligat = !!document.getElementById('ct-obligat')?.checked;
   const desc = (document.getElementById('ct-desc').value||'').trim();
   if(!codigo){ showAlert('Código obligatorio.', 'warning'); return; }
@@ -1713,7 +1713,7 @@ async function hysCatEppGuardar(idx){
   const codigo = (document.getElementById('ce-codigo').value||'').trim().toUpperCase();
   const nombre = (document.getElementById('ce-nombre').value||'').trim();
   const categoria = document.getElementById('ce-cat').value;
-  const vida = parseInt(document.getElementById('ce-vida').value,10);
+  const vida = parseInt(document.getElementById('ce-vida')?.value || '0', 10);
   if(!codigo){ showAlert('Código obligatorio.', 'warning'); return; }
   if(!nombre){ showAlert('Nombre obligatorio.', 'warning'); return; }
   const cat = getHysEppCatalogo();
