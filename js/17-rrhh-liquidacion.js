@@ -359,7 +359,7 @@ function calcCFMensual(emp, params){
       return Math.max(0, Math.round((escala - (basico + aCuenta)*(1 + pctPres/100))*100)/100);
     }
   }
-  return $m(emp.complemento) || 0; // fallback: sin escala → valor guardado
+  return Math.max(0, $m(emp.complemento) || 0); // fallback: sin escala → valor guardado (nunca negativo)
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3753,7 +3753,7 @@ function renderPreviewTabla(items){
       <td style="${tdS('left',false)}">${i.empresa}</td>
       <td style="${tdS('right',false,'var(--t2)')}">${(()=>{
         const total = i.sueldoBasico + $m(i.mCompFuncion);
-        if(!$m(i.mCompFuncion)) return fmtPesos(i.sueldoBasico);
+        if(!($m(i.mCompFuncion) > 0)) return fmtPesos(i.sueldoBasico);
         return `<span title="Base: ${fmtPesos(i.sueldoBasico)} · Comp.Func.: ${fmtPesos(i.mCompFuncion)}" style="cursor:help">${fmtPesos(total)}</span>`;
       })()}</td>
       <td style="${tdS('right',false)}">${i.mHsE50?fmtPesos(i.mHsE50):'-'}</td>
@@ -3761,10 +3761,10 @@ function renderPreviewTabla(items){
       <td style="${tdS('right',false)}">${i.mAntig?fmtPesos(i.mAntig):'-'}</td>
       <td style="${tdS('right',false)}">${i.mPres?fmtPesos(i.mPres):'-'}</td>
       <td style="${tdS('right',false)}">${(()=>{
-        const total = i.mOtrosH+$m(i.mSac)+$m(i.mVac)+$m(i.mLicEspeciales)+$m(i.mAjuste)+$m(i.mCompFuncion);
+        const total = i.mOtrosH+$m(i.mSac)+$m(i.mVac)+$m(i.mLicEspeciales)+$m(i.mAjuste)+($m(i.mCompFuncion)>0?$m(i.mCompFuncion):0);
         if(!total) return '-';
         const desgloses = [];
-        if($m(i.mCompFuncion)) desgloses.push(`Comp.Func.: ${fmtPesos(i.mCompFuncion)}`);
+        if($m(i.mCompFuncion) > 0) desgloses.push(`Comp.Func.: ${fmtPesos(i.mCompFuncion)}`);
         if(i.mOtrosHRem)   desgloses.push(`Plus REM: ${fmtPesos(i.mOtrosHRem)}`);
         if(i.mOtrosHNoRem) desgloses.push(`Plus NO REM: ${fmtPesos(i.mOtrosHNoRem)}`);
         if($m(i.mSac))     desgloses.push(`SAC: ${fmtPesos(i.mSac)}`);
@@ -4441,7 +4441,7 @@ function buildConceptRows(item, params){
 
   // HABERES
   pH('Sueldo',             1,     item.diasTrab,              item.sueldoBasico);
-  pH('Complemento Función',1010,  '',                         $m(item.mCompFuncion));
+  if($m(item.mCompFuncion) > 0) pH('Complemento Función',1010,'', $m(item.mCompFuncion));
   pH('Antigüedad',         100,   '',                         item.mAntig);
   pH('Horas Extras 50%',   2,     item.hsE50||'',             item.mHsE50);
   pH('Horas Extras 100%',  3,     item.hsE100||'',            item.mHsE100);
@@ -4973,7 +4973,7 @@ async function exportarExcelLiquidacion(){
   const esc=v=>{ const s=String(v??''); return s.includes(';')||s.includes('"')?`"${s.replace(/"/g,'""')}"`:`${s}`; };
   const rows=liq.items.map(i=>[
     i.leg,i.nom,i.cuil||'',i.empresa,i.lugar||'',i.diasTrab,
-    i.sueldoBasico.toFixed(2),$m(i.mCompFuncion).toFixed(2),i.mHsE50.toFixed(2),i.mHsE100.toFixed(2),
+    i.sueldoBasico.toFixed(2),Math.max(0,$m(i.mCompFuncion)).toFixed(2),i.mHsE50.toFixed(2),i.mHsE100.toFixed(2),
     i.mAntig.toFixed(2),i.mPres.toFixed(2),$m(i.mSac).toFixed(2),$m(i.mVac).toFixed(2),
     $m(i.mLicEspeciales).toFixed(2),$m(i.mAjuste).toFixed(2),$m(i.mOtrosH).toFixed(2),
     $m(i.totalHaberesRem || i.totalHaberes).toFixed(2),
