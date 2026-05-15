@@ -415,11 +415,6 @@ function _certRechazarPedido(id){
     });
 }
 
-function _certReimprimirPedido(id){
-  const p = _certLeer().find(x => x.id === id);
-  if(!p){ toast('⚠ Pedido no encontrado', 'var(--red)'); return; }
-  _certGenerarImprimir(p);
-}
 
 // ─── Modal de generación (RRHH) ──────────────────────────────────────────
 function _certAbrirGenerarModal(id){
@@ -536,28 +531,29 @@ function _certConfirmarGenerar(id){
     remuneracion:  document.getElementById('certg-sueldo')?.checked ?? false,
   };
 
-  // Actualizar pedido
-  p.estado = 'generado';
+  // Actualizar pedido → 'en_revision' hasta que RRHH confirme desde la previa
+  p.estado       = 'generado';
   p.destinatario = dest;
-  p.campos = campos;
-  p.obs_rrhh = obs;
+  p.campos       = campos;
+  p.obs_rrhh     = obs;
   p.fecha_resolucion = _certFechaHoy().iso;
-  p.resuelto_por = currentUser?.emp?.nom || 'RR.HH.';
+  p.resuelto_por     = currentUser?.emp?.nom || 'RR.HH.';
   _certGuardar(arr);
   _certActualizarBadge();
 
   document.getElementById('modal-cert-generar')?.remove();
-
-  // Generar PDF
-  _certGenerarImprimir(p, fechaIso);
   renderCertTrabajoPedidos();
 
   if(typeof logAuditX === 'function'){
     logAuditX('certificados', 'generar_cert_trabajo', { id, leg: p.leg, destinatario: dest, por: p.resuelto_por });
   }
+
+  // Abrir previa editable
+  _certAbrirPrevistaEditable(p, fechaIso);
 }
 
-function _certGenerarImprimir(p, fechaIsoOverride){
+// ─── Previa editable: abre ventana con contenteditable ───────────────────
+function _certAbrirPrevistaEditable(p, fechaIsoOverride){
   const todosEmp = (typeof EMPLOYEES !== 'undefined') ? EMPLOYEES : (typeof getEmployees === 'function' ? getEmployees() : []);
   const emp = todosEmp.find(e => e.leg === p.leg) || { leg:p.leg, nom:p.nom, dni:p.dni||'', cuil:p.cuil||'', emp:p.empresa };
 
@@ -573,7 +569,7 @@ function _certGenerarImprimir(p, fechaIsoOverride){
   const cuitEmp = edatos?.cuit || '—';
   const dirEmp  = edatos ? `${edatos.dir} ${edatos.nro}${edatos.piso?' P'+edatos.piso:''}, ${edatos.loc||edatos.cp}` : '—';
 
-  // Calcular antigüedad
+  // Fecha de ingreso del empleado en texto corrido
   const ingDate = (() => {
     const s = emp.ing;
     if(!s) return null;
@@ -584,31 +580,20 @@ function _certGenerarImprimir(p, fechaIsoOverride){
   const hoyDate = new Date(fy, fm-1, fd);
   const antiguAnios = ingDate ? Math.floor((hoyDate - ingDate)/(365.25*86400000)) : null;
 
+  const ingTxt = ingDate
+    ? `el ${ingDate.getDate()} de ${_certMesLetras(ingDate.getMonth()+1)} de ${ingDate.getFullYear()}`
+    : 'fecha no registrada';
+
   // Remuneración
-  const bruto  = Number(emp.bruto || emp.basico || 0);
+  const bruto = Number(emp.bruto || emp.basico || 0);
   const sueldoTxt = bruto > 0 ? `$ ${bruto.toLocaleString('es-AR',{minimumFractionDigits:2})}` : '(no informado)';
 
-  // Construir filas de tabla
-  const filas = [];
-  filas.push({ label:'Apellido y Nombre', valor:`<strong>${emp.nom}</strong>` });
-  filas.push({ label:'DNI', valor: emp.dni || '—' });
-  filas.push({ label:'CUIL', valor:`<strong>${emp.cuil || '—'}</strong>` });
-  filas.push({ label:'Legajo', valor: emp.leg });
-  if(campos.cargo)         filas.push({ label:'Cargo / Tarea',       valor: emp.tarea || '—' });
-  if(campos.categoria)     filas.push({ label:'Categoría',           valor: [emp.cat, emp.tramo, emp.desc_categoria].filter(Boolean).join(' · ') || '—' });
-  if(campos.condicion)     filas.push({ label:'Condición laboral',   valor: [emp.condicion || 'Mensualizado', emp.cod_convenio ? 'CCT '+emp.cod_convenio : 'Fuera de convenio'].join(' · ') });
-  if(campos.lugar_trabajo) filas.push({ label:'Lugar de trabajo',    valor: emp.lugar || '—' });
-  if(campos.fecha_ingreso) filas.push({ label:'Fecha de ingreso',    valor:`<strong>${_certFmtFecha(emp.ing) || '—'}</strong>` });
-  if(campos.antiguedad && antiguAnios !== null) filas.push({ label:'Antigüedad', valor:`${antiguAnios} año${antiguAnios!==1?'s':''}` });
-  if(campos.remuneracion)  filas.push({ label:'Remuneración bruta',  valor:`<strong>${sueldoTxt}</strong>` });
-  filas.push({ label:'Estado', valor:`<span style="color:#1E6B3A;font-weight:700;font-size:13px">ACTIVO</span>` });
-
-  // Encabezado logo empresa
+  // ── Logo empresa ──
   const logoHtml = (typeof LOGOS !== 'undefined' && LOGOS[p.empresa])
     ? LOGOS[p.empresa].replace('max-height:48px','max-height:70px').replace('max-width:140px','max-width:220px')
     : `<div style="font-size:18px;font-weight:700;color:#111;letter-spacing:.03em">${p.empresa}</div>`;
 
-  // Pie firma RRHH
+  // ── Pie firma ──
   const firmaHtml = (typeof _docPieFirma === 'function') ? _docPieFirma(p.empresa) : `
     <div style="margin-top:60px;display:flex;justify-content:flex-end">
       <div style="text-align:center;border-top:1px solid #333;padding-top:6px;min-width:260px">
@@ -617,11 +602,33 @@ function _certGenerarImprimir(p, fechaIsoOverride){
       </div>
     </div>`;
 
-  // Cierre notarial
+  // ── Cierre notarial ──
   const cierreNotarial = `Se expide el presente en la localidad de Caseros, Partido de Tres de Febrero, para ser presentado ante <strong>${p.destinatario}</strong>, a los <strong>${dia}</strong> días del mes de <strong>${_certMesLetras(mes)}</strong> de dos mil <strong>${_certAnioLetras(anio).replace('dos mil ','')}</strong>.`;
 
-  const contenido = `
-    <!-- Encabezado -->
+  // ── Párrafo de apertura (fórmula solicitada) ──
+  const parrafoApertura = `Certifico que <strong>${emp.nom}</strong>, CUIL <strong>${emp.cuil || '—'}</strong>, presta servicios en <strong>${p.empresa}</strong>, CUIT <strong>${cuitEmp}</strong>, desde ${ingTxt}.`;
+
+  // ── Datos adicionales seleccionados ──
+  const datosExtra = [];
+  if(campos.cargo && emp.tarea)               datosExtra.push(`Cargo / Tarea: <strong>${emp.tarea}</strong>`);
+  if(campos.categoria){
+    const cat = [emp.cat, emp.tramo, emp.desc_categoria].filter(Boolean).join(' · ');
+    if(cat) datosExtra.push(`Categoría: <strong>${cat}</strong>`);
+  }
+  if(campos.condicion){
+    const cond = [emp.condicion || 'Mensualizado', emp.cod_convenio ? 'CCT '+emp.cod_convenio : 'Fuera de convenio'].join(' · ');
+    datosExtra.push(`Condición: <strong>${cond}</strong>`);
+  }
+  if(campos.lugar_trabajo && emp.lugar)       datosExtra.push(`Lugar de trabajo: <strong>${emp.lugar}</strong>`);
+  if(campos.antiguedad && antiguAnios !== null) datosExtra.push(`Antigüedad: <strong>${antiguAnios} año${antiguAnios!==1?'s':''}</strong>`);
+  if(campos.remuneracion)                      datosExtra.push(`Remuneración bruta mensual: <strong>${sueldoTxt}</strong>`);
+
+  const datosExtraHtml = datosExtra.length
+    ? `<ul style="font-size:12.5px;line-height:2;margin:0 0 24px;padding-left:20px;color:#222">${datosExtra.map(d=>`<li>${d}</li>`).join('')}</ul>`
+    : '';
+
+  // ── HTML del cuerpo del certificado (SIN no-print, se agrega fuera) ──
+  const cuerpoHtml = `
     <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:3px solid #1E6B3A;margin-bottom:24px">
       <div>${logoHtml}</div>
       <div style="text-align:right;font-size:10px;color:#555;font-family:Arial,sans-serif;line-height:1.6">
@@ -632,32 +639,21 @@ function _certGenerarImprimir(p, fechaIsoOverride){
       </div>
     </div>
 
-    <!-- Título -->
     <div style="text-align:center;margin:0 0 24px">
       <h1 style="font-size:20px;font-weight:700;color:#111;letter-spacing:.08em;text-transform:uppercase;margin:0 0 4px">CERTIFICADO DE TRABAJO</h1>
       <div style="width:80px;height:3px;background:#1E6B3A;margin:0 auto"></div>
     </div>
 
-    <!-- Fecha y lugar -->
     <div style="text-align:right;font-size:11px;color:#555;margin-bottom:20px">
       Caseros, ${dia} de ${_certMesLetras(mes)} de ${anio}
     </div>
 
-    <!-- Párrafo certifica -->
-    <p style="font-size:12.5px;line-height:1.7;margin-bottom:20px">
-      <strong>${p.empresa}</strong>, CUIT <strong>${cuitEmp}</strong>, con domicilio en ${dirEmp}, a través de su Departamento de Recursos Humanos, <strong>CERTIFICA</strong> que:
+    <p style="font-size:12.5px;line-height:1.8;margin-bottom:${datosExtra.length ? '16px' : '24px'}">
+      ${parrafoApertura}
     </p>
 
-    <!-- Tabla datos -->
-    <table style="border-collapse:collapse;width:100%;margin-bottom:24px;font-size:12px">
-      ${filas.map(f=>`
-        <tr>
-          <th style="border:1px solid #ddd;padding:7px 10px;background:#f7f9f7;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.04em;width:38%;text-align:left;font-weight:600">${f.label}</th>
-          <td style="border:1px solid #ddd;padding:7px 10px;color:#222">${f.valor}</td>
-        </tr>`).join('')}
-    </table>
+    ${datosExtraHtml}
 
-    <!-- Cierre notarial -->
     <div style="margin-top:28px;padding:16px 18px;border:1px solid #c8d8c8;border-radius:6px;background:#f4faf4;font-size:12px;line-height:1.8;color:#333">
       ${cierreNotarial}
     </div>
@@ -667,32 +663,88 @@ function _certGenerarImprimir(p, fechaIsoOverride){
     <div style="margin-top:30px;padding-top:10px;border-top:1px dashed #ccc;font-size:9px;color:#aaa;text-align:center">
       Documento generado el ${dia} de ${_certMesLetras(mes)} de ${anio} desde el Portal RR.HH. LEITEN S.A. &nbsp;·&nbsp;
       Para verificación, contactar al Dpto. de RR.HH. de ${p.empresa}.
-    </div>
-  `;
+    </div>`;
 
-  if(typeof _docAbrirImprimible === 'function'){
-    _docAbrirImprimible(`Certificado de trabajo — ${emp.nom}`, contenido);
-  } else {
-    // Fallback: abrir ventana directamente
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-      <title>Certificado de trabajo — ${emp.nom}</title>
-      <style>
-        @page { size: A4; margin: 20mm 18mm; }
-        body { margin:0; padding:20px 24px; font-family:Arial,sans-serif; color:#222; max-width:780px; margin:auto; background:white }
-        .no-print { margin-bottom:20px;padding:12px 16px;background:#f0f4ff;border:1px solid #d0d8ee;border-radius:6px }
-        .no-print button { padding:8px 18px;background:#1E6B3A;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:600;margin-right:8px }
-        @media print { .no-print { display:none } }
-      </style></head><body>
-      <div class="no-print">
-        <button onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
-        <span style="font-size:11px;color:#555">Cerrá esta ventana cuando termines</span>
+  // ── Armar página completa con contenteditable ──
+  const htmlCompleto = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Certificado de trabajo — ${emp.nom}</title>
+    <style>
+      @page { size: A4; margin: 20mm 18mm; }
+      * { box-sizing: border-box; }
+      body { margin:0; padding:0; font-family:Arial,sans-serif; color:#222; background:white }
+      #no-print {
+        position:sticky; top:0; z-index:100;
+        background:#f8f9ff; border-bottom:2px solid #d0d8ee;
+        padding:12px 24px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+      }
+      #no-print button.btn-print {
+        padding:9px 20px; background:#1E6B3A; color:white; border:none;
+        border-radius:5px; cursor:pointer; font-size:13px; font-weight:600;
+      }
+      #no-print button.btn-print:hover { background:#175028; }
+      #no-print .hint {
+        font-size:12px; color:#555; flex:1; line-height:1.4;
+      }
+      #no-print .hint strong { color:#1E6B3A; }
+      #cert-body {
+        max-width:780px; margin:0 auto; padding:32px 36px;
+        min-height:600px;
+        outline:none;
+        border:2px dashed transparent;
+        transition:border-color .2s;
+      }
+      #cert-body:focus {
+        border-color:#a0c0a0;
+        border-radius:4px;
+      }
+      #cert-body:focus ~ #edit-hint { display:block; }
+      #edit-bar {
+        max-width:780px; margin:0 auto 0; padding:6px 36px;
+        font-size:11px; color:#888; font-style:italic;
+        display:flex; align-items:center; gap:8px;
+      }
+      #edit-bar span { display:inline-block; width:10px; height:10px;
+        border-radius:50%; background:#1E6B3A; opacity:.6; }
+      @media print {
+        #no-print, #edit-bar { display:none !important; }
+        body { padding:0; }
+        #cert-body { padding:0; border:none !important; max-width:100%; }
+      }
+    </style>
+  </head><body>
+
+    <div id="no-print">
+      <button class="btn-print" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+      <div class="hint">
+        <strong>Previa editable</strong> — Hacé clic sobre cualquier parte del documento para editar el texto.<br>
+        Cuando esté listo, imprimí o guardá como PDF desde el botón.
       </div>
-      ${contenido}
-      </body></html>`;
-    const w = window.open('','_blank');
-    if(w){ w.document.write(html); w.document.close(); }
-    else  toast('⚠ El navegador bloqueó la ventana. Habilitá popups.', 'var(--red)');
+    </div>
+
+    <div id="edit-bar"><span></span> Clic en el documento para editar</div>
+
+    <div id="cert-body" contenteditable="true" spellcheck="false">
+      ${cuerpoHtml}
+    </div>
+
+  </body></html>`;
+
+  const w = window.open('', '_blank', 'width=900,height=720');
+  if(!w){
+    toast('⚠ El navegador bloqueó la ventana. Habilitá popups e intentá de nuevo.', 'var(--red)', 5000);
+    return;
   }
+  w.document.write(htmlCompleto);
+  w.document.close();
+  // Foco al body editable para que quede listo para editar
+  setTimeout(()=>{ try { w.document.getElementById('cert-body')?.focus(); } catch(e){} }, 400);
+}
+
+// Reimprimir desde historial
+function _certReimprimirPedido(id){
+  const p = _certLeer().find(x => x.id === id);
+  if(!p){ toast('⚠ Pedido no encontrado', 'var(--red)'); return; }
+  _certAbrirPrevistaEditable(p);
 }
 
 // ─── Init: badge al cargar ────────────────────────────────────────────────
