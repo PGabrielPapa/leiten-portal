@@ -40,7 +40,7 @@ function renderMisDatos(){
       <button class="btn btn-ghost" onclick="toggleMiHistorial()" style="color:rgb(168,85,247);border-color:rgba(168,85,247,.3)">📜 Ver mi historial</button>
       <button class="btn btn-ghost" onclick="toggleMisLicenciasHist()" style="color:rgb(34,197,94);border-color:rgba(34,197,94,.3)">🏖 Ver mis licencias</button>
       <button class="btn btn-ghost" onclick="toggleMisEvaluaciones()" style="color:rgb(234,179,8);border-color:rgba(234,179,8,.3)">📝 Ver mis evaluaciones</button>
-      <button class="btn btn-ghost" onclick="abrirSolicitarCertificadoLaboral()" style="color:rgb(20,184,166);border-color:rgba(20,184,166,.3)">📄 Solicitar certificado laboral</button>
+      <button class="btn btn-ghost" onclick="abrirSolicitarCertificadoTrabajo();_certToggleCertWrap(true)" style="color:rgb(99,102,241);border-color:rgba(99,102,241,.3)">📋 Certificado de trabajo</button>
     </div>
     <div id="mis-cbus-wrap" style="display:none;margin-top:16px">
       <div class="card" style="padding:18px;max-width:760px">
@@ -62,6 +62,15 @@ function renderMisDatos(){
       <div class="card" style="padding:18px;max-width:860px">
         <div class="card-title" style="margin-bottom:12px">🏖 Mis licencias</div>
         <div id="mis-licencias-content"></div>
+      </div>
+    </div>
+    <div id="mis-certificados-wrap" style="display:none;margin-top:16px">
+      <div class="card" style="padding:18px;max-width:680px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="card-title">📋 Mis certificados de trabajo</div>
+          <button onclick="document.getElementById('mis-certificados-wrap').style.display='none'" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">✕</button>
+        </div>
+        <div id="cert-historial-emp"></div>
       </div>
     </div>
     <div id="mis-evaluaciones-wrap" style="display:none;margin-top:16px">
@@ -119,3 +128,16 @@ function renderMisDatos(){
     </div>`;
 }
 
+
+// ─── Sección historial de certificados de trabajo ────────────────────────
+function _certToggleCertWrap(forzarAbrir){
+  const wrap = document.getElementById('mis-certificados-wrap');
+  if(!wrap) return;
+  const visible = wrap.style.display !== 'none';
+  if(forzarAbrir || !visible){
+    wrap.style.display = 'block';
+    if(typeof renderCertHistorialEmpleado === 'function') renderCertHistorialEmpleado();
+  } else {
+    wrap.style.display = 'none';
+  }
+}
