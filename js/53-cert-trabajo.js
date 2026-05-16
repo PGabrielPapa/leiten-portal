@@ -431,7 +431,7 @@ function _certAbrirGenerarModal(id){
   if(!pedido){ toast('⚠ Pedido no encontrado', 'var(--red)'); return; }
 
   // Buscar datos completos del empleado
-  const todosEmp = (typeof EMPLOYEES !== 'undefined') ? EMPLOYEES : (typeof getEmployees === 'function' ? getEmployees() : []);
+  const todosEmp = (typeof getNomina === 'function') ? getNomina() : ((typeof EMPLOYEES !== 'undefined') ? EMPLOYEES : []);
   const emp = todosEmp.find(e => e.leg === pedido.leg) || { leg:pedido.leg, nom:pedido.nom, dni:pedido.dni, cuil:pedido.cuil, emp:pedido.empresa };
 
   const prev = document.getElementById('modal-cert-generar');
@@ -563,7 +563,7 @@ function _certConfirmarGenerar(id){
 
 // ─── Previa editable: abre ventana con contenteditable ───────────────────
 function _certAbrirPrevistaEditable(p, fechaIsoOverride){
-  const todosEmp = (typeof EMPLOYEES !== 'undefined') ? EMPLOYEES : (typeof getEmployees === 'function' ? getEmployees() : []);
+  const todosEmp = (typeof getNomina === 'function') ? getNomina() : ((typeof EMPLOYEES !== 'undefined') ? EMPLOYEES : []);
   const emp = todosEmp.find(e => e.leg === p.leg) || { leg:p.leg, nom:p.nom, dni:p.dni||'', cuil:p.cuil||'', emp:p.empresa };
 
   const campos = p.campos || {};

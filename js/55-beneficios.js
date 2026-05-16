@@ -568,9 +568,18 @@ function _benRefrescarGlobalSiVisible(){
 // PANEL GLOBAL RRHH
 // ═══════════════════════════════════════════════════════════════════════════
 
+
+function _benDetectarContenedor(){
+  if(document.getElementById('sec-beneficios')?.classList?.contains('active') &&
+     (document.getElementById('ben-global-sec-cont')?.innerHTML?.length||0) > 20)
+    return 'ben-global-sec-cont';
+  return 'ben-global-cont';
+}
 function renderBenGlobal(contId){
-  const cont = document.getElementById(contId || 'ben-global-cont');
+  const cid = contId || _benDetectarContenedor();
+  const cont = document.getElementById(cid);
   if(!cont) return;
+  cont.dataset.cid = cid;  // guardar para que tabs/filtros sepan en qué contenedor están
 
   const tabActual = cont.dataset.tab || 'empleados';
   const todos  = _benLeer();
@@ -602,7 +611,7 @@ function renderBenGlobal(contId){
     <!-- Tabs -->
     <div style="display:flex;gap:4px;background:var(--bg2);border-radius:var(--r);padding:4px;width:fit-content;margin-bottom:16px">
       ${['empleados','tipo','empresa'].map(t=>`
-        <button onclick="_benGlobalTab('${t}')"
+        <button onclick="_benGlobalTab('${t}',this.closest('[data-cid]')?.dataset?.cid)"
           style="padding:6px 16px;font-size:12px;border-radius:6px;border:none;cursor:pointer;transition:all .15s;
           background:${tabActual===t?'var(--bg1)':'transparent'};
           color:${tabActual===t?'var(--t1)':'var(--t3)'};
@@ -622,11 +631,7 @@ function renderBenGlobal(contId){
 }
 
 function _benGlobalTab(tab, contId){
-  // Si no se pasa contId, detectar cuál contenedor está activo
-  const cid = contId
-    || (document.getElementById('ben-global-sec-cont')?.innerHTML?.length > 20 &&
-        document.getElementById('sec-beneficios')?.classList?.contains('active')
-        ? 'ben-global-sec-cont' : 'ben-global-cont');
+  const cid = contId || _benDetectarContenedor();
   const cont = document.getElementById(cid);
   if(!cont) return;
   cont.dataset.tab = tab;
@@ -643,9 +648,9 @@ function _benStat(icon, label, valor, color){
 // ── Tab: por empleado ─────────────────────────────────────────────────────
 function _benTabEmpleados(todos, nomina, empMap){
   // Filtros
-  const fEmp  = document.getElementById('ben-fe-empresa')?.value||'';
-  const fBusq = (document.getElementById('ben-fe-busq')?.value||'').toLowerCase();
-  const fSolo = document.getElementById('ben-fe-solo')?.checked ?? true;
+  const fEmp  = cont?.querySelector('#ben-fe-empresa')?.value || document.getElementById('ben-fe-empresa')?.value||'';
+  const fBusq = (cont?.querySelector('#ben-fe-busq')?.value || document.getElementById('ben-fe-busq')?.value||'').toLowerCase();
+  const fSolo = cont?.querySelector('#ben-fe-solo')?.checked ?? document.getElementById('ben-fe-solo')?.checked ?? true;
 
   // Agrupar por leg
   const porLeg = {};
@@ -664,16 +669,16 @@ function _benTabEmpleados(todos, nomina, empMap){
 
   return `
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-      <input id="ben-fe-busq" placeholder="🔍 Buscar empleado..." oninput="_benGlobalTab('empleados')"
-        value="${document.getElementById('ben-fe-busq')?.value||''}"
+      <input id="ben-fe-busq" placeholder="🔍 Buscar empleado..." oninput="_benGlobalTab('empleados',this.closest('[data-cid]')?.dataset?.cid)"
+        value="${cont?.querySelector('#ben-fe-busq')?.value || document.getElementById('ben-fe-busq')?.value||''}"
         style="flex:1;min-width:180px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:13px;outline:none">
-      <select id="ben-fe-empresa" onchange="_benGlobalTab('empleados')"
+      <select id="ben-fe-empresa" onchange="_benGlobalTab('empleados',this.closest('[data-cid]')?.dataset?.cid)"
         style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none">
         <option value="">Todas las empresas</option>
         ${empresas.map(e=>`<option value="${e}" ${fEmp===e?'selected':''}>${e}</option>`).join('')}
       </select>
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);cursor:pointer">
-        <input type="checkbox" id="ben-fe-solo" ${fSolo?'checked':''} onchange="_benGlobalTab('empleados')"
+        <input type="checkbox" id="ben-fe-solo" ${fSolo?'checked':''} onchange="_benGlobalTab('empleados',this.closest('[data-cid]')?.dataset?.cid)"
           style="cursor:pointer;accent-color:var(--accent)">
         Solo con beneficios activos
       </label>

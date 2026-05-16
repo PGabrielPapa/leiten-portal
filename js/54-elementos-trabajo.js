@@ -473,9 +473,11 @@ function etEliminar(id, leg){
 
 
 function _etDetectarContenedor(){
+  // Preferir la sección independiente si está activa
   if(document.getElementById('sec-elementos-trabajo')?.classList?.contains('active') &&
      (document.getElementById('et-global-sec-contenido')?.innerHTML?.length||0) > 10)
     return 'et-global-sec-contenido';
+  // Fallback: usar el último contenedor activo o el del panel RRHH
   return window._etActiveContId || 'et-global-contenido';
 }
 function renderEtGlobal(contId){
@@ -483,16 +485,17 @@ function renderEtGlobal(contId){
   window._etActiveContId = cid;  // guardar para filtros internos
   const cont = document.getElementById(cid);
   if(!cont) return;
+  cont.dataset.cid = cid;  // para filtros internos via data-cid
 
   const todos   = _etLeer();
   const nomina  = typeof getNomina === 'function' ? getNomina() : [];
   const empMap  = Object.fromEntries(nomina.map(e=>[e.leg, e]));
 
   // Filtros
-  const fTipo   = document.getElementById('et-g-filtro-tipo')?.value   || '';
-  const fEst    = document.getElementById('et-g-filtro-estado')?.value || 'entregado';
-  const fEmp    = document.getElementById('et-g-filtro-empresa')?.value|| '';
-  const fBusq   = (document.getElementById('et-g-busq')?.value||'').toLowerCase();
+  const fTipo   = cont?.querySelector('#et-g-filtro-tipo')?.value    || document.getElementById('et-g-filtro-tipo')?.value   || '';
+  const fEst    = cont?.querySelector('#et-g-filtro-estado')?.value  || document.getElementById('et-g-filtro-estado')?.value || 'entregado';
+  const fEmp    = cont?.querySelector('#et-g-filtro-empresa')?.value || document.getElementById('et-g-filtro-empresa')?.value|| '';
+  const fBusq   = (cont?.querySelector('#et-g-busq')?.value || document.getElementById('et-g-busq')?.value||'').toLowerCase();
 
   let lista = todos;
   if(fTipo)  lista = lista.filter(e => e.tipo === fTipo);
@@ -528,23 +531,23 @@ function renderEtGlobal(contId){
     <!-- Filtros -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
       <input id="et-g-busq" placeholder="🔍 Buscar empleado, IMEI, patente..."
-        oninput="renderEtGlobal()"
+        oninput="renderEtGlobal(this.closest('[data-cid]')?.dataset?.cid)"
         value="${document.getElementById('et-g-busq')?.value||''}"
         style="flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:13px;outline:none">
 
-      <select id="et-g-filtro-tipo" onchange="renderEtGlobal()"
+      <select id="et-g-filtro-tipo" onchange="renderEtGlobal(this.closest('[data-cid]')?.dataset?.cid)"
         style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none">
         <option value="">Todos los tipos</option>
         ${ET_TIPOS.map(t=>`<option value="${t.key}" ${fTipo===t.key?'selected':''}>${t.icon} ${t.label}</option>`).join('')}
       </select>
 
-      <select id="et-g-filtro-estado" onchange="renderEtGlobal()"
+      <select id="et-g-filtro-estado" onchange="renderEtGlobal(this.closest('[data-cid]')?.dataset?.cid)"
         style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none">
         <option value="">Todos los estados</option>
         ${Object.entries(ET_ESTADOS).map(([k,v])=>`<option value="${k}" ${fEst===k?'selected':''}>${v.label}</option>`).join('')}
       </select>
 
-      <select id="et-g-filtro-empresa" onchange="renderEtGlobal()"
+      <select id="et-g-filtro-empresa" onchange="renderEtGlobal(this.closest('[data-cid]')?.dataset?.cid)"
         style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none">
         <option value="">Todas las empresas</option>
         ${[...new Set(nomina.map(e=>e.emp).filter(Boolean))].sort().map(emp=>`<option value="${emp}" ${fEmp===emp?'selected':''}>${emp}</option>`).join('')}
