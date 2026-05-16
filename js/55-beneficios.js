@@ -82,31 +82,8 @@ const BEN_CATALOGO = [
       { id:'rubros_autorizados', label:'Rubros autorizados', tipo:'text',  ph:'Ej: Viáticos, Comidas, Hotel' },
     ],
   },
-  {
-    key: 'celular',
-    label: 'Celular corporativo',
-    icon: '📱',
-    grupo: 'Comunicaciones',
-    modalidades: ['fijo'],
-    campos: [
-      { id:'operadora',      label:'Operadora',              tipo:'text',  ph:'Personal, Claro, Movistar' },
-      { id:'plan_cel',       label:'Plan',                   tipo:'text',  ph:'Ej: Plan Empresas 30GB' },
-      { id:'nro_linea',      label:'Número de línea',        tipo:'text' },
-      { id:'limite_roaming', label:'Habilitado roaming',     tipo:'check' },
-    ],
-  },
-  {
-    key: 'notebook',
-    label: 'Notebook / equipamiento',
-    icon: '💻',
-    grupo: 'Tecnología',
-    modalidades: ['fijo'],
-    campos: [
-      { id:'proveedor_hw',   label:'Proveedor / marca',      tipo:'text',  ph:'Ej: Dell, Lenovo, Apple' },
-      { id:'modelo_hw',      label:'Modelo',                 tipo:'text' },
-      { id:'ciclo_renovacion', label:'Ciclo renovación (años)', tipo:'number' },
-    ],
-  },
+
+
   {
     key: 'estacionamiento',
     label: 'Estacionamiento',
