@@ -119,80 +119,83 @@ function abrirSolicitarCertificadoTrabajo(){
   }
 
   modal.innerHTML = `
-    <div class="card" style="padding:0;max-width:560px;width:100%;border:1px solid var(--border);margin-top:20px;overflow:hidden">
-      <div style="padding:16px 22px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between">
+    <div style="background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);width:100%;max-width:520px;margin-top:20px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4)">
+
+      <!-- Header -->
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between">
         <div>
           <div style="font-size:14px;font-weight:600;color:var(--t1)">📄 Solicitar certificado de trabajo</div>
           <div style="font-size:11px;color:var(--t3);margin-top:2px">El pedido será procesado por RR.HH.</div>
         </div>
-        <button onclick="document.getElementById('modal-cert-trabajo').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;padding:4px 8px">✕</button>
+        <button onclick="document.getElementById('modal-cert-trabajo').remove()"
+          style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1">✕</button>
       </div>
 
-      <div style="padding:18px 22px;display:flex;flex-direction:column;gap:16px">
+      <!-- Body -->
+      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px;max-height:75vh;overflow-y:auto">
 
         <!-- Destinatario -->
         <div>
-          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">¿Para quién es? (destinatario)</label>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2);font-size:13px;color:var(--t1)" id="cert-dest-opt-0">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">¿Para quién es?</div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2)">
               <input type="radio" name="cert-destinatario" value="quien_corresponda" checked onchange="_certToggleDest()"
-                style="cursor:pointer;accent-color:var(--accent)">
-              <span>Ante <strong>quien corresponda</strong></span>
+                style="cursor:pointer;accent-color:var(--accent);flex-shrink:0;width:14px;height:14px">
+              <span style="font-size:13px;color:var(--t1)">Ante <strong>quien corresponda</strong></span>
             </label>
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2);font-size:13px;color:var(--t1)" id="cert-dest-opt-1">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2)">
               <input type="radio" name="cert-destinatario" value="custom" onchange="_certToggleDest()"
-                style="cursor:pointer;accent-color:var(--accent)">
-              <span>Especificar destinatario</span>
+                style="cursor:pointer;accent-color:var(--accent);flex-shrink:0;width:14px;height:14px">
+              <span style="font-size:13px;color:var(--t1)">Especificar destinatario</span>
             </label>
             <input type="text" id="cert-dest-custom" placeholder="Ej: Banco Galicia, ANSES, Embajada de Italia..."
-              style="display:none;width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;margin-top:2px;box-sizing:border-box">
+              style="display:none;width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;box-sizing:border-box">
           </div>
         </div>
 
         <!-- Campos a incluir -->
         <div>
-          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Información a incluir en el certificado</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            ${_certCampoCheck('cert-campo-ingreso',   'Fecha de ingreso',         true)}
-            ${_certCampoCheck('cert-campo-antiguedad', 'Antigüedad',              true)}
-            ${_certCampoCheck('cert-campo-cargo',      'Cargo / tarea',           true)}
-            ${_certCampoCheck('cert-campo-categoria',  'Categoría laboral',       true)}
-            ${_certCampoCheck('cert-campo-condicion',  'Condición (mensualizado / jornalizado)', true)}
-            ${_certCampoCheck('cert-campo-lugar',      'Lugar de trabajo',        true)}
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Información a incluir</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+            ${_certCampoCheck('cert-campo-ingreso',   'Fecha de ingreso',    true)}
+            ${_certCampoCheck('cert-campo-antiguedad', 'Antigüedad',         true)}
+            ${_certCampoCheck('cert-campo-cargo',      'Cargo / tarea',      true)}
+            ${_certCampoCheck('cert-campo-categoria',  'Categoría laboral',  true)}
+            ${_certCampoCheck('cert-campo-condicion',  'Condición',          true)}
+            ${_certCampoCheck('cert-campo-lugar',      'Lugar de trabajo',   true)}
           </div>
-          <div style="margin-top:6px">
+          <div style="margin-top:5px">
             ${_certCampoCheck('cert-campo-sueldo', 'Remuneración bruta mensual', false, '⚠ Requerido por bancos / entidades financieras')}
           </div>
         </div>
 
         <!-- Observaciones -->
         <div>
-          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Observaciones para RR.HH. (opcional)</label>
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--t3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Observaciones para RR.HH. (opcional)</div>
           <textarea id="cert-obs" rows="2" placeholder="Ej: urgente, necesito para antes del martes..."
             style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;resize:vertical;font-family:var(--font-sans);box-sizing:border-box"></textarea>
         </div>
 
-        <div style="font-size:11px;color:var(--t3);padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);line-height:1.5">
-          El certificado siempre incluye: <strong>nombre completo, DNI, CUIL, legajo y empresa.</strong><br>
-          RR.HH. lo genera con firma oficial y sello de la empresa.
+        <div style="font-size:11px;color:var(--t3);padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);line-height:1.6">
+          El certificado siempre incluye: <strong>nombre completo, DNI, CUIL, legajo y empresa.</strong>
         </div>
       </div>
 
-      <div style="padding:14px 22px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
+      <!-- Footer -->
+      <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
         <button class="btn btn-ghost" onclick="document.getElementById('modal-cert-trabajo').remove()" style="font-size:13px;padding:8px 14px">Cancelar</button>
         <button class="btn btn-primary" onclick="_certEnviarPedido()" style="font-size:13px;padding:8px 20px">📤 Enviar pedido a RR.HH.</button>
       </div>
-    </div>`;
-
+    </div>`
   document.body.appendChild(modal);
 }
 
 function _certCampoCheck(id, label, checked, sub=''){
-  return `<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--t2);padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2);width:100%;box-sizing:border-box">
-    <input type="checkbox" id="${id}" ${checked?'checked':''} style="cursor:pointer;accent-color:var(--accent);margin-top:2px;flex-shrink:0">
-    <div style="flex:1;min-width:0">
-      <div style="white-space:normal;word-break:break-word">${label}</div>
-      ${sub ? `<div style="font-size:10px;color:var(--t3);margin-top:2px">${sub}</div>` : ''}
+  return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2);overflow:hidden">
+    <input type="checkbox" id="${id}" ${checked?'checked':''} style="cursor:pointer;accent-color:var(--accent);flex-shrink:0;width:14px;height:14px">
+    <div style="min-width:0;flex:1">
+      <div style="font-size:12px;color:var(--t2);line-height:1.3;overflow:hidden;text-overflow:ellipsis">${label}</div>
+      ${sub ? `<div style="font-size:10px;color:var(--t3);margin-top:1px;white-space:normal">${sub}</div>` : ''}
     </div>
   </label>`;
 }
