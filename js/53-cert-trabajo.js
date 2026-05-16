@@ -294,6 +294,14 @@ function renderCertHistorialEmpleado(){
 }
 
 function _certCancelarPedidoEmp(id){
+  if(typeof showConfirm !== 'function'){
+    const arr = _certLeer().filter(p => p.id !== id);
+    _certGuardar(arr);
+    _certActualizarBadge();
+    renderCertHistorialEmpleado();
+    toast('Pedido cancelado', 'var(--t2)');
+    return;
+  }
   showConfirm({ titulo:'Cancelar pedido', mensaje:'¿Cancelar este pedido de certificado?', labelOk:'Sí, cancelar', labelCancel:'No' })
     .then(ok => {
       if(!ok) return;
@@ -303,6 +311,14 @@ function _certCancelarPedidoEmp(id){
       renderCertHistorialEmpleado();
       toast('Pedido cancelado', 'var(--t2)');
     });
+}
+
+
+// ─── Helper: obtener datos del empleado por legajo ──────────────────────
+function _certGetEmp(leg){
+  const nomina = (typeof getNomina === 'function') ? getNomina()
+    : ((typeof EMPLOYEES !== 'undefined') ? EMPLOYEES : []);
+  return nomina.find(e => e.leg === leg) || null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -431,8 +447,7 @@ function _certAbrirGenerarModal(id){
   if(!pedido){ toast('⚠ Pedido no encontrado', 'var(--red)'); return; }
 
   // Buscar datos completos del empleado
-  const todosEmp = (typeof getNomina === 'function') ? getNomina() : ((typeof EMPLOYEES !== 'undefined') ? EMPLOYEES : []);
-  const emp = todosEmp.find(e => e.leg === pedido.leg) || { leg:pedido.leg, nom:pedido.nom, dni:pedido.dni, cuil:pedido.cuil, emp:pedido.empresa };
+  const emp = _certGetEmp(pedido.leg) || { leg:pedido.leg, nom:pedido.nom, dni:pedido.dni||'', cuil:pedido.cuil||'', emp:pedido.empresa };
 
   const prev = document.getElementById('modal-cert-generar');
   if(prev) prev.remove();
@@ -563,8 +578,7 @@ function _certConfirmarGenerar(id){
 
 // ─── Previa editable: abre ventana con contenteditable ───────────────────
 function _certAbrirPrevistaEditable(p, fechaIsoOverride){
-  const todosEmp = (typeof getNomina === 'function') ? getNomina() : ((typeof EMPLOYEES !== 'undefined') ? EMPLOYEES : []);
-  const emp = todosEmp.find(e => e.leg === p.leg) || { leg:p.leg, nom:p.nom, dni:p.dni||'', cuil:p.cuil||'', emp:p.empresa };
+  const emp = _certGetEmp(p.leg) || { leg:p.leg, nom:p.nom, dni:p.dni||'', cuil:p.cuil||'', emp:p.empresa };
 
   const campos = p.campos || {};
   const fechaIso = fechaIsoOverride || p.fecha_resolucion || _certFechaHoy().iso;

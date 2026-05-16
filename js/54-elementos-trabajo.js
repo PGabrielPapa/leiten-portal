@@ -296,7 +296,7 @@ function _etSeleccionarTipo(tipo){
   document.querySelectorAll('input[name="et-tipo"]').forEach(r => r.checked = r.value === tipo);
   _etResaltarTipoSeleccionado(tipo);
   const elem = null; // al cambiar tipo, limpiar campos dinámicos
-  document.getElementById('et-campos-dinamicos').innerHTML = _etCamposDinamicosHtml(tipo, null);
+  const _etCampDiv = document.getElementById('et-campos-dinamicos'); if(_etCampDiv) _etCampDiv.innerHTML = _etCamposDinamicosHtml(tipo, null);
 }
 
 function _etResaltarTipoSeleccionado(tipo){
