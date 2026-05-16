@@ -4,40 +4,51 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 function buildNav(){
-  const role = currentUser?.role;
+  const role  = currentUser?.role;
   const level = currentUser?.level;
-  const isEmployee = role === 'employee';
-  const isManager  = role === 'manager';
-  const isAdmin    = level === 'admin';
-  const esPapa     = currentUser?.emp?.nom?.toUpperCase().includes('PAPA, PABLO GABRIEL');
+  const isAdmin   = level === 'admin';
+  const isRRHH    = role === 'rrhh' || isAdmin;
+  const isManager = role === 'manager' || isAdmin;
+  const isEmp     = role === 'employee';
+  const esPapa    = currentUser?.emp?.nom?.toUpperCase().includes('PAPA, PABLO GABRIEL');
   const verGerente = isManager || esPapa;
-  // ── Controlar visibilidad de items por ID (robusto, no depende del orden del DOM) ──
-  const sbPendientes = document.querySelector('.sb-item[onclick*="pendientes"]');
-  const sbRRHH       = document.querySelector('.sb-item[onclick*="rrhhpanel"]');
-  const sbHistorial  = document.querySelector('.sb-item[onclick*="historial"]');
-  const sbAdmin      = document.getElementById('sb-admin-usuarios');
-  const sbEt         = document.getElementById('sb-elementos-trabajo');
-  const sbBen        = document.getElementById('sb-beneficios');
-  const sbSecRRHH    = document.getElementById('sb-section-rrhh-modulos');
 
-  if(sbPendientes) sbPendientes.style.display = verGerente ? 'flex' : 'none';
-  if(sbRRHH)       sbRRHH.style.display       = (role==='rrhh' || level==='admin') ? 'flex' : 'none';
-  if(sbAdmin)      sbAdmin.style.display      = isAdmin ? 'flex' : 'none';
+  // ── Sección General — todos ──
+  // (siempre visible, sin cambios)
 
-  // Sección y botones de módulos RRHH independientes
-  const puedeVerModulos = role === 'rrhh' || level === 'admin';
-  if(sbSecRRHH) sbSecRRHH.style.display = puedeVerModulos ? 'block' : 'none';
-  if(sbEt)      sbEt.style.display      = puedeVerModulos ? 'flex'  : 'none';
-  if(sbBen)     sbBen.style.display     = puedeVerModulos ? 'flex'  : 'none';
+  // ── Historial — label según rol ──
+  const sbHistLbl = document.getElementById('sb-historial-label');
+  if(sbHistLbl) sbHistLbl.textContent = isEmp ? 'Mis solicitudes' : 'Historial de solicitudes';
 
-  // Label historial según rol
-  if(sbHistorial) sbHistorial.querySelector('div').textContent =
-    isEmployee ? 'Mis Solicitudes' : 'Todas las solicitudes';
-  // Certificado de trabajo — visible para todos (empleado, manager, rrhh, admin)
-  const sbCert = document.getElementById('sb-cert-trabajo');
-  if(sbCert) sbCert.style.display = 'flex';
+  // ── Sección Gerente ──
+  const secGerente = document.getElementById('sb-sec-gerente');
+  if(secGerente) secGerente.style.display = verGerente ? 'block' : 'none';
 
-  // Tarjeta del gerente ya no está en el home del empleado
+  // ── Sección RR.HH. ──
+  const secRRHH = document.getElementById('sb-sec-rrhh');
+  if(secRRHH) secRRHH.style.display = isRRHH ? 'block' : 'none';
+
+  // Admin → muestra Administración dentro del panel RRHH
+  const sbAdmin = document.getElementById('sb-admin-usuarios');
+  if(sbAdmin) sbAdmin.style.display = isAdmin ? 'flex' : 'none';
+
+  // ── Sección Personal — ocultar lo que no aplica a RRHH puro ──
+  // RRHH y admin no necesitan: adelanto, licencias, mensajes, cert-trabajo
+  // (pueden pedirlos como empleados, pero no es su flujo principal)
+  const esPersonal = isEmp || isManager;
+
+  const hide = (id, cond) => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = cond ? 'flex' : 'none';
+  };
+
+  hide('sb-nueva',          true);         // adelanto: todos
+  hide('sb-licencias-comp', esPersonal);   // solo emp/manager
+  hide('sb-licencias-inf',  esPersonal);   // solo emp/manager
+  hide('sb-lic-anual',      esPersonal);   // solo emp/manager
+  hide('sb-mensajes',       esPersonal);   // solo emp/manager
+  hide('sb-cert-trabajo',   esPersonal);   // solo emp/manager
+
   actualizarCntRecibos();
   actualizarDotRRHH();
 }

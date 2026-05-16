@@ -97,73 +97,81 @@
 <div class="app">
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="sb-section">
-      <div class="sb-label">Solicitudes</div>
-      <div class="sb-item active" onclick="nav('home')">
+    <!-- ═══ SIDEBAR — organizado por rol ═══
+         Todos los items tienen ID. buildNav() muestra solo los del rol activo.
+         Roles: employee | manager | rrhh | admin
+    ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- ── General (todos los roles) ── -->
+    <div class="sb-section" id="sb-sec-general">
+      <div class="sb-label">General</div>
+      <div class="sb-item active" id="sb-inicio" onclick="nav('home')">
         <div class="sb-dot blue"></div>Inicio
       </div>
-      <div class="sb-item" onclick="nav('pendientes')">
+      <div class="sb-item" id="sb-historial" onclick="nav('historial')">
+        <div class="sb-dot"></div><span id="sb-historial-label">Mis solicitudes</span>
+      </div>
+    </div>
+
+    <!-- ── Panel Gerente (manager + admin) ── -->
+    <div class="sb-section" id="sb-sec-gerente" style="display:none">
+      <div class="sb-label">Gerente</div>
+      <div class="sb-item" id="sb-pendientes" onclick="nav('pendientes')">
         <div class="sb-dot yellow" id="dot-pend"></div>Panel Gerente
         <span id="cnt-pend" style="margin-left:auto;font-size:11px;font-family:var(--font-mono);color:var(--yellow)"></span>
       </div>
-      <div class="sb-item" onclick="nav('rrhhpanel')">
+    </div>
+
+    <!-- ── Panel RR.HH. (rrhh + admin) ── -->
+    <div class="sb-section" id="sb-sec-rrhh" style="display:none">
+      <div class="sb-label">RR.HH.</div>
+      <div class="sb-item" id="sb-rrhhpanel" onclick="nav('rrhhpanel')">
         <div class="sb-dot green" id="dot-rrhh"></div>Panel RR.HH.
         <span id="cnt-rrhh" style="margin-left:auto;font-size:11px;font-family:var(--font-mono);color:var(--green)"></span>
+      </div>
+      <div class="sb-item" id="sb-elementos-trabajo" onclick="nav('elementos-trabajo')">
+        <div class="sb-dot" style="background:rgba(245,158,11,.8)"></div>Elementos de trabajo
+      </div>
+      <div class="sb-item" id="sb-beneficios" onclick="nav('beneficios')">
+        <div class="sb-dot" style="background:rgba(99,102,241,.8)"></div>Beneficios gerenciales
       </div>
       <div class="sb-item" id="sb-admin-usuarios" style="display:none" onclick="nav('admin-usuarios')">
         <div class="sb-dot" style="background:#D85A30"></div>Administración
       </div>
     </div>
-    <div class="sb-section" id="sb-section-rrhh-modulos" style="display:none">
-      <div class="sb-label">RR.HH.</div>
-      <div class="sb-item" id="sb-elementos-trabajo" onclick="nav('elementos-trabajo')">
-        <div class="sb-dot" style="background:rgba(245,158,11,.8)"></div>Elementos de trabajo
+
+    <!-- ── Personal (empleado + manager + rrhh + admin) ── -->
+    <div class="sb-section" id="sb-sec-personal">
+      <div class="sb-label">Mi portal</div>
+      <div class="sb-item" id="sb-nueva" onclick="nav('nueva')">
+        <div class="sb-dot blue"></div>Adelanto de haberes
       </div>
-      <div class="sb-item" id="sb-beneficios" onclick="nav('beneficios')">
-        <div class="sb-dot" style="background:rgba(99,102,241,.8)"></div>Beneficios
-      </div>
-    </div>
-    <div class="sb-section">
-      <div class="sb-label">Historial</div>
-      <div class="sb-item" onclick="nav('historial')">
-        <div class="sb-dot"></div>Todas las solicitudes
-      </div>
-    </div>
-    <div class="sb-section">
-      <div class="sb-label">Recibos de Haberes</div>
       <div class="sb-item" id="sb-recibos" onclick="nav('recibos')">
-        <div class="sb-dot" style="background:var(--accent)"></div>Mis Recibos
+        <div class="sb-dot" style="background:var(--accent)"></div>Mis recibos
         <span id="cnt-recibos-new" style="margin-left:auto;font-size:10px;font-family:var(--font-mono);color:var(--accent2)"></span>
-      </div>
-      <div class="sb-item" id="sb-licencias" onclick="nav('licencias'); setTimeout(()=>licTab('comprobante'),50)">
-        <div class="sb-dot" style="background:rgba(168,85,247,.7)"></div>Presentar comprobante
-      </div>
-      <div class="sb-item" onclick="nav('licencias'); setTimeout(()=>licTab('informar'),50)">
-        <div class="sb-dot" style="background:rgba(61,200,160,.7)"></div>Informar licencia
-      </div>
-      <div class="sb-item" onclick="nav('lic-anual')">
-        <div class="sb-dot" style="background:rgba(34,197,94,.7)"></div>Licencia anual
       </div>
       <div class="sb-item" id="sb-ganancias" onclick="nav('ganancias')">
         <div class="sb-dot" style="background:rgba(234,179,8,.7)"></div>Ganancias
       </div>
+      <div class="sb-item" id="sb-licencias-comp" onclick="nav('licencias'); setTimeout(()=>licTab('comprobante'),50)">
+        <div class="sb-dot" style="background:rgba(168,85,247,.7)"></div>Presentar comprobante
+      </div>
+      <div class="sb-item" id="sb-licencias-inf" onclick="nav('licencias'); setTimeout(()=>licTab('informar'),50)">
+        <div class="sb-dot" style="background:rgba(61,200,160,.7)"></div>Informar licencia
+      </div>
+      <div class="sb-item" id="sb-lic-anual" onclick="nav('lic-anual')">
+        <div class="sb-dot" style="background:rgba(34,197,94,.7)"></div>Licencia anual
+      </div>
+      <div class="sb-item" id="sb-cert-trabajo" onclick="nav('cert-trabajo-emp')">
+        <div class="sb-dot" style="background:rgba(99,102,241,.7)"></div>Certificado de trabajo
+      </div>
       <div class="sb-item" id="sb-misdatos" onclick="nav('misdatos')">
-        <div class="sb-dot" style="background:rgba(92,104,128,.6)"></div>Mis Datos
+        <div class="sb-dot" style="background:rgba(92,104,128,.6)"></div>Mis datos
       </div>
       <div class="sb-item" id="sb-mensajes" onclick="nav('mensajes')">
         <div class="sb-dot" style="background:rgba(61,127,255,.7)"></div>Mensajes a RR.HH.
       </div>
-      <div class="sb-item" id="sb-cert-trabajo" onclick="nav('cert-trabajo-emp')">
-        <div class="sb-dot" style="background:rgba(99,102,241,.8)"></div>Certificado de trabajo
-      </div>
     </div>
-    <div class="sb-section" style="margin-top:auto;padding-top:20px;border-top:1px solid var(--border)">
-      <div class="sb-label">Reglamento</div>
-      <div style="font-size:11px;color:var(--t3);padding:0 4px;line-height:1.6">
-        Tope: 50% neto<br>Neto = 80% bruto<br>Max: 1/trimestre<br>Excluye: Jun/Jul/Dic/Ene
-      </div>
-    </div>
-  </div>
 
   <!-- MAIN -->
   <div class="main">
