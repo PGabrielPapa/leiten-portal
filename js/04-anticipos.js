@@ -495,7 +495,7 @@ function renderPendientes(){
 }
 
 // ─── PANEL RR.HH. — NAVEGACIÓN POR SECCIONES ───
-const RRHH_SUBS = ['solicitudes','recibos','ganancias','contraseñas','delegacion','exportar','licencias','domicilios','mensajes','repositorio','abm','empresas','lic-anuales','lic-especiales','liquidacion','simulacion','evaluaciones','escala','sindicatos','hys','familiares','sanciones','conceptos-custom','reportes','reporte-conceptos','importar-conceptos','cert-trabajo'];
+const RRHH_SUBS = ['solicitudes','recibos','ganancias','contraseñas','delegacion','exportar','licencias','domicilios','mensajes','repositorio','abm','empresas','lic-anuales','lic-especiales','liquidacion','simulacion','evaluaciones','escala','sindicatos','hys','familiares','sanciones','conceptos-custom','reportes','reporte-conceptos','importar-conceptos','cert-trabajo','elementos-trabajo'];
 
 function navRRHH(sub){
   const _navRole = currentUser?.role; const _navLevel = (typeof getUserLevel === 'function') ? getUserLevel(currentUser?.emp?.dni) : currentUser?.level;
@@ -531,6 +531,7 @@ function navRRHH(sub){
   if(sub==='reporte-conceptos'){ renderReporteConceptos(); }
   if(sub==='importar-conceptos'){ renderImportadorConceptos(); }
   if(sub==='cert-trabajo'){ renderCertTrabajoPedidos(); _certActualizarBadge(); }
+  if(sub==='elementos-trabajo'){ renderEtGlobal(); }
 }
 
 function renderDelegacionSub(){
