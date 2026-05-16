@@ -471,8 +471,17 @@ function etEliminar(id, leg){
 // PANEL GLOBAL RRHH — vista completa de todos los elementos
 // ═══════════════════════════════════════════════════════════════════════════
 
-function renderEtGlobal(){
-  const cont = document.getElementById('et-global-contenido');
+
+function _etDetectarContenedor(){
+  if(document.getElementById('sec-elementos-trabajo')?.classList?.contains('active') &&
+     (document.getElementById('et-global-sec-contenido')?.innerHTML?.length||0) > 10)
+    return 'et-global-sec-contenido';
+  return window._etActiveContId || 'et-global-contenido';
+}
+function renderEtGlobal(contId){
+  const cid = contId || _etDetectarContenedor();
+  window._etActiveContId = cid;  // guardar para filtros internos
+  const cont = document.getElementById(cid);
   if(!cont) return;
 
   const todos   = _etLeer();
@@ -601,6 +610,8 @@ function _etStat(icon, label, valor, color){
 function renderEtGlobalIfVisible(){
   const cont = document.getElementById('et-global-contenido');
   if(cont && cont.innerHTML.length > 10) renderEtGlobal();
+  const contSec = document.getElementById('et-global-sec-contenido');
+  if(contSec && contSec.innerHTML.length > 10) renderEtGlobal('et-global-sec-contenido');
 }
 
 // ─── Exportar CSV ─────────────────────────────────────────────────────────

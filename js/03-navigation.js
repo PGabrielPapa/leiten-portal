@@ -24,6 +24,12 @@ function buildNav(){
   // Item de Administración de usuarios — solo visible para nivel admin
   const sbAdmin = document.getElementById('sb-admin-usuarios');
   if(sbAdmin) sbAdmin.style.display = isAdmin ? 'flex' : 'none';
+  // Módulos Elementos de trabajo y Beneficios — solo RRHH/admin
+  const sbEt  = document.getElementById('sb-elementos-trabajo');
+  const sbBen = document.getElementById('sb-beneficios');
+  const puedeVerModulos = role === 'rrhh' || level === 'admin';
+  if(sbEt)  sbEt.style.display  = puedeVerModulos ? 'flex' : 'none';
+  if(sbBen) sbBen.style.display = puedeVerModulos ? 'flex' : 'none';
   // Tarjeta del gerente ya no está en el home del empleado
   actualizarCntRecibos();
   actualizarDotRRHH();
@@ -86,6 +92,9 @@ function nav(sec){
   if(sec === 'licencias-gerente' && role !== 'manager'){
     mostrarAccesoNoAutorizado(); return;
   }
+  if((sec === 'elementos-trabajo' || sec === 'beneficios') && role !== 'rrhh' && level !== 'admin'){
+    mostrarAccesoNoAutorizado(); return;
+  }
   if(sec === 'organigrama' && role !== 'rrhh' && role !== 'manager'){
     mostrarAccesoNoAutorizado(); return;
   }
@@ -134,6 +143,12 @@ function nav(sec){
   if(sec==='familiares') renderMisFamiliares();
   if(sec==='mensajes'){ nuevoMensaje(); renderMisMensajes(); }
   if(sec==='admin-usuarios'){ renderAdminUsuarios(); }
+  if(sec==='elementos-trabajo'){
+    if(typeof renderEtGlobal === 'function') renderEtGlobal('et-global-sec-contenido');
+  }
+  if(sec==='beneficios'){
+    if(typeof renderBenGlobal === 'function') renderBenGlobal('ben-global-sec-cont');
+  }
   if(sec==='lic-anual'){ nuevaSolicitudAnual(); renderMisLicAnuales(); }
   if(sec==='lic-especial'){ leNuevo(); renderMisLicEspeciales(); }
   if(sec==='organigrama'){

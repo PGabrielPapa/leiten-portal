@@ -560,14 +560,16 @@ function benEliminar(id, leg){
 function _benRefrescarGlobalSiVisible(){
   const cont = document.getElementById('ben-global-cont');
   if(cont && cont.innerHTML.length > 20) renderBenGlobal();
+  const contSec = document.getElementById('ben-global-sec-cont');
+  if(contSec && contSec.innerHTML.length > 20) renderBenGlobal('ben-global-sec-cont');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PANEL GLOBAL RRHH
 // ═══════════════════════════════════════════════════════════════════════════
 
-function renderBenGlobal(){
-  const cont = document.getElementById('ben-global-cont');
+function renderBenGlobal(contId){
+  const cont = document.getElementById(contId || 'ben-global-cont');
   if(!cont) return;
 
   const tabActual = cont.dataset.tab || 'empleados';
@@ -619,11 +621,16 @@ function renderBenGlobal(){
   cont.dataset.tab = tabActual;
 }
 
-function _benGlobalTab(tab){
-  const cont = document.getElementById('ben-global-cont');
+function _benGlobalTab(tab, contId){
+  // Si no se pasa contId, detectar cuál contenedor está activo
+  const cid = contId
+    || (document.getElementById('ben-global-sec-cont')?.innerHTML?.length > 20 &&
+        document.getElementById('sec-beneficios')?.classList?.contains('active')
+        ? 'ben-global-sec-cont' : 'ben-global-cont');
+  const cont = document.getElementById(cid);
   if(!cont) return;
   cont.dataset.tab = tab;
-  renderBenGlobal();
+  renderBenGlobal(cid);
 }
 
 function _benStat(icon, label, valor, color){

@@ -110,6 +110,12 @@
         <div class="sb-dot green" id="dot-rrhh"></div>Panel RR.HH.
         <span id="cnt-rrhh" style="margin-left:auto;font-size:11px;font-family:var(--font-mono);color:var(--green)"></span>
       </div>
+      <div class="sb-item" id="sb-elementos-trabajo" style="display:none" onclick="nav('elementos-trabajo')">
+        <div class="sb-dot" style="background:rgba(245,158,11,.7)"></div>Elementos de trabajo
+      </div>
+      <div class="sb-item" id="sb-beneficios" style="display:none" onclick="nav('beneficios')">
+        <div class="sb-dot" style="background:rgba(99,102,241,.7)"></div>Beneficios
+      </div>
       <div class="sb-item" id="sb-admin-usuarios" style="display:none" onclick="nav('admin-usuarios')">
         <div class="sb-dot" style="background:#D85A30"></div>Administración
       </div>
@@ -2623,6 +2629,29 @@
     </div>
 
     <!-- ===================== ADMINISTRACIÓN DE USUARIOS ===================== -->
+
+    <div class="section" id="sec-elementos-trabajo">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🔧 Elementos de trabajo</div>
+          <div class="page-sub">Inventario de activos entregados a empleados</div>
+        </div>
+        <button class="btn btn-ghost" onclick="nav('rrhhpanel')" style="font-size:12px;padding:6px 14px">← Panel RR.HH.</button>
+      </div>
+      <div id="et-global-sec-contenido"></div>
+    </div>
+
+    <div class="section" id="sec-beneficios">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🎁 Beneficios gerenciales</div>
+          <div class="page-sub">Paquetes por empleado · Reportes por tipo y empresa</div>
+        </div>
+        <button class="btn btn-ghost" onclick="nav('rrhhpanel')" style="font-size:12px;padding:6px 14px">← Panel RR.HH.</button>
+      </div>
+      <div id="ben-global-sec-cont"></div>
+    </div>
+
     <div class="section" id="sec-admin-usuarios">
       <!-- Renderizado dinámicamente por renderAdminUsuarios() -->
     </div>
