@@ -1220,6 +1220,7 @@ async function abmEditarEmpleado(leg){
   // Cargar historial del empleado
   await renderHistorialEmpleadoABM(leg);
   if(typeof _etActualizarBadgeFicha === 'function') _etActualizarBadgeFicha(leg);
+  if(typeof _benActualizarBadgeFicha === 'function') _benActualizarBadgeFicha(leg);
 
   const et=document.getElementById('abm-tab-editar');
   if(et) et.style.display='inline-block';
