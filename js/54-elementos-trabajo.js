@@ -480,6 +480,52 @@ function _etDetectarContenedor(){
   // Fallback: usar el último contenedor activo o el del panel RRHH
   return window._etActiveContId || 'et-global-contenido';
 }
+// ── Selector de empleado para agregar desde vista global ──────────────────
+function _etAbrirSelectorEmpleado(){
+  const nomina = (typeof getNomina==='function') ? getNomina().filter(e=>!e._deBaja&&!e.egreso) : [];
+  const prev = document.getElementById('modal-et-sel-emp');
+  if(prev) prev.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-et-sel-emp';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px';
+
+  modal.innerHTML = `
+    <div class="card" style="padding:0;max-width:480px;width:100%;border:1px solid var(--border)">
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;font-weight:600;color:var(--t1)">¿A qué empleado le asignás el elemento?</div>
+        <button onclick="document.getElementById('modal-et-sel-emp').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:16px 20px">
+        <input id="et-sel-busq" placeholder="🔍 Buscar por nombre o legajo..."
+          oninput="_etFiltrarSelectorEmp()"
+          style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;box-sizing:border-box;margin-bottom:10px">
+        <div id="et-sel-lista" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:4px">
+          ${nomina.sort((a,b)=>(a.nom||'').localeCompare(b.nom||'')).map(e=>`
+            <div onclick="document.getElementById('modal-et-sel-emp').remove(); etAbrirFormNuevo('${e.leg}')"
+              style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:var(--bg2);transition:background .1s"
+              onmouseover="this.style.background='var(--bg1)'" onmouseout="this.style.background='var(--bg2)'">
+              <div style="font-size:13px;font-weight:500;color:var(--t1)">${e.nom}</div>
+              <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Leg ${e.leg} · ${e.emp||''}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(()=>document.getElementById('et-sel-busq')?.focus(), 100);
+}
+
+function _etFiltrarSelectorEmp(){
+  const q = (document.getElementById('et-sel-busq')?.value||'').toLowerCase();
+  const lista = document.getElementById('et-sel-lista');
+  if(!lista) return;
+  lista.querySelectorAll('div[onclick]').forEach(d=>{
+    const txt = d.textContent.toLowerCase();
+    d.style.display = txt.includes(q) ? '' : 'none';
+  });
+}
+
+
 function renderEtGlobal(contId){
   const cid = contId || _etDetectarContenedor();
   window._etActiveContId = cid;  // guardar para filtros internos
@@ -553,6 +599,8 @@ function renderEtGlobal(contId){
         ${[...new Set(nomina.map(e=>e.emp).filter(Boolean))].sort().map(emp=>`<option value="${emp}" ${fEmp===emp?'selected':''}>${emp}</option>`).join('')}
       </select>
 
+      <button class="btn btn-primary" onclick="_etAbrirSelectorEmpleado()"
+        style="font-size:12px;padding:7px 14px">➕ Agregar elemento</button>
       <button class="btn btn-ghost" onclick="_etExportarCsv()"
         style="font-size:12px;padding:7px 12px">📥 Exportar CSV</button>
     </div>

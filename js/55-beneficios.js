@@ -569,6 +569,52 @@ function _benRefrescarGlobalSiVisible(){
 // ═══════════════════════════════════════════════════════════════════════════
 
 
+// ── Selector de empleado para agregar beneficio desde vista global ─────────
+function _benAbrirSelectorEmpleado(){
+  const nomina = (typeof getNomina==='function') ? getNomina().filter(e=>!e._deBaja&&!e.egreso) : [];
+  const prev = document.getElementById('modal-ben-sel-emp');
+  if(prev) prev.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-ben-sel-emp';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px';
+
+  modal.innerHTML = `
+    <div class="card" style="padding:0;max-width:480px;width:100%;border:1px solid var(--border)">
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;font-weight:600;color:var(--t1)">¿A qué empleado le agregás el beneficio?</div>
+        <button onclick="document.getElementById('modal-ben-sel-emp').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:16px 20px">
+        <input id="ben-sel-busq" placeholder="🔍 Buscar por nombre o legajo..."
+          oninput="_benFiltrarSelectorEmp()"
+          style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;box-sizing:border-box;margin-bottom:10px">
+        <div id="ben-sel-lista" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:4px">
+          ${nomina.sort((a,b)=>(a.nom||'').localeCompare(b.nom||'')).map(e=>`
+            <div onclick="document.getElementById('modal-ben-sel-emp').remove(); benAbrirForm('${e.leg}',null)"
+              style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:var(--bg2);transition:background .1s"
+              onmouseover="this.style.background='var(--bg1)'" onmouseout="this.style.background='var(--bg2)'">
+              <div style="font-size:13px;font-weight:500;color:var(--t1)">${e.nom}</div>
+              <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Leg ${e.leg} · ${e.emp||''}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(()=>document.getElementById('ben-sel-busq')?.focus(), 100);
+}
+
+function _benFiltrarSelectorEmp(){
+  const q = (document.getElementById('ben-sel-busq')?.value||'').toLowerCase();
+  const lista = document.getElementById('ben-sel-lista');
+  if(!lista) return;
+  lista.querySelectorAll('div[onclick]').forEach(d=>{
+    const txt = d.textContent.toLowerCase();
+    d.style.display = txt.includes(q) ? '' : 'none';
+  });
+}
+
+
 function _benDetectarContenedor(){
   if(document.getElementById('sec-beneficios')?.classList?.contains('active') &&
      (document.getElementById('ben-global-sec-cont')?.innerHTML?.length||0) > 20)
@@ -682,6 +728,7 @@ function _benTabEmpleados(todos, nomina, empMap){
           style="cursor:pointer;accent-color:var(--accent)">
         Solo con beneficios activos
       </label>
+      <button class="btn btn-primary" onclick="_benAbrirSelectorEmpleado()" style="font-size:12px;padding:7px 14px">➕ Agregar beneficio</button>
       <button class="btn btn-ghost" onclick="_benExportarCsv()" style="font-size:12px;padding:7px 12px">📥 CSV</button>
     </div>
 

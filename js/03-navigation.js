@@ -11,25 +11,28 @@ function buildNav(){
   const isAdmin    = level === 'admin';
   const esPapa     = currentUser?.emp?.nom?.toUpperCase().includes('PAPA, PABLO GABRIEL');
   const verGerente = isManager || esPapa;
-  const items = document.querySelectorAll('.sb-item');
-  // items: 0=nueva, 1=pendientes, 2=rrhhpanel, 3=historial, 4=recibos, 5=gestionrecibos
-  items[1].style.display = verGerente ? 'flex' : 'none';
-  items[2].style.display = (role==='rrhh' || level==='admin') ? 'flex' : 'none';
-  items[0].innerHTML = '<div class="sb-dot blue"></div>Inicio';
-  items[3].innerHTML = isEmployee ? '<div class="sb-dot"></div>Mis Solicitudes' : '<div class="sb-dot"></div>Todas las solicitudes';
-  items[0].onclick = ()=>nav('home');
-  items[1].onclick = ()=>nav('pendientes');
-  items[2].onclick = ()=>nav('rrhhpanel');
-  items[3].onclick = ()=>nav('historial');
-  // Item de Administración de usuarios — solo visible para nivel admin
-  const sbAdmin = document.getElementById('sb-admin-usuarios');
-  if(sbAdmin) sbAdmin.style.display = isAdmin ? 'flex' : 'none';
-  // Módulos Elementos de trabajo y Beneficios — solo RRHH/admin
-  const sbEt  = document.getElementById('sb-elementos-trabajo');
-  const sbBen = document.getElementById('sb-beneficios');
+  // ── Controlar visibilidad de items por ID (robusto, no depende del orden del DOM) ──
+  const sbPendientes = document.querySelector('.sb-item[onclick*="pendientes"]');
+  const sbRRHH       = document.querySelector('.sb-item[onclick*="rrhhpanel"]');
+  const sbHistorial  = document.querySelector('.sb-item[onclick*="historial"]');
+  const sbAdmin      = document.getElementById('sb-admin-usuarios');
+  const sbEt         = document.getElementById('sb-elementos-trabajo');
+  const sbBen        = document.getElementById('sb-beneficios');
+  const sbSecRRHH    = document.getElementById('sb-section-rrhh-modulos');
+
+  if(sbPendientes) sbPendientes.style.display = verGerente ? 'flex' : 'none';
+  if(sbRRHH)       sbRRHH.style.display       = (role==='rrhh' || level==='admin') ? 'flex' : 'none';
+  if(sbAdmin)      sbAdmin.style.display      = isAdmin ? 'flex' : 'none';
+
+  // Sección y botones de módulos RRHH independientes
   const puedeVerModulos = role === 'rrhh' || level === 'admin';
-  if(sbEt)  sbEt.style.display  = puedeVerModulos ? 'flex' : 'none';
-  if(sbBen) sbBen.style.display = puedeVerModulos ? 'flex' : 'none';
+  if(sbSecRRHH) sbSecRRHH.style.display = puedeVerModulos ? 'block' : 'none';
+  if(sbEt)      sbEt.style.display      = puedeVerModulos ? 'flex'  : 'none';
+  if(sbBen)     sbBen.style.display     = puedeVerModulos ? 'flex'  : 'none';
+
+  // Label historial según rol
+  if(sbHistorial) sbHistorial.querySelector('div').textContent =
+    isEmployee ? 'Mis Solicitudes' : 'Todas las solicitudes';
   // Tarjeta del gerente ya no está en el home del empleado
   actualizarCntRecibos();
   actualizarDotRRHH();
