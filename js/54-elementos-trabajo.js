@@ -472,14 +472,6 @@ function etEliminar(id, leg){
 // ═══════════════════════════════════════════════════════════════════════════
 
 
-function _etDetectarContenedor(){
-  // Preferir la sección independiente si está activa
-  if(document.getElementById('sec-elementos-trabajo')?.classList?.contains('active') &&
-     (document.getElementById('et-global-sec-contenido')?.innerHTML?.length||0) > 10)
-    return 'et-global-sec-contenido';
-  // Fallback: usar el último contenedor activo o el del panel RRHH
-  return window._etActiveContId || 'et-global-contenido';
-}
 // ── Selector de empleado para agregar desde vista global ──────────────────
 function _etAbrirSelectorEmpleado(){
   const nomina = (typeof getNomina==='function') ? getNomina().filter(e=>!e._deBaja&&!e.egreso) : [];
@@ -526,22 +518,19 @@ function _etFiltrarSelectorEmp(){
 }
 
 
-function renderEtGlobal(contId){
-  const cid = contId || _etDetectarContenedor();
-  window._etActiveContId = cid;  // guardar para filtros internos
-  const cont = document.getElementById(cid);
+function renderEtGlobal(){
+  const cont = document.getElementById('et-global-sec-contenido');
   if(!cont) return;
-  cont.dataset.cid = cid;  // para filtros internos via data-cid
 
   const todos   = _etLeer();
   const nomina  = typeof getNomina === 'function' ? getNomina() : [];
   const empMap  = Object.fromEntries(nomina.map(e=>[e.leg, e]));
 
   // Filtros
-  const fTipo   = cont?.querySelector('#et-g-filtro-tipo')?.value    || document.getElementById('et-g-filtro-tipo')?.value   || '';
-  const fEst    = cont?.querySelector('#et-g-filtro-estado')?.value  || document.getElementById('et-g-filtro-estado')?.value || 'entregado';
-  const fEmp    = cont?.querySelector('#et-g-filtro-empresa')?.value || document.getElementById('et-g-filtro-empresa')?.value|| '';
-  const fBusq   = (cont?.querySelector('#et-g-busq')?.value || document.getElementById('et-g-busq')?.value||'').toLowerCase();
+  const fTipo   = document.getElementById('et-g-filtro-tipo')?.value   || '';
+  const fEst    = document.getElementById('et-g-filtro-estado')?.value || 'entregado';
+  const fEmp    = document.getElementById('et-g-filtro-empresa')?.value || '';
+  const fBusq   = (document.getElementById('et-g-busq')?.value || '').toLowerCase();
 
   let lista = todos;
   if(fTipo)  lista = lista.filter(e => e.tipo === fTipo);
@@ -577,23 +566,23 @@ function renderEtGlobal(contId){
     <!-- Filtros -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
       <input id="et-g-busq" placeholder="🔍 Buscar empleado, IMEI, patente..."
-        oninput="renderEtGlobal(this.closest('[data-cid]')?.dataset?.cid)"
+        oninput="renderEtGlobal()"
         value="${document.getElementById('et-g-busq')?.value||''}"
         style="flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:13px;outline:none">
 
-      <select id="et-g-filtro-tipo" onchange="renderEtGlobal(this.closest('[data-cid]')?.dataset?.cid)"
+      <select id="et-g-filtro-tipo" onchange="renderEtGlobal()"
         style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none">
         <option value="">Todos los tipos</option>
         ${ET_TIPOS.map(t=>`<option value="${t.key}" ${fTipo===t.key?'selected':''}>${t.icon} ${t.label}</option>`).join('')}
       </select>
 
-      <select id="et-g-filtro-estado" onchange="renderEtGlobal(this.closest('[data-cid]')?.dataset?.cid)"
+      <select id="et-g-filtro-estado" onchange="renderEtGlobal()"
         style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none">
         <option value="">Todos los estados</option>
         ${Object.entries(ET_ESTADOS).map(([k,v])=>`<option value="${k}" ${fEst===k?'selected':''}>${v.label}</option>`).join('')}
       </select>
 
-      <select id="et-g-filtro-empresa" onchange="renderEtGlobal(this.closest('[data-cid]')?.dataset?.cid)"
+      <select id="et-g-filtro-empresa" onchange="renderEtGlobal()"
         style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none">
         <option value="">Todas las empresas</option>
         ${[...new Set(nomina.map(e=>e.emp).filter(Boolean))].sort().map(emp=>`<option value="${emp}" ${fEmp===emp?'selected':''}>${emp}</option>`).join('')}
@@ -659,10 +648,8 @@ function _etStat(icon, label, valor, color){
 }
 
 function renderEtGlobalIfVisible(){
-  const cont = document.getElementById('et-global-contenido');
+  const cont = document.getElementById('et-global-sec-contenido');
   if(cont && cont.innerHTML.length > 10) renderEtGlobal();
-  const contSec = document.getElementById('et-global-sec-contenido');
-  if(contSec && contSec.innerHTML.length > 10) renderEtGlobal('et-global-sec-contenido');
 }
 
 // ─── Exportar CSV ─────────────────────────────────────────────────────────

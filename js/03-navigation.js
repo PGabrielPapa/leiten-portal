@@ -147,10 +147,10 @@ function nav(sec){
   if(sec==='mensajes'){ nuevoMensaje(); renderMisMensajes(); }
   if(sec==='admin-usuarios'){ renderAdminUsuarios(); }
   if(sec==='elementos-trabajo'){
-    if(typeof renderEtGlobal === 'function') renderEtGlobal('et-global-sec-contenido');
+    if(typeof renderEtGlobal === 'function') renderEtGlobal();
   }
   if(sec==='beneficios'){
-    if(typeof renderBenGlobal === 'function') renderBenGlobal('ben-global-sec-cont');
+    if(typeof renderBenGlobal === 'function') renderBenGlobal();
   }
   if(sec==='lic-anual'){ nuevaSolicitudAnual(); renderMisLicAnuales(); }
   if(sec==='lic-especial'){ leNuevo(); renderMisLicEspeciales(); }

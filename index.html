@@ -843,20 +843,20 @@
             <span id="rrhh-badge-cert" style="display:none;font-size:10px;font-family:var(--font-mono);color:rgb(99,102,241);border:1px solid rgba(99,102,241,.3);padding:2px 8px;border-radius:10px"></span>
           </div>
 
-          <div class="card home-card" onclick="navRRHH('elementos-trabajo')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+          <div class="card home-card" onclick="nav('elementos-trabajo')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🔧</div>
             <div>
               <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Elementos de trabajo</div>
               <div style="font-size:11px;color:var(--t3)">Inventario de activos por empleado</div>
             </div>
+          </div>
 
-          <div class="card home-card" onclick="navRRHH('beneficios')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+          <div class="card home-card" onclick="nav('beneficios')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🎁</div>
             <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Beneficios</div>
-              <div style="font-size:11px;color:var(--t3)">Paquetes gerenciales · Prepaga · Costos</div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Beneficios gerenciales</div>
+              <div style="font-size:11px;color:var(--t3)">Paquetes por empleado · Prepaga · Reportes</div>
             </div>
-          </div>
           </div>
 
           <div class="card home-card" onclick="navRRHH('simulacion')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
@@ -2125,27 +2125,7 @@
         <div id="cert-rrhh-contenido"></div>
       </div>
 
-      <div id="rrhh-sub-elementos-trabajo" style="display:none">
-        <div class="page-header">
-          <button class="btn btn-ghost" onclick="navRRHH(null)" style="font-size:12px;padding:5px 12px;margin-right:8px">← Volver</button>
-          <div>
-            <div class="page-title">🔧 Elementos de trabajo</div>
-            <div class="page-sub">Inventario de activos entregados a empleados</div>
-          </div>
-        </div>
-        <div id="et-global-contenido"></div>
-      </div>
 
-      <div id="rrhh-sub-beneficios" style="display:none">
-        <div class="page-header">
-          <button class="btn btn-ghost" onclick="navRRHH(null)" style="font-size:12px;padding:5px 12px;margin-right:8px">← Volver</button>
-          <div>
-            <div class="page-title">🎁 Beneficios gerenciales / estratégicos</div>
-            <div class="page-sub">Paquetes por empleado · Reportes por tipo y empresa</div>
-          </div>
-        </div>
-        <div id="ben-global-cont"></div>
-      </div>
 
 <!-- Mensajes -->
       <div id="rrhh-sub-mensajes" style="display:none">
