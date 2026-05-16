@@ -119,7 +119,7 @@ function abrirSolicitarCertificadoTrabajo(){
   }
 
   modal.innerHTML = `
-    <div class="card" style="padding:0;max-width:540px;width:100%;border:1px solid var(--border);margin-top:20px">
+    <div class="card" style="padding:0;max-width:560px;width:100%;border:1px solid var(--border);margin-top:20px;overflow:hidden">
       <div style="padding:16px 22px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between">
         <div>
           <div style="font-size:14px;font-weight:600;color:var(--t1)">📄 Solicitar certificado de trabajo</div>
@@ -152,14 +152,16 @@ function abrirSolicitarCertificadoTrabajo(){
         <!-- Campos a incluir -->
         <div>
           <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Información a incluir en el certificado</label>
-          <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
             ${_certCampoCheck('cert-campo-ingreso',   'Fecha de ingreso',         true)}
             ${_certCampoCheck('cert-campo-antiguedad', 'Antigüedad',              true)}
             ${_certCampoCheck('cert-campo-cargo',      'Cargo / tarea',           true)}
             ${_certCampoCheck('cert-campo-categoria',  'Categoría laboral',       true)}
             ${_certCampoCheck('cert-campo-condicion',  'Condición (mensualizado / jornalizado)', true)}
             ${_certCampoCheck('cert-campo-lugar',      'Lugar de trabajo',        true)}
-            ${_certCampoCheck('cert-campo-sueldo',     'Remuneración bruta mensual', false, '⚠ Requerido por bancos / entidades financieras')}
+          </div>
+          <div style="margin-top:6px">
+            ${_certCampoCheck('cert-campo-sueldo', 'Remuneración bruta mensual', false, '⚠ Requerido por bancos / entidades financieras')}
           </div>
         </div>
 
@@ -186,10 +188,10 @@ function abrirSolicitarCertificadoTrabajo(){
 }
 
 function _certCampoCheck(id, label, checked, sub=''){
-  return `<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--t2);padding:6px 10px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2)">
+  return `<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--t2);padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg2);width:100%;box-sizing:border-box">
     <input type="checkbox" id="${id}" ${checked?'checked':''} style="cursor:pointer;accent-color:var(--accent);margin-top:2px;flex-shrink:0">
-    <div>
-      <div>${label}</div>
+    <div style="flex:1;min-width:0">
+      <div style="white-space:normal;word-break:break-word">${label}</div>
       ${sub ? `<div style="font-size:10px;color:var(--t3);margin-top:2px">${sub}</div>` : ''}
     </div>
   </label>`;
