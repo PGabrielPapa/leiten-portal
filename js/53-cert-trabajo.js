@@ -261,6 +261,10 @@ function _certEnviarPedido(){
 
 // ─── Historial empleado (para panel Mis Datos) ───────────────────────────
 function renderCertHistorialEmpleado(){
+  // Refrescar también el panel dedicado si está activo
+  if(document.getElementById('sec-cert-trabajo-emp')?.classList?.contains('active')){
+    renderCertEmpPanel();
+  }
   const cont = document.getElementById('cert-historial-emp');
   if(!cont) return;
   const emp = currentUser?.emp;
@@ -766,3 +770,95 @@ function _certReimprimirPedido(id){
 
 // ─── Init: badge al cargar ────────────────────────────────────────────────
 (function(){ setTimeout(_certActualizarBadge, 800); })();
+// ═══════════════════════════════════════════════════════════════════════════
+// PANEL EMPLEADO — sección propia de solicitud de certificado
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderCertEmpPanel(){
+  const cont = document.getElementById('cert-emp-contenido');
+  if(!cont) return;
+  const emp = currentUser?.emp;
+  if(!emp){ cont.innerHTML = '<div style="padding:20px;color:var(--t3)">Sesión no disponible.</div>'; return; }
+
+  const pedidos = _certLeer().filter(p => p.leg === emp.leg);
+  const pendiente = pedidos.find(p => p.estado === 'pendiente');
+  const generados = pedidos.filter(p => p.estado === 'generado');
+  const rechazados = pedidos.filter(p => p.estado === 'rechazado');
+
+  cont.innerHTML = `
+    <div style="max-width:700px;display:flex;flex-direction:column;gap:20px">
+
+      <!-- Card de solicitud -->
+      <div class="card" style="padding:24px">
+        <div style="font-size:15px;font-weight:600;color:var(--t1);margin-bottom:4px">¿Necesitás un certificado de trabajo?</div>
+        <div style="font-size:13px;color:var(--t2);margin-bottom:18px;line-height:1.6">
+          Podés solicitar tu certificado indicando qué información necesitás que figure (fecha de ingreso, remuneración, cargo, etc.)
+          y a quién va dirigido. RR.HH. lo genera con firma oficial.
+        </div>
+        ${pendiente ? `
+          <div style="padding:14px 16px;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.3);border-radius:var(--r);display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <span style="font-size:20px">⏳</span>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--yellow)">Tenés un pedido pendiente</div>
+              <div style="font-size:12px;color:var(--t2);margin-top:2px">
+                Solicitado el ${_certFmtFecha(pendiente.fecha_pedido)} · Para: <em>${pendiente.destinatario}</em>
+              </div>
+            </div>
+            <button onclick="_certCancelarPedidoEmp('${pendiente.id}')" 
+              class="btn btn-ghost" style="font-size:11px;padding:4px 10px;margin-left:auto;color:var(--red);border-color:rgba(239,68,68,.3);white-space:nowrap;flex-shrink:0">
+              Cancelar pedido
+            </button>
+          </div>
+        ` : ''}
+        <button class="btn btn-primary" onclick="abrirSolicitarCertificadoTrabajo()"
+          ${pendiente ? 'disabled style="opacity:.5;cursor:not-allowed"' : ''}
+          style="font-size:13px;padding:10px 24px">
+          📋 Solicitar certificado de trabajo
+        </button>
+        ${pendiente ? '<div style="font-size:11px;color:var(--t3);margin-top:8px">Cancelá el pedido anterior para hacer uno nuevo.</div>' : ''}
+      </div>
+
+      <!-- Historial -->
+      <div class="card" style="padding:20px">
+        <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:14px">
+          📜 Historial de certificados
+          <span style="font-size:11px;color:var(--t3);font-weight:400;margin-left:8px;font-family:var(--font-mono)">
+            ${generados.length} generado${generados.length!==1?'s':''} · ${rechazados.length} rechazado${rechazados.length!==1?'s':''}
+          </span>
+        </div>
+        ${!pedidos.length ? `
+          <div style="text-align:center;padding:24px;color:var(--t3);font-size:13px">
+            Aún no solicitaste ningún certificado.
+          </div>` :
+          pedidos.map(p => {
+            const est = p.estado==='generado' ? {color:'var(--green)',bg:'rgba(34,197,94,.08)',border:'rgba(34,197,94,.3)',label:'✅ Generado'}
+                       : p.estado==='rechazado' ? {color:'var(--red)',bg:'rgba(239,68,68,.08)',border:'rgba(239,68,68,.3)',label:'✕ Rechazado'}
+                       : {color:'var(--yellow)',bg:'rgba(234,179,8,.08)',border:'rgba(234,179,8,.3)',label:'⏳ Pendiente'};
+
+            const camposStr = Object.entries(p.campos||{})
+              .filter(([,v])=>v)
+              .map(([k])=>({fecha_ingreso:'Ingreso',antiguedad:'Antigüedad',cargo:'Cargo',
+                categoria:'Categoría',condicion:'Condición',lugar_trabajo:'Lugar',remuneracion:'Remuneración'}[k]||k))
+              .join(' · ');
+
+            return `<div style="border:1px solid ${est.border};border-radius:var(--r);background:${est.bg};padding:12px 16px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
+                <div style="font-size:11px;font-family:var(--font-mono);color:var(--t3)">${_certFmtFecha(p.fecha_pedido)}</div>
+                <div style="font-size:11px;font-weight:600;color:${est.color}">${est.label}</div>
+              </div>
+              <div style="font-size:12px;color:var(--t2)">Para: <em>${p.destinatario}</em></div>
+              ${camposStr ? `<div style="font-size:11px;color:var(--t3);margin-top:3px">${camposStr}</div>` : ''}
+              ${p.obs_rrhh ? `<div style="font-size:11px;color:var(--t3);margin-top:4px;font-style:italic">RR.HH.: "${p.obs_rrhh}"</div>` : ''}
+              ${p.estado==='pendiente' ? `
+                <button onclick="_certCancelarPedidoEmp('${p.id}')" 
+                  class="btn btn-ghost" style="font-size:10px;padding:3px 10px;margin-top:6px;color:var(--red);border-color:rgba(239,68,68,.3)">
+                  Cancelar pedido
+                </button>` : ''}
+            </div>`;
+          }).join('')
+        }
+      </div>
+
+    </div>
+  `;
+}

@@ -33,6 +33,10 @@ function buildNav(){
   // Label historial según rol
   if(sbHistorial) sbHistorial.querySelector('div').textContent =
     isEmployee ? 'Mis Solicitudes' : 'Todas las solicitudes';
+  // Certificado de trabajo — visible para todos (empleado, manager, rrhh, admin)
+  const sbCert = document.getElementById('sb-cert-trabajo');
+  if(sbCert) sbCert.style.display = 'flex';
+
   // Tarjeta del gerente ya no está en el home del empleado
   actualizarCntRecibos();
   actualizarDotRRHH();
@@ -143,6 +147,7 @@ function nav(sec){
   if(sec==='licencias'){ renderMisLicencias(); nuevaLicencia(); licTab('comprobante'); nuevoInformeLicencia(); }
   if(sec==='ganancias') renderGanancias();
   if(sec==='misdatos') renderMisDatos();
+  if(sec==='cert-trabajo-emp'){ renderCertEmpPanel(); }
   if(sec==='familiares') renderMisFamiliares();
   if(sec==='mensajes'){ nuevoMensaje(); renderMisMensajes(); }
   if(sec==='admin-usuarios'){ renderAdminUsuarios(); }
