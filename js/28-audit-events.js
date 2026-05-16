@@ -193,7 +193,7 @@ async function auditClearAll(){
     return;
   }
   // Vaciamos y dejamos un evento que lo registra.
-  localStorage.setItem(_LS_AUDIT, '[]');
+  try { localStorage.setItem(_LS_AUDIT, '[]'); } catch(e) { console.error('audit reset', e); }
   auditSistema('log_limpiado', `Se eliminaron ${total} eventos previos`);
   if(typeof _admRenderTabContent === 'function') _admRenderTabContent();
   if(typeof _admToast === 'function') _admToast('Log limpiado', 'green');

@@ -2551,7 +2551,7 @@ function _renderLiqFinalContenido(leg, emp){
           <div>
             <label style="font-size:9px;color:var(--t3)">Meses retenidos</label>
             <input type="number" min="0" step="1" value="${lf.sancionArt132bisMeses||0}" id="lf-132bis-meses"
-              onchange="(() => { const m=parseInt(document.getElementById('lf-132bis-meses').value)||0; document.getElementById('lf-132bis-monto').value=(${mejorRem}*m).toFixed(2); })()"
+              onchange="(() => { const m=parseInt(document.getElementById('lf-132bis-meses')?.value||'0')||0; document.getElementById('lf-132bis-monto').value=(${mejorRem}*m).toFixed(2); })()"
               style="width:100%;background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--t1);font-size:12px;outline:none;font-family:var(--font-mono);text-align:right;box-sizing:border-box">
           </div>
           <div>

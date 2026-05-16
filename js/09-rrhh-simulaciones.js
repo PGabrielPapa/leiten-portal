@@ -116,8 +116,8 @@ function ejecutarSimMensual(){
   const mes = parseInt(document.getElementById('sim-mes')?.value || '1');
   const anio = parseInt(document.getElementById('sim-anio')?.value || new Date().getFullYear());
   const empFiltro = document.getElementById('sim-emp').value;
-  const pctInc = parseFloat(document.getElementById('sim-pct-inc').value) || 0;
-  const montoInc = parseFloat(document.getElementById('sim-monto-inc').value) || 0;
+  const pctInc = parseFloat(document.getElementById('sim-pct-inc')?.value || '0') || 0;
+  const montoInc = parseFloat(document.getElementById('sim-monto-inc')?.value || '0') || 0;
 
   if(isNaN(mes) || isNaN(anio)){ toast('⚠ Datos inválidos', 'var(--yellow)'); return; }
 
@@ -486,7 +486,7 @@ function ejecutarSimGrat(){
   const concepto = document.getElementById('grat-concepto').value.trim() || 'Gratificación';
   const tipo = document.getElementById('grat-tipo').value;
   const modo = document.getElementById('grat-modo').value;
-  const valor = parseFloat(document.getElementById('grat-valor').value) || 0;
+  const valor = parseFloat(document.getElementById('grat-valor')?.value || '0') || 0;
   const empFiltro = document.getElementById('grat-emp').value;
   const sindFiltro = document.getElementById('grat-sind').value;
 
@@ -849,7 +849,7 @@ function ejecutarSimFinal(){
   const leg = document.getElementById('fin-emp').value;
   const tipo = document.getElementById('fin-tipo').value;
   const fechaCeseStr = document.getElementById('fin-fecha').value;
-  const vacGozadas = parseInt(document.getElementById('fin-vac-gozadas').value) || 0;
+  const vacGozadas = parseInt(document.getElementById('fin-vac-gozadas')?.value || '0') || 0;
   const preavisoOtorgado = document.getElementById('fin-preaviso').value === 'si';
 
   if(!leg){ toast('⚠ Seleccioná un empleado', 'var(--yellow)'); return; }
