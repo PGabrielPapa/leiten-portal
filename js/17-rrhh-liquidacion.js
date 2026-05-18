@@ -1581,31 +1581,106 @@ function resetNuevoLiqForm(){
   if(res){ res.innerHTML=''; res.style.display='none'; }
 }
 
+// ─── Poblar select de empresa en formulario nueva liquidación ───────────
+async function liqPoblarEmpresas(){
+  const sel = document.getElementById('liq-empresa');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Seleccioná una empresa —</option>';
+  // Obtener empresas desde ABM (tienen CUIT, razón social, etc.)
+  const empresas = (typeof getEmpresasABM === 'function')
+    ? await getEmpresasABM()
+    : [];
+  if(empresas.length){
+    empresas.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+    empresas.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.nombre || e.id;
+      opt.textContent = e.nombre || e.id;
+      sel.appendChild(opt);
+    });
+  } else {
+    // Fallback: empresas de la nómina
+    const nombres = [...new Set(
+      getNomina().map(e=>e.emp||'').filter(Boolean).sort()
+    )];
+    nombres.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    });
+  }
+}
+
+// Al cambiar la empresa, actualizar el contador y refrescar lista de empleados
+function liqEmpresaCambio(){
+  const empresa = document.getElementById('liq-empresa')?.value;
+  const infoEl  = document.getElementById('liq-empresa-info');
+  if(infoEl){
+    if(!empresa){
+      infoEl.textContent = '';
+    } else {
+      const activos = getNomina().filter(e => !e._deBaja && !e.egreso && (e.emp||'') === empresa);
+      infoEl.textContent = `${activos.length} empleado${activos.length!==1?'s':''} activo${activos.length!==1?'s':''}`;
+    }
+  }
+  // Si alcance es individual, refrescar la lista de empleados
+  const alcance = document.querySelector('input[name="liq-alcance"]:checked')?.value;
+  if(alcance === 'individual'){
+    _liqEmpSeleccionado = null;
+    const s   = document.getElementById('liq-emp-search');
+    const sel = document.getElementById('liq-emp-selected');
+    if(s)   s.value = '';
+    if(sel) sel.textContent = '';
+    buscarEmpLiq();
+  }
+}
+
+
 function toggleAlcanceLiq(val){
-  const empSel = document.getElementById('liq-emp-selector');
-  if(empSel) empSel.style.display = val==='individual' ? 'block' : 'none';
-  if(val==='grupal') _liqEmpSeleccionado = null;
+  const sel = document.getElementById('liq-emp-selector');
+  if(sel) sel.style.display = val === 'individual' ? 'block' : 'none';
+  if(val !== 'individual'){
+    _liqEmpSeleccionado = null;
+    const s   = document.getElementById('liq-emp-search');
+    const sel2= document.getElementById('liq-emp-selected');
+    const res = document.getElementById('liq-emp-results');
+    if(s)    s.value = '';
+    if(sel2) sel2.textContent = '';
+    if(res){ res.innerHTML = ''; res.style.display = 'none'; }
+  } else {
+    // Al activar Individual, mostrar todos los empleados de la empresa seleccionada
+    setTimeout(buscarEmpLiq, 50);
+  }
 }
 
 function buscarEmpLiq(){
-  const q = (document.getElementById('liq-emp-search')?.value||'').toLowerCase().trim();
-  const res = document.getElementById('liq-emp-results');
+  const q       = (document.getElementById('liq-emp-search')?.value || '').toLowerCase().trim();
+  const res     = document.getElementById('liq-emp-results');
   if(!res) return;
-  if(q.length < 2){ res.style.display='none'; return; }
-  const matches = getNomina()
-    .filter(e=>!e._deBaja&&!e.egreso)
-    .filter(e=>e.nom.toLowerCase().includes(q)||(e.leg||'').includes(q))
-    .slice(0,12);
-  if(!matches.length){ res.style.display='none'; return; }
+  const empresa = document.getElementById('liq-empresa')?.value || '';
+  // Filtrar por empresa si está seleccionada; sin empresa = todos
+  const nomina  = getNomina().filter(e =>
+    !e._deBaja && !e.egreso && (!empresa || e.emp === empresa)
+  );
+  // Sin texto: mostrar todos de la empresa; con texto: filtrar
+  const matches = q.length >= 1
+    ? nomina.filter(e => e.nom.toLowerCase().includes(q) || (e.leg||'').includes(q))
+    : nomina;
+  if(!matches.length){
+    res.style.display = 'block';
+    res.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--t3)">Sin empleados' + (empresa ? ' en esta empresa.' : '.') + '</div>';
+    return;
+  }
   res.style.display = 'block';
-  res.innerHTML = matches.map(e=>`
-    <div onclick="seleccionarEmpLiq('${e.leg}','${e.nom.replace(/'/g,"\\'")}')"
+  res.innerHTML = matches.slice(0, 60).map(e =>
+    `<div onclick="seleccionarEmpLiq('${e.leg}','${e.nom.replace(/'/g,"\\'")}')"
       style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center"
       onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background='transparent'">
       <span style="font-family:var(--font-mono);color:var(--t3);font-size:10px;min-width:52px">${e.leg}</span>
-      <span style="color:var(--t1)">${e.nom}</span>
-      <span style="font-size:10px;color:var(--t3);margin-left:auto">${e.emp}</span>
-    </div>`).join('');
+      <span style="color:var(--t1);flex:1">${e.nom}</span>
+      <span style="font-size:10px;color:var(--t3)">${e.emp||''}</span>
+    </div>`).join('') +
+    (matches.length > 60 ? `<div style="padding:8px 12px;font-size:11px;color:var(--t3)">... y ${matches.length-60} más. Escribí para filtrar.</div>` : '');
 }
 
 async function seleccionarEmpLiq(leg, nom){
@@ -1620,11 +1695,12 @@ async function seleccionarEmpLiq(leg, nom){
 
 async function abrirNuevoPeriodo(){
   const f = document.getElementById('liq-nuevo-form');
-  f.style.display = f.style.display==='none' ? 'block' : 'none';
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
   resetNuevoLiqForm();
   const hoy = new Date();
   document.getElementById('liq-periodo').value = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
   document.getElementById('liq-fecha-pago').value = new Date(hoy.getFullYear(),hoy.getMonth()+1,5).toISOString().split('T')[0];
+  if(f.style.display === 'block') await liqPoblarEmpresas();
 }
 
 async function crearLiquidacion(){
@@ -1632,6 +1708,11 @@ async function crearLiquidacion(){
   const tipo     = document.getElementById('liq-tipo').value;
   const periodo  = document.getElementById('liq-periodo').value;
   const empresa  = document.getElementById('liq-empresa').value;
+  if(!empresa){
+    toast('⚠ Seleccioná una empresa', 'var(--yellow)');
+    document.getElementById('liq-empresa')?.focus();
+    return;
+  }
   const fechaPago= document.getElementById('liq-fecha-pago').value;
   const alcance  = document.querySelector('input[name="liq-alcance"]:checked')?.value || 'grupal';
 
@@ -1692,7 +1773,7 @@ async function renderLiqPeriodos(){
     return;
   }
   lista.sort((a,b)=>(b.periodo||'').localeCompare(a.periodo||''));
-  const tipoLabel={mensual:'Mensual',quincenal:'Quincenal',quincenal_1:'Quinc. 1ª (1-15)',quincenal_2:'Quinc. 2ª (16-fin)',sac1:'SAC 1°',sac2:'SAC 2°',vacaciones:'Vacaciones',final:'Final',complementaria:'Complementaria'};
+  const tipoLabel={mensual:'Mensual',quincenal:'Quincenal',quincenal_1:'Quinc. 1ª (1-15)',quincenal_2:'Quinc. 2ª (16-fin)',sac1:'SAC 1°',sac2:'SAC 2°',vacaciones:'Vacaciones',anticipo:'Anticipo de haberes',final:'Final',complementaria:'Complementaria'};
   const estadoColor={borrador:'var(--yellow)',aprobada:'var(--green)',pagada:'var(--accent2)',cerrada:'#888'};
   div.innerHTML=`<div class="card" style="padding:0;overflow:hidden">`+
     lista.map(l=>{
@@ -4621,7 +4702,7 @@ function reciboUnaCopiaPag(item, liq, pageRows, params, empDB, tipo, pagActual, 
   const firmaInfo=(typeof getEmpresaFirmaInfo === 'function') ? getEmpresaFirmaInfo(item.empresa) : null;
   const esUltima=(pagActual===totalPags);
   const tipoDesc=({mensual:'HABERES MENSUALES',quincenal:'HABERES QUINCENALES',quincenal_1:'HABERES QUINCENALES (1ª QUINCENA)',quincenal_2:'HABERES QUINCENALES (2ª QUINCENA)',sac1:'SAC 1° SEMESTRE',sac2:'SAC 2° SEMESTRE',
-    vacaciones:'VACACIONES',final:'LIQUIDACION FINAL',complementaria:'COMPLEMENTARIA'})[liq.tipo]||liq.tipo.toUpperCase();
+    vacaciones:'VACACIONES',anticipo:'ANTICIPO DE HABERES',final:'LIQUIDACION FINAL',complementaria:'COMPLEMENTARIA'})[liq.tipo]||liq.tipo.toUpperCase();
 
   // Descripción del pago legible (ej: "MARZO 2026")
   const MESES_ES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];

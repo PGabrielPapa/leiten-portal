@@ -1666,6 +1666,7 @@
                     <option value="sac1">SAC 1° semestre (junio)</option>
                     <option value="sac2">SAC 2° semestre (diciembre)</option>
                     <option value="vacaciones">Vacaciones</option>
+                    <option value="anticipo">Anticipo de haberes</option>
                     <option value="final">Liquidación final</option>
                     <option value="complementaria">Complementaria</option>
                   </select>
@@ -1675,41 +1676,40 @@
                   <input type="month" id="liq-periodo" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;width:100%;font-family:var(--font-mono)">
                 </div>
                 <div class="form-group">
-                  <label>Empresa</label>
-                  <select id="liq-empresa" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;width:100%">
-                    <option value="todas">Todas las empresas</option>
-                    <option>BARTON REBAR SA</option>
-                    <option>IDEE S.R.L.</option>
-                    <option>LEITEN SALTA S.A.</option>
-                    <option>LEITEN S.A.</option>
-                    <option>SINIS S.A.</option>
+                  <label>Empresa <span style="color:var(--red)">*</span></label>
+                  <select id="liq-empresa" onchange="liqEmpresaCambio()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;width:100%">
+                    <option value="">— Seleccioná una empresa —</option>
                   </select>
+                  <div style="font-size:10px;color:var(--t3);margin-top:3px" id="liq-empresa-info"></div>
                 </div>
                 <div class="form-group">
                   <label>Fecha de pago</label>
                   <input type="date" id="liq-fecha-pago" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;width:100%;font-family:var(--font-mono)">
                 </div>
               </div>
-              <!-- Modo: Grupal o Individual -->
+
+              <!-- Alcance: Grupal o Individual -->
               <div class="form-group full" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
                 <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Alcance</label>
                 <div style="display:flex;gap:10px;margin-top:6px">
                   <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--t2)">
                     <input type="radio" name="liq-alcance" value="grupal" checked onchange="toggleAlcanceLiq(this.value)"
-                      style="accent-color:var(--accent)"> Grupal (empresa o todas)
+                      style="accent-color:var(--accent)"> Grupal (todos los empleados de la empresa)
                   </label>
                   <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--t2)">
                     <input type="radio" name="liq-alcance" value="individual" onchange="toggleAlcanceLiq(this.value)"
-                      style="accent-color:var(--accent)"> Individual (empleado)
+                      style="accent-color:var(--accent)"> Individual (un empleado)
                   </label>
                 </div>
               </div>
+
               <!-- Selector de empleado (solo para individual) -->
               <div class="form-group full" id="liq-emp-selector" style="display:none">
                 <label>Empleado <span style="color:var(--red)">*</span></label>
-                <input type="text" id="liq-emp-search" placeholder="Escribí nombre o legajo..." oninput="buscarEmpLiq()"
-                  style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;width:100%">
-                <div id="liq-emp-results" style="background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);max-height:180px;overflow-y:auto;margin-top:4px;display:none"></div>
+                <input type="text" id="liq-emp-search" placeholder="Buscá por nombre o legajo..."
+                  oninput="buscarEmpLiq()"
+                  style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;width:100%;margin-bottom:4px">
+                <div id="liq-emp-results" style="background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);max-height:240px;overflow-y:auto;display:none"></div>
                 <div id="liq-emp-selected" style="margin-top:6px;font-size:12px;color:var(--accent2);font-family:var(--font-mono)"></div>
               </div>
               <div class="btn-row" style="justify-content:flex-end;gap:10px;margin-top:12px">
