@@ -895,7 +895,17 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   // ─ Empleados Fuera de Convenio (FC) ─
   const esFueraConvenio = (typeof empleadoFueraConvenio === 'function') && empleadoFueraConvenio(emp);
 
-  // ─ Presentismo ─
+  // ─ Adicional por título ──────────────────────────────────────────────
+  // Se calcula como porcentaje del bruto si el convenio del empleado lo
+  // dispone (tiene_adicional_titulo = true en su sindicato) y el empleado
+  // tiene título registrado en su legajo (campo 'titulo').
+  // El porcentaje varía según nivel: secundario / terciario / universitario.
+  const _pctTitulo = (typeof getPctAdicionalTitulo === 'function') ? getPctAdicionalTitulo(emp) : 0;
+  const mAdicionalTitulo = _pctTitulo > 0
+    ? $m(bruto * (_pctTitulo / 100) * _factorPeriodo)
+    : 0;
+
+    // ─ Presentismo ─
   const tienePres = !esFueraConvenio
                  && ausentismo===0
                  && !$m(nov.ausenciasInjustificadas)
@@ -1094,7 +1104,8 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
                         + mPreaviso + mSacProporcional + mFeriadosNoTrab
                         // Liq. final — conceptos REMUNERATIVOS
                         + mMultaCert + mSancion132bis
-                        + mCompFuncion;                     // complemento función (escala - base)
+                        + mCompFuncion                      // complemento función (escala - base)
+                        + mAdicionalTitulo;                 // adicional por título CCT
 
   // TOTAL HABERES = remunerativos + no remunerativos exentos (lo que cobra el empleado)
   let totalHaberes = totalHaberesRem + totalExentos;
@@ -1453,6 +1464,7 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
     // Cumplimiento de objetivos (concepto remunerativo)
     mCumpObj, cumplimientoObjetivos: mCumpObj,
     mCompFuncion, basicoEmp: _basicoEmp, aCuentaEmp: _aCuentaEmp,
+    mAdicionalTitulo, pctTitulo: _pctTitulo, tituloEmp: emp.titulo || '', tituloDescEmp: emp.titulo_desc || '',
     // Liquidación final (conceptos por baja)
     mPreaviso, mSacProporcional, mVacNoGozadas, mIntegrMesDesp, mIndemAntig,
     liqFinalDatos: lf,

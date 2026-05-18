@@ -1158,8 +1158,16 @@ async function abmEditarEmpleado(leg){
   setVal('abm-e-dni', e.dni); setVal('abm-e-cuil', e.cuil);
   setVal('abm-e-nom', e.nom); setVal('abm-e-lugar', e.lugar);
   setVal('abm-e-cat', e.cat); setVal('abm-e-tramo', e.tramo);
+  setVal('abm-e-titulo', e.titulo || '');
+  setVal('abm-e-titulo-desc', e.titulo_desc || '');
   // Poblar select de sindicato y preseleccionar el valor actual (maneja aliases)
   poblarSelectoresSindicato(e.cod_sindicato || '');
+  // Poblar y seleccionar categoría de convenio (depende del sindicato)
+  setTimeout(() => {
+    abmActualizarCatConvenioPicker();
+    if(e.cat_convenio) setVal('abm-e-cat-convenio', e.cat_convenio);
+    abmOnCatConvenioChange();
+  }, 80);
   setVal('abm-e-nac', e.fecha_nac||'');
   setVal('abm-e-bruto', e.bruto||''); setVal('abm-e-neto', e.neto||'');
   setVal('abm-e-mail', e.mail||'');
@@ -1573,6 +1581,9 @@ async function abmGuardarEdicion(){
     complemento: _abmComplementoCalculado()||0,
     condicion: gV('abm-e-condicion'),
     cod_sindicato: gV('abm-e-sindicato') || '',
+    cat_convenio:  gV('abm-e-cat-convenio') || '',
+    titulo:        gV('abm-e-titulo') || '',
+    titulo_desc:   gV('abm-e-titulo-desc').trim() || '',
     validador: gV('abm-e-validador') || null, areaOrg: gV('abm-e-area') || null};
   saveAbmOverrides(ov);
   // Altas: actualizar también
@@ -1608,6 +1619,9 @@ async function abmGuardarEdicion(){
     lugar: gV('abm-e-lugar'),
     cat: gV('abm-e-cat').toUpperCase(),
     tramo: gV('abm-e-tramo').toUpperCase(),
+    cat_convenio: gV('abm-e-cat-convenio') || '',
+    titulo: gV('abm-e-titulo') || '',
+    titulo_desc: gV('abm-e-titulo-desc').trim() || '',
     tarea: gV('abm-e-tarea'),
     estado_civil: gV('abm-e-estado-civil'),
     mail: gV('abm-e-mail'),
@@ -1617,6 +1631,9 @@ async function abmGuardarEdicion(){
     complemento: _abmComplementoCalculado()||0,
     condicion: gV('abm-e-condicion'),
     cod_convenio: empAntes.cod_convenio, // no editables en este form
+    cat_convenio: gV('abm-e-cat-convenio') || '',
+    titulo: gV('abm-e-titulo') || '',
+    titulo_desc: gV('abm-e-titulo-desc').trim() || '',
     cod_os: empAntes.cod_os, cod_sindicato: empAntes.cod_sindicato,
     // Domicilio expandido
     dom_calle: calle, dom_nro: nro, dom_piso: piso, dom_depto: depto,
@@ -1922,3 +1939,63 @@ function importarAltasMasivas(input){
   }
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CATEGORÍA DE CONVENIO Y TÍTULO — helpers del formulario ABM
+// ═══════════════════════════════════════════════════════════════════════════
+
+function abmActualizarCatConvenioPicker(){
+  const sel = document.getElementById('abm-e-cat-convenio');
+  if(!sel) return;
+  const valActual = sel.value;
+  const escala = (typeof getEscalaActiva === 'function') ? getEscalaActiva() : null;
+  const cats   = escala?.categorias || [];
+  const codSind = document.getElementById('abm-e-sindicato')?.value || '';
+  const fc = !codSind || codSind.toUpperCase() === 'FC';
+
+  sel.innerHTML = '<option value="">— Sin categoría de convenio —</option>';
+  if(!cats.length){
+    document.getElementById('abm-e-cat-conv-preview').textContent = '';
+    return;
+  }
+  cats.forEach(c => {
+    Object.keys(c.tramos||{}).forEach(t => {
+      const monto = c.tramos[t];
+      const opt   = document.createElement('option');
+      opt.value   = `${c.cat}/${t}`;
+      opt.textContent = `${c.cat} · ${t}${c.label ? ' — ' + c.label : ''} ($${Number(monto).toLocaleString('es-AR',{minimumFractionDigits:2})})`;
+      if(fc) opt.disabled = true;
+      sel.appendChild(opt);
+    });
+  });
+  if(valActual) sel.value = valActual;
+  abmOnCatConvenioChange();
+}
+
+function abmOnCatConvenioChange(){
+  const sel = document.getElementById('abm-e-cat-convenio');
+  const preview = document.getElementById('abm-e-cat-conv-preview');
+  if(!sel || !preview) return;
+  const val = sel.value;
+  if(!val){ preview.textContent = ''; return; }
+  const [cat, tramo] = val.split('/');
+  const monto = (typeof getMontoEscala === 'function') ? getMontoEscala(cat, tramo) : null;
+  if(monto !== null){
+    preview.innerHTML = `Básico CCT: <strong>$ ${Number(monto).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong>`;
+    preview.style.color = 'var(--accent2)';
+    const basicoField = document.getElementById('abm-e-basico');
+    if(basicoField && (!basicoField.value || parseFloat(basicoField.value||'0') === 0)){
+      basicoField.value = monto;
+      setTimeout(abmRecalcComplemento, 30);
+      preview.innerHTML += ' <span style="font-size:10px;color:var(--t3)">(básico sugerido)</span>';
+    }
+    const catField = document.getElementById('abm-e-cat');
+    const tramoField = document.getElementById('abm-e-tramo');
+    if(catField   && !catField.value)   catField.value   = cat;
+    if(tramoField && !tramoField.value) tramoField.value = tramo;
+    setTimeout(abmRecalcComplemento, 30);
+  } else {
+    preview.textContent = 'Combinación no encontrada en la escala vigente';
+    preview.style.color = 'var(--yellow)';
+  }
+}

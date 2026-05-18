@@ -1322,7 +1322,38 @@
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">UBICACIÓN</label><input id="abm-e-lugar" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CATEGORÍA</label><input id="abm-e-cat" oninput="abmRecalcComplemento()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">TRAMO</label><input id="abm-e-tramo" oninput="abmRecalcComplemento()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
-              <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CÓDIGO DE SINDICATO</label><select id="abm-e-sindicato" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"><option value="">— Sin sindicato —</option></select></div>
+              <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CÓDIGO DE SINDICATO</label><select id="abm-e-sindicato" onchange="abmActualizarCatConvenioPicker()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"><option value="">— Sin sindicato —</option></select></div>
+
+              <!-- ── Categoría de convenio (código según escala del CCT) ── -->
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">
+                  CATEGORÍA DE CONVENIO
+                  <span style="font-size:9px;color:var(--accent2);font-weight:400;margin-left:4px">determina básico CCT</span>
+                </label>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <select id="abm-e-cat-convenio" onchange="abmOnCatConvenioChange()" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+                    <option value="">— Sin categoría de convenio —</option>
+                  </select>
+                </div>
+                <div id="abm-e-cat-conv-preview" style="font-size:11px;font-family:var(--font-mono);color:var(--accent2);margin-top:4px;min-height:16px"></div>
+              </div>
+
+              <!-- ── Título educativo ── -->
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">
+                  TÍTULO
+                  <span style="font-size:9px;color:var(--accent2);font-weight:400;margin-left:4px">adicional si CCT lo dispone</span>
+                </label>
+                <select id="abm-e-titulo" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none">
+                  <option value="">Sin título</option>
+                  <option value="secundario">Secundario completo</option>
+                  <option value="terciario">Terciario / Técnico</option>
+                  <option value="universitario">Universitario</option>
+                </select>
+                <input id="abm-e-titulo-desc" placeholder="Descripción del título (ej: Contador Público, Ing. Industrial...)"
+                  style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;outline:none;margin-top:5px;box-sizing:border-box">
+              </div>
+
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">FECHA INGRESO</label><input type="date" id="abm-e-ing" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">NACIMIENTO (DD/MM)</label><input id="abm-e-nac" maxlength="5" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">SUELDO BRUTO ($)</label><input type="number" id="abm-e-bruto" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"></div>

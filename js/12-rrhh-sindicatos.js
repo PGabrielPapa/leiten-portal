@@ -4,12 +4,12 @@
 // Valores de referencia. Editables desde RR.HH. → Sindicatos.
 // Código en blanco ('') o 'SIN SINDICATO' → sin antigüedad y sin descuento.
 const SINDICATOS_DEFAULT = [
-  { codigo: 'COMERCIO', nombre: 'Empleados de Comercio (SEC/FAECYS)',          pctEmpleado: 2.5, pctPatronal: 0.5, pctAntigPorAnio: 1, nota: 'Cuota sindical 2% + FAECYS 0,5%' },
-  { codigo: 'UOM',      nombre: 'Unión Obrera Metalúrgica',                    pctEmpleado: 2.5, pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Cuota sindical + FONDO' },
-  { codigo: 'ASIMRA',   nombre: 'Sup. Industria Metalmecánica',                pctEmpleado: 3,   pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Cuota sindical + fondo cultura' },
-  { codigo: 'UOYEP',    nombre: 'Unión Obreros y Emp. Plásticos',              pctEmpleado: 2,   pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Aporte UOYEP' },
-  { codigo: 'UOCRA',    nombre: 'Unión Obrera de la Construcción (UOCRA)',     pctEmpleado: 2,   pctPatronal: 2,   pctAntigPorAnio: 1, nota: 'Cuota sindical construcción' },
-  { codigo: 'UECARA',   nombre: 'Empl. de Conducción (UECARA)',                pctEmpleado: 2.5, pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Personal jerárquico construcción' }
+  { codigo: 'COMERCIO', nombre: 'Empleados de Comercio (SEC/FAECYS)',          pctEmpleado: 2.5, pctPatronal: 0.5, pctAntigPorAnio: 1, nota: 'Cuota sindical 2% + FAECYS 0,5%',  tiene_adicional_titulo: true,  pct_titulo_sec: 3, pct_titulo_ter: 6, pct_titulo_uni: 10 },
+  { codigo: 'UOM',      nombre: 'Unión Obrera Metalúrgica',                    pctEmpleado: 2.5, pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Cuota sindical + FONDO',          tiene_adicional_titulo: true,  pct_titulo_sec: 2, pct_titulo_ter: 4, pct_titulo_uni: 8  },
+  { codigo: 'ASIMRA',   nombre: 'Sup. Industria Metalmecánica',                pctEmpleado: 3,   pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Cuota sindical + fondo cultura', tiene_adicional_titulo: true,  pct_titulo_sec: 3, pct_titulo_ter: 5, pct_titulo_uni: 8  },
+  { codigo: 'UOYEP',    nombre: 'Unión Obreros y Emp. Plásticos',              pctEmpleado: 2,   pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Aporte UOYEP',                   tiene_adicional_titulo: false, pct_titulo_sec: 0, pct_titulo_ter: 0, pct_titulo_uni: 0  },
+  { codigo: 'UOCRA',    nombre: 'Unión Obrera de la Construcción (UOCRA)',     pctEmpleado: 2,   pctPatronal: 2,   pctAntigPorAnio: 1, nota: 'Cuota sindical construcción',   tiene_adicional_titulo: false, pct_titulo_sec: 0, pct_titulo_ter: 0, pct_titulo_uni: 0  },
+  { codigo: 'UECARA',   nombre: 'Empl. de Conducción (UECARA)',                pctEmpleado: 2.5, pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Personal jerárquico construcción', tiene_adicional_titulo: false, pct_titulo_sec: 0, pct_titulo_ter: 0, pct_titulo_uni: 0 }
 ];
 
 const SINDICATOS_STORAGE_KEY = 'lsg_sindicatos';
@@ -51,6 +51,30 @@ function empleadoFueraConvenio(emp){
   if(!emp) return false;
   const c = (emp.cod_sindicato || '').trim().toUpperCase();
   return c === 'FC';
+}
+
+
+// ─── Adicional por título ────────────────────────────────────────────────
+// Devuelve el porcentaje de adicional por título que corresponde al empleado
+// según su sindicato/convenio.
+// titulo: '' | 'secundario' | 'terciario' | 'universitario'
+// Retorna 0 si el convenio no dispone adicional o el empleado no tiene título.
+function getPctAdicionalTitulo(emp){
+  if(!emp) return 0;
+  const titulo = (emp.titulo || '').toLowerCase().trim();
+  if(!titulo) return 0;
+  if(empleadoSinSindicato(emp)) return 0;
+  const s = getSindicatoByCodigo(emp.cod_sindicato);
+  if(!s || !s.tiene_adicional_titulo) return 0;
+  if(titulo === 'universitario') return s.pct_titulo_uni || 0;
+  if(titulo === 'terciario')     return s.pct_titulo_ter || 0;
+  if(titulo === 'secundario')    return s.pct_titulo_sec || 0;
+  return 0;
+}
+
+// ¿El empleado tiene adicional por título habilitado en su convenio?
+function empleadoTieneAdicionalTitulo(emp){
+  return getPctAdicionalTitulo(emp) > 0;
 }
 
 function getPctSindicatoEmpleado(emp){
@@ -241,6 +265,38 @@ function abrirFormSindicato(codigoEdit){
           <input type="text" id="sind-nota" value="${esEdicion?(s.nota||'').replace(/"/g,'&quot;'):''}" placeholder="Opcional — ej: Cuota sindical + fondo cultural"
             style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--t1);font-size:13px;outline:none">
         </div>
+
+        <!-- ── Adicional por título ── -->
+        <div style="border-top:1px solid var(--border);padding-top:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--t2)">
+              <input type="checkbox" id="sind-tiene-titulo" ${esEdicion&&s.tiene_adicional_titulo?'checked':''}
+                onchange="document.getElementById('sind-titulo-campos').style.display=this.checked?'grid':'none'"
+                style="cursor:pointer;accent-color:var(--accent);width:14px;height:14px">
+              <span>Este CCT dispone <strong>adicional por título</strong></span>
+            </label>
+          </div>
+          <div id="sind-titulo-campos" style="display:${esEdicion&&s.tiene_adicional_titulo?'grid':'none'};grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div>
+              <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">% Secundario</label>
+              <input type="number" step="0.01" min="0" id="sind-pct-sec" value="${esEdicion?(s.pct_titulo_sec||0):3}"
+                style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+              <div style="font-size:10px;color:var(--t3);margin-top:3px">% s/ sueldo bruto</div>
+            </div>
+            <div>
+              <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">% Terciario</label>
+              <input type="number" step="0.01" min="0" id="sind-pct-ter" value="${esEdicion?(s.pct_titulo_ter||0):6}"
+                style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+              <div style="font-size:10px;color:var(--t3);margin-top:3px">% s/ sueldo bruto</div>
+            </div>
+            <div>
+              <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">% Universitario</label>
+              <input type="number" step="0.01" min="0" id="sind-pct-uni" value="${esEdicion?(s.pct_titulo_uni||0):10}"
+                style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+              <div style="font-size:10px;color:var(--t3);margin-top:3px">% s/ sueldo bruto</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div style="padding:16px 22px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:10px;justify-content:flex-end">
@@ -280,12 +336,22 @@ async function guardarSindicato(codigoOriginal){
       showAlert(`Ya existe un sindicato con código ${codigo}. Edítalo en lugar de crear uno nuevo.`, 'warning');
       return;
     }
-    lista.push({ codigo, nombre, pctEmpleado:pctEmp, pctPatronal:pctPat, pctAntigPorAnio:pctAnt, nota });
+    const tieneTit = document.getElementById('sind-tiene-titulo')?.checked || false;
+    const pctSec = tieneTit ? (parseFloat(document.getElementById('sind-pct-sec')?.value||'0')||0) : 0;
+    const pctTer = tieneTit ? (parseFloat(document.getElementById('sind-pct-ter')?.value||'0')||0) : 0;
+    const pctUni = tieneTit ? (parseFloat(document.getElementById('sind-pct-uni')?.value||'0')||0) : 0;
+    lista.push({ codigo, nombre, pctEmpleado:pctEmp, pctPatronal:pctPat, pctAntigPorAnio:pctAnt, nota,
+      tiene_adicional_titulo: tieneTit, pct_titulo_sec: pctSec, pct_titulo_ter: pctTer, pct_titulo_uni: pctUni });
   } else {
     // Edición: buscar y actualizar
     const idx = lista.findIndex(s => s.codigo === codigoOriginal);
     if(idx >= 0){
-      lista[idx] = { ...lista[idx], nombre, pctEmpleado:pctEmp, pctPatronal:pctPat, pctAntigPorAnio:pctAnt, nota };
+      const tieneTit2 = document.getElementById('sind-tiene-titulo')?.checked || false;
+      const pctSec2 = tieneTit2 ? (parseFloat(document.getElementById('sind-pct-sec')?.value||'0')||0) : 0;
+      const pctTer2 = tieneTit2 ? (parseFloat(document.getElementById('sind-pct-ter')?.value||'0')||0) : 0;
+      const pctUni2 = tieneTit2 ? (parseFloat(document.getElementById('sind-pct-uni')?.value||'0')||0) : 0;
+      lista[idx] = { ...lista[idx], nombre, pctEmpleado:pctEmp, pctPatronal:pctPat, pctAntigPorAnio:pctAnt, nota,
+        tiene_adicional_titulo: tieneTit2, pct_titulo_sec: pctSec2, pct_titulo_ter: pctTer2, pct_titulo_uni: pctUni2 };
     }
   }
   saveSindicatos(lista);
