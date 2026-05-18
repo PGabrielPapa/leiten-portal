@@ -1586,29 +1586,30 @@ async function liqPoblarEmpresas(){
   const sel = document.getElementById('liq-empresa');
   if(!sel) return;
   sel.innerHTML = '<option value="">— Seleccioná una empresa —</option>';
-  // Obtener empresas desde ABM (tienen CUIT, razón social, etc.)
-  const empresas = (typeof getEmpresasABM === 'function')
-    ? await getEmpresasABM()
-    : [];
-  if(empresas.length){
-    empresas.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
-    empresas.forEach(e => {
-      const opt = document.createElement('option');
-      opt.value = e.nombre || e.id;
-      opt.textContent = e.nombre || e.id;
-      sel.appendChild(opt);
-    });
-  } else {
-    // Fallback: empresas de la nómina
-    const nombres = [...new Set(
-      getNomina().map(e=>e.emp||'').filter(Boolean).sort()
-    )];
-    nombres.forEach(n => {
-      const opt = document.createElement('option');
-      opt.value = n; opt.textContent = n;
-      sel.appendChild(opt);
-    });
-  }
+
+  // La fuente de verdad para el VALUE siempre es e.emp de la nómina
+  // (es lo que usa el filtro nomina.filter(e=>e.emp===liq.empresa)).
+  // El ABM de empresas solo se usa para enriquecer el label con CUIT o razón social.
+  const nomina = getNomina().filter(e => !e._deBaja && !e.egreso);
+  const empNames = [...new Set(nomina.map(e => e.emp||'').filter(Boolean))].sort();
+
+  // Intentar enriquecer con datos del ABM (razón social formal, CUIT)
+  let abmEmpresas = [];
+  try {
+    abmEmpresas = (typeof getEmpresasABM === 'function') ? (await getEmpresasABM()) : [];
+  } catch(e) { abmEmpresas = []; }
+
+  empNames.forEach(nomEmp => {
+    const abm = abmEmpresas.find(a =>
+      (a.nombre||'').trim().toUpperCase() === nomEmp.trim().toUpperCase()
+    );
+    const opt = document.createElement('option');
+    opt.value = nomEmp;  // ← SIEMPRE el valor exacto de e.emp
+    opt.textContent = abm?.cuit
+      ? `${nomEmp} — CUIT ${abm.cuit}`
+      : nomEmp;
+    sel.appendChild(opt);
+  });
 }
 
 // Al cambiar la empresa, actualizar el contador y refrescar lista de empleados
@@ -1904,8 +1905,14 @@ async function renderNovedades(){
   // Si es liquidación individual → solo ese empleado
   if(liq.alcance==='individual' && liq.empLeg){
     nomina = nomina.filter(e=>e.leg===liq.empLeg);
-  } else if(liq.empresa!=='todas'){
-    nomina=nomina.filter(e=>e.emp===liq.empresa);
+  } else if(liq.empresa && liq.empresa!=='todas'){
+    const _empExacta2 = nomina.filter(e=>e.emp===liq.empresa);
+    if(_empExacta2.length > 0){
+      nomina = _empExacta2;
+    } else {
+      const _empNorm2 = liq.empresa.trim().toUpperCase();
+      nomina = nomina.filter(e=>(e.emp||'').trim().toUpperCase()===_empNorm2);
+    }
   }
   // Excluir empleados que ingresaron DESPUÉS del fin del período liquidado
   // (no pueden cobrar un mes en el que todavía no eran empleados)
@@ -3083,7 +3090,11 @@ function _descargarPlantillaCumpObj(){
   if(!liq){ toast('⚠ Sin liquidación activa','var(--yellow)'); return; }
   // Filtrar igual que la grilla de novedades (mismas reglas de nómina del período)
   let nomina = (typeof getNomina==='function' ? getNomina() : []).filter(e => !e._deBaja && !e.egreso);
-  if(liq.empresa && liq.empresa !== 'todas') nomina = nomina.filter(e => e.emp === liq.empresa);
+  if(liq.empresa && liq.empresa !== 'todas'){
+    const _ex3 = nomina.filter(e => e.emp === liq.empresa);
+    nomina = _ex3.length > 0 ? _ex3
+           : nomina.filter(e => (e.emp||'').trim().toUpperCase() === liq.empresa.trim().toUpperCase());
+  }
   const ultDia = new Date(liq.anio, liq.mes, 0);
   nomina = nomina.filter(e => {
     const fIng = (typeof parseFechaIng==='function') ? parseFechaIng(e.ing) : null;
@@ -3830,8 +3841,16 @@ async function calcularYRenderPreview(){
   // Liquidación individual: solo el empleado seleccionado
   if(liq.alcance==='individual' && liq.empLeg){
     nomina = nomina.filter(e=>e.leg===liq.empLeg);
-  } else if(liq.empresa!=='todas'){
-    nomina=nomina.filter(e=>e.emp===liq.empresa);
+  } else if(liq.empresa && liq.empresa!=='todas'){
+    // Filtro exacto primero; si no hay resultados, intentar coincidencia normalizada
+    const _empExacta = nomina.filter(e=>e.emp===liq.empresa);
+    if(_empExacta.length > 0){
+      nomina = _empExacta;
+    } else {
+      // Fallback: comparación case-insensitive y sin espacios extra
+      const _empNorm = liq.empresa.trim().toUpperCase();
+      nomina = nomina.filter(e=>(e.emp||'').trim().toUpperCase()===_empNorm);
+    }
   }
   // Excluir empleados que ingresaron DESPUÉS del fin del período liquidado
   const ultDiaPeriodo = new Date(liq.anio, liq.mes, 0);
