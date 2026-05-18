@@ -56,7 +56,7 @@ async function renderMisEvaluaciones(){
   }).join('');
 }
 
-function calcularDiasAnual(){
+async function calcularDiasAnual(){
   const desde = document.getElementById('la-desde')?.value;
   const hasta  = document.getElementById('la-hasta')?.value;
   const wrap   = document.getElementById('la-dias-wrap');
@@ -68,7 +68,7 @@ function calcularDiasAnual(){
   // Calcular días que corresponden según antigüedad
   const ing  = currentUser?.emp?.ing || '';
   const anio = new Date().getFullYear();
-  const diasCorresponden = calcularDiasVacaciones(ing, anio);
+  const diasCorresponden = await calcularDiasVacaciones(ing, anio);
 
   if(num) num.textContent = `${dias} día${dias!==1?'s':''}`;
   if(wrap) wrap.style.display = 'block';
@@ -133,7 +133,7 @@ async function solicitarLicenciaAnual(){
   actualizarRRHHBadges();
 }
 
-function nuevaSolicitudAnual(){
+async function nuevaSolicitudAnual(){
   const form = document.getElementById('la-form-card');
   const conf = document.getElementById('la-confirmacion');
   if(form) form.style.display='block';
@@ -146,7 +146,7 @@ function nuevaSolicitudAnual(){
   // Mostrar info de días correspondientes
   const ing  = currentUser?.emp?.ing || '';
   const anio = new Date().getFullYear();
-  const dias = calcularDiasVacaciones(ing, anio);
+  const dias = await calcularDiasVacaciones(ing, anio);
   const infoEl = document.getElementById('la-info-reglamento');
   if(infoEl) infoEl.innerHTML = `🏖 Te corresponden <strong>${dias} días corridos</strong> de licencia anual (antigüedad al 31/12/${anio} — Art. 150, Ley 20.744). <span style="color:var(--t3)">Período: 1° oct → 30 abr. Las vacaciones deben comenzar en día lunes.</span>`;
 }
@@ -214,6 +214,11 @@ async function renderLicAnualGerente(){
     return;
   }
   const fmtD = iso=>{ if(!iso) return '—'; const[y,m,d]=iso.split('-'); return`${d}/${m}/${y}`; };
+  // Precalcular días de vacaciones para cada empleado (calcularDiasVacaciones es async)
+  const _anioRef = new Date().getFullYear();
+  await Promise.all(lista.map(async l => {
+    l._diasCorresponden = await calcularDiasVacaciones(l.ing||'', _anioRef);
+  }));
   div.innerHTML = lista.map(l=>`
     <div data-lic-leg="${l.leg||''}" data-lic-desde="${l.desde||''}" data-lic-hasta="${l.hasta||''}" data-lic-estado="${l.estado||''}" style="padding:14px 18px;border-bottom:1px solid var(--border)">
       <div style="display:flex;align-items:flex-start;gap:12px">
@@ -224,7 +229,7 @@ async function renderLicAnualGerente(){
           </div>
           <div style="font-size:12px;color:var(--t2);margin-bottom:4px">
             📅 ${fmtD(l.desde)} → ${fmtD(l.hasta)} · <strong>${l.dias} día${l.dias!==1?'s':''}</strong>
-            · <span style="color:var(--t3)">Corresponden: ${calcularDiasVacaciones(l.ing||'', new Date().getFullYear())} días</span>
+            · <span style="color:var(--t3)">Corresponden: ${l._diasCorresponden||14} días</span>
           </div>
           <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">
             Solicitado: ${l.solicitadoEl} ${l.solicitadoHora}${l.obs?' · '+l.obs:''}
