@@ -32,7 +32,15 @@ const ESCALA_SEED_V1 = {
     { key:'REG',      label:'Gerente Regional',          desc:'Neuquén / Córdoba / Mendoza / Rosario / Santa Fe / Corrientes', monto:2765771.32, difMesAnt:0.02 },
     { key:'BSAS-3F',  label:'Gerente Buenos Aires · 3F', desc:'Sucursal 3 de Febrero',                                         monto:2475489.38, difMesAnt:0.02 },
     { key:'BSAS-JM',  label:'Gerente Buenos Aires · JM', desc:'Sucursal José Marmol',                                          monto:3318925.58, difMesAnt:0.02 }
-  ]
+  ],
+  // ── Adicional por título (monto fijo paritario, actualizable en cada incremento) ──
+  // Estos montos se negocian por paritaria y se actualizan junto con la escala.
+  // El monto aplica a TODOS los empleados del CCT que tengan ese nivel de título.
+  montos_titulo: {
+    secundario:   0,      // $ — 0 = no configurado aún
+    terciario:    0,
+    universitario:0
+  }
 };
 
 // Alias de compatibilidad con el código previo
@@ -74,6 +82,21 @@ function eliminarEscalaVersion(id){
   _setEscalaVersionesRaw(filtered);
   return true;
 }
+
+// ─── Adicional por título: monto fijo paritario ───────────────────────────
+// Retorna el monto fijo del adicional por título según la escala activa.
+// titulo: 'secundario' | 'terciario' | 'universitario' | ''
+function getMontoAdicionalTitulo(titulo, fechaRef){
+  if(!titulo) return 0;
+  const escala = getEscalaActiva(fechaRef);
+  const mt = escala.montos_titulo || {};
+  const nivel = titulo.toLowerCase();
+  if(nivel === 'universitario') return mt.universitario || 0;
+  if(nivel === 'terciario')     return mt.terciario     || 0;
+  if(nivel === 'secundario')    return mt.secundario    || 0;
+  return 0;
+}
+
 
 function getEscalaActiva(fechaRef){
   const todas = getEscalaVersiones();
@@ -379,6 +402,36 @@ function _renderEscalaPaneActiva(escala, conteo, nominaActiva){
           </div>
         </details>
       `:'<div style="margin-top:12px;font-size:12px;color:var(--green)">✓ Todos los empleados activos están mapeados a la escala.</div>'}
+    </div>
+
+    <!-- ── Adicional por título ── -->
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+      <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:13px;font-weight:600;color:var(--t1)">🎓 Adicional por título (monto fijo paritario)</span>
+          <span style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Se actualiza en cada paritaria junto con la escala</span>
+        </div>
+        <button class="btn btn-ghost" onclick="abrirEditorMontosTitulo()" style="font-size:11px;padding:4px 12px">✎ Editar montos</button>
+      </div>
+      <div style="padding:14px 18px;display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Secundario</span>
+          <span style="font-size:14px;font-weight:600;color:var(--t1);font-family:var(--font-mono)">${fN(escala.montos_titulo?.secundario||0)}</span>
+        </div>
+        <span style="color:var(--border)">·</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Terciario</span>
+          <span style="font-size:14px;font-weight:600;color:var(--t1);font-family:var(--font-mono)">${fN(escala.montos_titulo?.terciario||0)}</span>
+        </div>
+        <span style="color:var(--border)">·</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Universitario</span>
+          <span style="font-size:14px;font-weight:600;color:var(--t1);font-family:var(--font-mono)">${fN(escala.montos_titulo?.universitario||0)}</span>
+        </div>
+        ${!(escala.montos_titulo?.secundario||escala.montos_titulo?.terciario||escala.montos_titulo?.universitario)
+          ? '<div style="font-size:11px;color:var(--t3);font-style:italic;margin-left:8px">Sin configurar — editá los montos para activar el cálculo automático en la liquidación</div>'
+          : ''}
+      </div>
     </div>`;
 
   pane.innerHTML = html;
@@ -3598,3 +3651,102 @@ function _syncTodosRows(sindId, panelId){
   if(pane) renderLiqSyncCard(sindId, pane);
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EDITOR DE MONTOS DE TÍTULO — Panel de Escala Salarial
+// ═══════════════════════════════════════════════════════════════════════════
+
+function abrirEditorMontosTitulo(){
+  const escala = getEscalaActiva();
+  const mt = escala.montos_titulo || { secundario:0, terciario:0, universitario:0 };
+
+  const prev = document.getElementById('modal-montos-titulo');
+  if(prev) prev.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-montos-titulo';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+
+  modal.innerHTML = `
+    <div class="card" style="padding:0;max-width:500px;width:100%;border:1px solid var(--border)">
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--t1)">🎓 Montos de adicional por título</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">Estos valores se aplican a todos los empleados bajo CCT que tengan el título correspondiente</div>
+        </div>
+        <button onclick="document.getElementById('modal-montos-titulo').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+        <div style="padding:10px 12px;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.3);border-radius:var(--r);font-size:12px;color:var(--yellow);line-height:1.5">
+          ⚠ Estos montos se negocian por paritaria. Al guardar se guardan sobre la versión de escala activa
+          y aplican a la próxima liquidación.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div>
+            <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">Secundario ($)</label>
+            <input type="number" id="mt-sec" step="1" min="0" value="${mt.secundario||0}"
+              style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono);box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">Terciario ($)</label>
+            <input type="number" id="mt-ter" step="1" min="0" value="${mt.terciario||0}"
+              style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono);box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">Universitario ($)</label>
+            <input type="number" id="mt-uni" step="1" min="0" value="${mt.universitario||0}"
+              style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono);box-sizing:border-box">
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--t3);font-style:italic;line-height:1.5">
+          Los sindicatos que <strong>no disponen</strong> adicional por título (UOCRA, UOYEP, UECARA)
+          ignoran estos valores independientemente de lo que se configure aquí.
+        </div>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-montos-titulo').remove()" style="font-size:13px;padding:8px 14px">Cancelar</button>
+        <button class="btn btn-primary" onclick="_guardarMontosTitulo()" style="font-size:13px;padding:8px 20px">✓ Guardar montos</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  document.getElementById('mt-sec')?.focus();
+}
+
+function _guardarMontosTitulo(){
+  const sec = parseFloat(document.getElementById('mt-sec')?.value||'0') || 0;
+  const ter = parseFloat(document.getElementById('mt-ter')?.value||'0') || 0;
+  const uni = parseFloat(document.getElementById('mt-uni')?.value||'0') || 0;
+
+  // Guardar sobre la versión activa en el storage de usuario
+  // Si la activa es la seed, crear una versión "override de montos" basada en ella
+  const escalaActiva = getEscalaActiva();
+  const versiones = _getEscalaVersionesRaw();
+
+  // Buscar si hay una versión de usuario con el mismo id o vigencia
+  const idxUser = versiones.findIndex(v => v.id === escalaActiva.id || v.vigencia === escalaActiva.vigencia);
+  if(idxUser >= 0){
+    versiones[idxUser].montos_titulo = { secundario: sec, terciario: ter, universitario: uni };
+    _setEscalaVersionesRaw(versiones);
+  } else {
+    // La activa es la seed — crear una versión de override
+    const nueva = {
+      ...JSON.parse(JSON.stringify(escalaActiva)),
+      id: 'esc_titulo_' + Date.now(),
+      vigencia: escalaActiva.vigencia,
+      mesLabel: escalaActiva.mesLabel + ' (actualización título)',
+      origen: 'montos_titulo',
+      comentario: 'Actualización de montos de adicional por título',
+      creado: new Date().toISOString(),
+      creadoPor: typeof currentUser !== 'undefined' ? (currentUser?.emp?.nom || null) : null,
+      montos_titulo: { secundario: sec, terciario: ter, universitario: uni }
+    };
+    versiones.push(nueva);
+    _setEscalaVersionesRaw(versiones);
+  }
+
+  document.getElementById('modal-montos-titulo')?.remove();
+  if(typeof renderEscalaSalarial === 'function') renderEscalaSalarial();
+  if(typeof logAuditX === 'function') logAuditX('escala', 'actualizar_montos_titulo', { sec, ter, uni });
+  toast('✅ Montos de adicional por título actualizados', 'var(--green)', 3000);
+}

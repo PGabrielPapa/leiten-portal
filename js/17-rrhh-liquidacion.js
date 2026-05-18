@@ -895,22 +895,37 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   // ─ Empleados Fuera de Convenio (FC) ─
   const esFueraConvenio = (typeof empleadoFueraConvenio === 'function') && empleadoFueraConvenio(emp);
 
-  // ─ Adicional por título ──────────────────────────────────────────────
-  // Se calcula como porcentaje del bruto si el convenio del empleado lo
-  // dispone (tiene_adicional_titulo = true en su sindicato) y el empleado
-  // tiene título registrado en su legajo (campo 'titulo').
-  // El porcentaje varía según nivel: secundario / terciario / universitario.
-  const _pctTitulo = (typeof getPctAdicionalTitulo === 'function') ? getPctAdicionalTitulo(emp) : 0;
-  const mAdicionalTitulo = _pctTitulo > 0
-    ? $m(bruto * (_pctTitulo / 100) * _factorPeriodo)
+  // ─ Adicional por título (monto fijo paritario) ─────────────────────────
+  // El monto viene de la escala salarial activa (negociado por paritaria),
+  // no es un porcentaje. Solo aplica si el CCT del empleado lo dispone
+  // (tiene_adicional_titulo = true en su sindicato).
+  const _tieneAdicTitulo = (typeof getSindicatoByCodigo === 'function')
+    ? (() => { const s = getSindicatoByCodigo(emp.cod_sindicato); return s?.tiene_adicional_titulo || false; })()
+    : false;
+  const _montoTituloEscala = (_tieneAdicTitulo && emp.titulo && typeof getMontoAdicionalTitulo === 'function')
+    ? getMontoAdicionalTitulo(emp.titulo)
     : 0;
+  // Si el empleado tuvo ausencias proporcionales, el adicional se prorratear igual que el básico
+  const mAdicionalTitulo = _montoTituloEscala > 0
+    ? $m(_montoTituloEscala * proporcion * _factorPeriodo)
+    : 0;
+  // pctTitulo → 0 (ya no se usa %, se deja en 0 para compatibilidad del return)
+  const _pctTitulo = 0;
 
-    // ─ Presentismo ─
+  // ─ Base de presentismo (configurable por CCT) ────────────────────────────
+  // Según getPresBase(emp) el CCT puede disponer que el presentismo se calcule
+  // sobre: solo el básico, básico+antigüedad, o básico+antigüedad+título.
   const tienePres = !esFueraConvenio
                  && ausentismo===0
                  && !$m(nov.ausenciasInjustificadas)
                  && !tieneSuspension;
-  const mPres=tienePres?sueldoBasico*params.pctPresentismo/100:0;
+  const _presBaseCCT = (typeof getPresBase === 'function') ? getPresBase(emp) : 'basico';
+  const _basePresCalc = _presBaseCCT === 'basico+antig+titulo'
+    ? sueldoBasico + mAntig + mAdicionalTitulo
+    : _presBaseCCT === 'basico+antig'
+      ? sueldoBasico + mAntig
+      : sueldoBasico;
+  const mPres = tienePres ? $m(_basePresCalc * params.pctPresentismo / 100) : 0;
 
   // ─ SAC proporcional (si corresponde) ─
   const mSac=$m(nov.sac);
@@ -1465,6 +1480,7 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
     mCumpObj, cumplimientoObjetivos: mCumpObj,
     mCompFuncion, basicoEmp: _basicoEmp, aCuentaEmp: _aCuentaEmp,
     mAdicionalTitulo, pctTitulo: _pctTitulo, tituloEmp: emp.titulo || '', tituloDescEmp: emp.titulo_desc || '',
+    presBase: _presBaseCCT, basePresCalc: _basePresCalc,
     // Liquidación final (conceptos por baja)
     mPreaviso, mSacProporcional, mVacNoGozadas, mIntegrMesDesp, mIndemAntig,
     liqFinalDatos: lf,

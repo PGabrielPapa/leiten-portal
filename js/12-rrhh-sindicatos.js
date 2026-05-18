@@ -4,12 +4,12 @@
 // Valores de referencia. Editables desde RR.HH. → Sindicatos.
 // Código en blanco ('') o 'SIN SINDICATO' → sin antigüedad y sin descuento.
 const SINDICATOS_DEFAULT = [
-  { codigo: 'COMERCIO', nombre: 'Empleados de Comercio (SEC/FAECYS)',          pctEmpleado: 2.5, pctPatronal: 0.5, pctAntigPorAnio: 1, nota: 'Cuota sindical 2% + FAECYS 0,5%',  tiene_adicional_titulo: true,  pct_titulo_sec: 3, pct_titulo_ter: 6, pct_titulo_uni: 10 },
-  { codigo: 'UOM',      nombre: 'Unión Obrera Metalúrgica',                    pctEmpleado: 2.5, pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Cuota sindical + FONDO',          tiene_adicional_titulo: true,  pct_titulo_sec: 2, pct_titulo_ter: 4, pct_titulo_uni: 8  },
-  { codigo: 'ASIMRA',   nombre: 'Sup. Industria Metalmecánica',                pctEmpleado: 3,   pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Cuota sindical + fondo cultura', tiene_adicional_titulo: true,  pct_titulo_sec: 3, pct_titulo_ter: 5, pct_titulo_uni: 8  },
-  { codigo: 'UOYEP',    nombre: 'Unión Obreros y Emp. Plásticos',              pctEmpleado: 2,   pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Aporte UOYEP',                   tiene_adicional_titulo: false, pct_titulo_sec: 0, pct_titulo_ter: 0, pct_titulo_uni: 0  },
-  { codigo: 'UOCRA',    nombre: 'Unión Obrera de la Construcción (UOCRA)',     pctEmpleado: 2,   pctPatronal: 2,   pctAntigPorAnio: 1, nota: 'Cuota sindical construcción',   tiene_adicional_titulo: false, pct_titulo_sec: 0, pct_titulo_ter: 0, pct_titulo_uni: 0  },
-  { codigo: 'UECARA',   nombre: 'Empl. de Conducción (UECARA)',                pctEmpleado: 2.5, pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Personal jerárquico construcción', tiene_adicional_titulo: false, pct_titulo_sec: 0, pct_titulo_ter: 0, pct_titulo_uni: 0 }
+  { codigo: 'COMERCIO', nombre: 'Empleados de Comercio (SEC/FAECYS)',          pctEmpleado: 2.5, pctPatronal: 0.5, pctAntigPorAnio: 1, nota: 'Cuota sindical 2% + FAECYS 0,5%',  tiene_adicional_titulo: true,  pres_base: 'basico+antig+titulo' },
+  { codigo: 'UOM',      nombre: 'Unión Obrera Metalúrgica',                    pctEmpleado: 2.5, pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Cuota sindical + FONDO',          tiene_adicional_titulo: true,  pres_base: 'basico+antig' },
+  { codigo: 'ASIMRA',   nombre: 'Sup. Industria Metalmecánica',                pctEmpleado: 3,   pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Cuota sindical + fondo cultura', tiene_adicional_titulo: true,  pres_base: 'basico+antig' },
+  { codigo: 'UOYEP',    nombre: 'Unión Obreros y Emp. Plásticos',              pctEmpleado: 2,   pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Aporte UOYEP',                   tiene_adicional_titulo: false, pres_base: 'basico' },
+  { codigo: 'UOCRA',    nombre: 'Unión Obrera de la Construcción (UOCRA)',     pctEmpleado: 2,   pctPatronal: 2,   pctAntigPorAnio: 1, nota: 'Cuota sindical construcción',   tiene_adicional_titulo: false, pres_base: 'basico' },
+  { codigo: 'UECARA',   nombre: 'Empl. de Conducción (UECARA)',                pctEmpleado: 2.5, pctPatronal: 1.5, pctAntigPorAnio: 1, nota: 'Personal jerárquico construcción', tiene_adicional_titulo: false, pres_base: 'basico' }
 ];
 
 const SINDICATOS_STORAGE_KEY = 'lsg_sindicatos';
@@ -75,6 +75,17 @@ function getPctAdicionalTitulo(emp){
 // ¿El empleado tiene adicional por título habilitado en su convenio?
 function empleadoTieneAdicionalTitulo(emp){
   return getPctAdicionalTitulo(emp) > 0;
+}
+
+
+// ─── Base de presentismo por CCT ─────────────────────────────────────────
+// Retorna el string que indica qué conceptos integran la base de presentismo
+// según el CCT del empleado.
+// Valores: 'basico' | 'basico+antig' | 'basico+antig+titulo'
+function getPresBase(emp){
+  if(!emp || empleadoSinSindicato(emp)) return 'basico';
+  const s = getSindicatoByCodigo(emp.cod_sindicato);
+  return (s && s.pres_base) ? s.pres_base : 'basico';
 }
 
 function getPctSindicatoEmpleado(emp){
@@ -260,6 +271,28 @@ function abrirFormSindicato(codigoEdit){
           </div>
         </div>
 
+        <!-- ── Base de presentismo ── -->
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">
+            Base de cálculo del presentismo
+            <span style="font-size:9px;color:var(--accent2);font-weight:400;margin-left:4px">según CCT</span>
+          </label>
+          <select id="sind-pres-base" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--t1);font-size:13px;outline:none">
+            <option value="basico" ${esEdicion&&(s.pres_base||'basico')==='basico'?'selected':''}>
+              Básico — solo sobre sueldo básico
+            </option>
+            <option value="basico+antig" ${esEdicion&&s.pres_base==='basico+antig'?'selected':''}>
+              Básico + Antigüedad
+            </option>
+            <option value="basico+antig+titulo" ${esEdicion&&s.pres_base==='basico+antig+titulo'?'selected':''}>
+              Básico + Antigüedad + Adicional por título
+            </option>
+          </select>
+          <div style="font-size:10px;color:var(--t3);margin-top:4px">
+            Define qué conceptos integran la base sobre la que se calcula el presentismo en la liquidación.
+          </div>
+        </div>
+
         <div>
           <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Nota / observaciones</label>
           <input type="text" id="sind-nota" value="${esEdicion?(s.nota||'').replace(/"/g,'&quot;'):''}" placeholder="Opcional — ej: Cuota sindical + fondo cultural"
@@ -340,8 +373,9 @@ async function guardarSindicato(codigoOriginal){
     const pctSec = tieneTit ? (parseFloat(document.getElementById('sind-pct-sec')?.value||'0')||0) : 0;
     const pctTer = tieneTit ? (parseFloat(document.getElementById('sind-pct-ter')?.value||'0')||0) : 0;
     const pctUni = tieneTit ? (parseFloat(document.getElementById('sind-pct-uni')?.value||'0')||0) : 0;
+    const presBase = document.getElementById('sind-pres-base')?.value || 'basico';
     lista.push({ codigo, nombre, pctEmpleado:pctEmp, pctPatronal:pctPat, pctAntigPorAnio:pctAnt, nota,
-      tiene_adicional_titulo: tieneTit, pct_titulo_sec: pctSec, pct_titulo_ter: pctTer, pct_titulo_uni: pctUni });
+      tiene_adicional_titulo: tieneTit, pres_base: presBase });
   } else {
     // Edición: buscar y actualizar
     const idx = lista.findIndex(s => s.codigo === codigoOriginal);
@@ -350,8 +384,9 @@ async function guardarSindicato(codigoOriginal){
       const pctSec2 = tieneTit2 ? (parseFloat(document.getElementById('sind-pct-sec')?.value||'0')||0) : 0;
       const pctTer2 = tieneTit2 ? (parseFloat(document.getElementById('sind-pct-ter')?.value||'0')||0) : 0;
       const pctUni2 = tieneTit2 ? (parseFloat(document.getElementById('sind-pct-uni')?.value||'0')||0) : 0;
+      const presBase2 = document.getElementById('sind-pres-base')?.value || 'basico';
       lista[idx] = { ...lista[idx], nombre, pctEmpleado:pctEmp, pctPatronal:pctPat, pctAntigPorAnio:pctAnt, nota,
-        tiene_adicional_titulo: tieneTit2, pct_titulo_sec: pctSec2, pct_titulo_ter: pctTer2, pct_titulo_uni: pctUni2 };
+        tiene_adicional_titulo: tieneTit2, pres_base: presBase2 };
     }
   }
   saveSindicatos(lista);
