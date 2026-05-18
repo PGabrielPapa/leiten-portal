@@ -64,7 +64,7 @@ const EVAL_ITEMS = {
 const EVAL_LABELS = {1:'Muy Deficiente',2:'Deficiente',3:'Satisfactorio',4:'Bueno',5:'Excelente'};
 
 // Parse fecha ingreso (DD/MM/YYYY o YYYY-MM-DD) → Date
-async function parseFechaIng(ing){
+function parseFechaIng(ing){
   if(!ing) return null;
   if(ing.includes('/')){
     const p = ing.split('/'); if(p.length!==3) return null;
@@ -77,8 +77,8 @@ async function parseFechaIng(ing){
   return null;
 }
 
-async function fechaISO(d){ return d.toISOString().slice(0,10); }
-async function fechaDDMMYYYY(iso){
+function fechaISO(d){ return d.toISOString().slice(0,10); }
+function fechaDDMMYYYY(iso){
   if(!iso) return '—';
   const p = iso.split('-'); return `${p[2]}/${p[1]}/${p[0]}`;
 }
@@ -135,7 +135,7 @@ async function generarEvalPrueba(leg){
     await addEvaluacion({
       leg,
       tipo,
-      periodo: `prueba_${d}_${emp.leg}_${emp.ing}`, // único por empleado/tipo/ingreso
+      periodo: `prueba_${d}_${emp.leg}_${emp.ing}`,
       fechaProgramada: fechaISO(fProg),
       fechaRealizada: null,
       estado: 'pendiente',
@@ -203,7 +203,7 @@ async function getAlertaEvalPrueba(ev){
 }
 
 // ── Filtrar empleados a cargo del gerente actual ──
-async function _getEquipoDelGerente(incluirBajas){
+function _getEquipoDelGerente(incluirBajas){
   if(!currentUser) return [];
   const gerNom = currentUser.emp.nom.toUpperCase().trim();
   const esPapa = gerNom.includes('PAPA, PABLO GABRIEL');
