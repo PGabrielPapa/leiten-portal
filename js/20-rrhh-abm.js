@@ -457,6 +457,7 @@ function _abmEmpresaMostrarForm(rec){
   if(cbuEmp) cbuEmp.value = rec?.cbuOrigen || '';
   if(tcEmp)  tcEmp.value  = rec?.tipoCuentaOrigen || 'CC';
   if(alEmp)  alEmp.value  = rec?.aliasOrigen || '';
+
   if(typeof _cbuInputLiveEmpresa === 'function') _cbuInputLiveEmpresa();
   // Centros de operaciones
   document.getElementById('abm-emp-centros-data').value = JSON.stringify(rec?.centros || []);
@@ -1030,6 +1031,7 @@ async function abmEmpresaGuardar(){
 
   // Validar CBU origen si fue cargado (puede quedar vacío sin problemas)
   const cbuOrigenRaw = gv('abm-emp-cbu').replace(/\D/g, '');
+
   if(cbuOrigenRaw){
     const v = (typeof validarCBU === 'function') ? validarCBU(cbuOrigenRaw) : { ok: true };
     if(!v.ok){
@@ -1053,6 +1055,7 @@ async function abmEmpresaGuardar(){
     bancoOrigen:      cbuOrigenRaw && typeof bancoDesdeCBU === 'function' ? bancoDesdeCBU(cbuOrigenRaw) : '',
     tipoCuentaOrigen: gv('abm-emp-tipo-cuenta') || 'CC',
     aliasOrigen:      gv('abm-emp-alias').trim(),
+
     centros: _getCentrosFromHidden(),
     actualizadaEl: new Date().toISOString(),
     actualizadaPor: currentUser?.emp?.nom || null
@@ -1629,8 +1632,8 @@ async function abmGuardarEdicion(){
   if(egreso){ bj[leg]={fecha:egreso}; saveAbmBajas(bj); toast(`✓ Baja registrada — egreso ${egreso.split('-').reverse().join('/')}`,'var(--red)'); }
   else { delete bj[leg]; saveAbmBajas(bj); }
 
-  // Las cuentas bancarias se persisten al instante desde su propio modal,
-  // no se guardan acá junto con el resto del form.
+  // Las cuentas bancarias se gestionan desde el panel de CBUs dentro de la ficha del empleado.
+  // El modal de agregar/editar cuenta usa actor='RRHH' y persiste al instante sin generar novedad.
   // Cumpleaños
   const nac=gV('abm-e-nac');
   if(nac&&/^\d{2}\/\d{2}$/.test(nac)){const ci=CUMPLE_DATA.findIndex(c=>c.leg===leg);if(ci>=0)CUMPLE_DATA[ci].fecha=nac;else CUMPLE_DATA.push({leg,fecha:nac});}
