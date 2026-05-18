@@ -2059,28 +2059,23 @@ function abmAutocompletarBruto(pref){
   const brutoEl = document.getElementById(`abm-${pref}-bruto`);
   if(!brutoEl) return;
 
-  // No sobreescribir si el usuario ya cargó un valor manual
-  const brutoActual = parseFloat(brutoEl.value || '0') || 0;
-
   if(!cat || !tramo){
-    // Limpiar el preview si alguno está vacío
     _abmBrutoEscalaPreview(pref, null, cat, tramo);
     return;
   }
 
+  // Consultar la escala interna vigente
   const monto = (typeof getMontoEscala === 'function') ? getMontoEscala(cat, tramo) : null;
 
   if(monto && monto > 0){
-    // Proponer el monto de escala si el campo está vacío o en cero
-    if(brutoActual === 0){
-      brutoEl.value = monto.toFixed(2);
-      // En edición: recalcular el complemento con el nuevo bruto
-      if(pref === 'e' && typeof abmRecalcComplemento === 'function'){
-        setTimeout(abmRecalcComplemento, 30);
-      }
-    }
+    // Autocompletar siempre que haya valor en la escala interna vigente
+    brutoEl.value = monto.toFixed(2);
+    brutoEl.style.borderColor = 'var(--accent2)';
+    // Recalcular complemento función con el nuevo bruto
+    if(typeof abmRecalcComplemento === 'function') setTimeout(abmRecalcComplemento, 30);
     _abmBrutoEscalaPreview(pref, monto, cat, tramo);
   } else {
+    brutoEl.style.borderColor = '';
     _abmBrutoEscalaPreview(pref, null, cat, tramo);
   }
 }
@@ -2102,7 +2097,7 @@ function _abmBrutoEscalaPreview(pref, monto, cat, tramo){
 
   if(monto && monto > 0){
     const fmt = Number(monto).toLocaleString('es-AR', { minimumFractionDigits:2 });
-    el.innerHTML = `Escala ${cat}/${tramo}: <strong style="color:var(--accent2)">$ ${fmt}</strong>`;
+    el.innerHTML = `Escala interna vigente — ${cat}/${tramo}: <strong style="color:var(--accent2)">$ ${fmt}</strong>`;
   } else if(cat && tramo){
     el.innerHTML = `<span style="color:var(--yellow)">⚠ ${cat}/${tramo} no encontrado en la escala vigente</span>`;
   } else {
