@@ -60,21 +60,23 @@ function empleadoFueraConvenio(emp){
 // titulo: '' | 'secundario' | 'terciario' | 'universitario'
 // Retorna 0 si el convenio no dispone adicional o el empleado no tiene título.
 function getPctAdicionalTitulo(emp){
+  // LEGACY — mantenida por compatibilidad. El adicional ya no es %.
+  // Retorna 1 si el CCT del empleado dispone adicional y tiene título, 0 si no.
   if(!emp) return 0;
   const titulo = (emp.titulo || '').toLowerCase().trim();
   if(!titulo) return 0;
   if(empleadoSinSindicato(emp)) return 0;
   const s = getSindicatoByCodigo(emp.cod_sindicato);
-  if(!s || !s.tiene_adicional_titulo) return 0;
-  if(titulo === 'universitario') return s.pct_titulo_uni || 0;
-  if(titulo === 'terciario')     return s.pct_titulo_ter || 0;
-  if(titulo === 'secundario')    return s.pct_titulo_sec || 0;
-  return 0;
+  return (s && s.tiene_adicional_titulo) ? 1 : 0;
 }
+
 
 // ¿El empleado tiene adicional por título habilitado en su convenio?
 function empleadoTieneAdicionalTitulo(emp){
-  return getPctAdicionalTitulo(emp) > 0;
+  if(!emp || !(emp.titulo||'').trim()) return false;
+  if(empleadoSinSindicato(emp)) return false;
+  const s = getSindicatoByCodigo(emp.cod_sindicato);
+  return !!(s && s.tiene_adicional_titulo);
 }
 
 

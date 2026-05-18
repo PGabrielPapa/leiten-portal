@@ -369,8 +369,14 @@ function calcCFMensual(emp, params){
     ? ($m(getMontoAdicionalTitulo(emp.titulo)) || 0)
     : 0;
 
-  if(emp.cat && emp.tramo && typeof getMontoEscala === 'function'){
-    const escala = getMontoEscala(emp.cat, emp.tramo);
+  // Resolver cat/tramo: usar campo directo o descomponer cat_convenio ('CAT/TRAMO')
+  const _cat   = (emp.cat   || '').trim().toUpperCase()
+              || (emp.cat_convenio || '').split('/')[0].trim().toUpperCase();
+  const _tramo = (emp.tramo || '').trim().toUpperCase()
+              || (emp.cat_convenio || '').split('/')[1]?.trim().toUpperCase() || '';
+
+  if(_cat && _tramo && typeof getMontoEscala === 'function'){
+    const escala = getMontoEscala(_cat, _tramo);
     if(escala && escala > 0){
       const pctPres = params?.pctPresentismo ?? 5;
       // CF = escala − (básico + a_cuenta + título) × (1 + %pres/100)

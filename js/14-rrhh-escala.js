@@ -156,7 +156,18 @@ function aplicarIncrementoEscala(pct, vigencia, alcance, comentario){
       desc: r.desc,
       difMesAnt: (alcance === 'categorias') ? r.difMesAnt : (pct/100),
       monto: (alcance === 'categorias') ? r.monto : round2(r.monto * factor)
-    }))
+    })),
+    // Propagar montos_titulo con el mismo incremento paritario
+    // Si el alcance es 'todas' o 'categorias', también se incrementan los títulos
+    montos_titulo: (() => {
+      const mt = activa.montos_titulo || { secundario:0, terciario:0, universitario:0 };
+      if(alcance === 'regionales') return { ...mt }; // solo regionales → títulos sin cambio
+      return {
+        secundario:   round2((mt.secundario   || 0) * factor),
+        terciario:    round2((mt.terciario    || 0) * factor),
+        universitario:round2((mt.universitario|| 0) * factor),
+      };
+    })()
   };
   saveEscalaVersion(nueva);
   return nueva;
