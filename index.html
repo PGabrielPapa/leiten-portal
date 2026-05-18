@@ -1264,7 +1264,19 @@
           <div class="card" style="max-width:720px;padding:24px">
             <div style="font-size:15px;font-weight:600;color:var(--t1);margin-bottom:18px">Alta de empleado</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-              <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">LEGAJO *</label><input id="abm-n-leg" placeholder="Ej: 000200" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
+              <div>
+                  <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">
+                    LEGAJO
+                    <span style="font-size:9px;color:var(--accent2);font-weight:400;margin-left:4px">asignado automáticamente</span>
+                  </label>
+                  <div style="position:relative">
+                    <input id="abm-n-leg-preview" readonly
+                      style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--accent2);font-size:14px;font-weight:600;outline:none;font-family:var(--font-mono);letter-spacing:1px;cursor:default"
+                      placeholder="—">
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--t3)">auto</span>
+                  </div>
+                  <div style="font-size:10px;color:var(--t3);margin-top:3px">El número se asigna al confirmar el alta</div>
+                </div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">DNI *</label><input id="abm-n-dni" placeholder="Sin puntos" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CUIL *</label><input id="abm-n-cuil" placeholder="XX-XXXXXXXX-X" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div style="grid-column:span 2"><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">APELLIDO Y NOMBRE *</label><input id="abm-n-nom" placeholder="APELLIDO, Nombre" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"></div>

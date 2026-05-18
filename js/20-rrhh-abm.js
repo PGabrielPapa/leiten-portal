@@ -41,7 +41,13 @@ function abmTab(tab){
     }
   });
   if(tab==='lista') renderAbmLista();
-  if(tab==='nuevo'){ poblarSelectoresValidador(); poblarSelectoresSindicato(); }
+  if(tab==='nuevo'){
+    poblarSelectoresValidador();
+    poblarSelectoresSindicato();
+    // Mostrar el próximo legajo disponible en el preview
+    const legPreview = document.getElementById('abm-n-leg-preview');
+    if(legPreview) legPreview.value = getProximoLegajo();
+  }
 }
 
 // Puebla los selects de sindicato en los forms de ABM (alta y edición)
@@ -1548,8 +1554,22 @@ function abmRecalcComplemento(){
   }
 }
 
+// ─── Próximo legajo disponible ────────────────────────────────────────────
+// Toma todos los legajos existentes (nómina + altas + bajas) y retorna el
+// siguiente número libre, formateado con padding de 6 dígitos.
+function getProximoLegajo(){
+  const todos = getNomina().map(e => parseInt(e.leg, 10)).filter(n => !isNaN(n));
+  // También considerar altas pendientes
+  const altas = getAbmAltas().map(e => parseInt(e.leg, 10)).filter(n => !isNaN(n));
+  const todos2 = [...new Set([...todos, ...altas])];
+  if(!todos2.length) return '000001';
+  const max = Math.max(...todos2);
+  return String(max + 1).padStart(6, '0');
+}
+
+
 function abmAltaEmpleado(){
-  const leg=gV('abm-n-leg').padStart(6,'0'), dni=gV('abm-n-dni'), cuil=gV('abm-n-cuil');
+  const leg=getProximoLegajo(), dni=gV('abm-n-dni'), cuil=gV('abm-n-cuil');
   const nom=gV('abm-n-nom').toUpperCase(), emp=gV('abm-n-emp');
   const lugar=gV('abm-n-lugar'), cat=gV('abm-n-cat').toUpperCase(), tramo=gV('abm-n-tramo').toUpperCase();
   const cod_sindicato = gV('abm-n-sindicato') || '';
@@ -1559,8 +1579,7 @@ function abmAltaEmpleado(){
   const validador = gV('abm-n-validador'), areaOrg = gV('abm-n-area');
   const calle=gV('abm-n-calle'), nro=gV('abm-n-nro'), piso=gV('abm-n-piso');
   const depto=gV('abm-n-depto'), loc=gV('abm-n-loc'), prov=gV('abm-n-prov'), cp=gV('abm-n-cp');
-  if(!leg||!dni||!cuil||!nom||!emp||!ing){toast('⚠ Completá los campos obligatorios (*)','var(--yellow)');return;}
-  if(getNomina().find(e=>e.leg===leg)){toast(`⚠ Legajo ${leg} ya existe`,'var(--yellow)');return;}
+  if(!dni||!cuil||!nom||!emp||!ing){toast('⚠ Completá los campos obligatorios (*)','var(--yellow)');return;}
   if(getNomina().find(e=>e.dni===dni)){toast(`⚠ DNI ${dni} ya existe`,'var(--yellow)');return;}
   const al=getAbmAltas();
   const nuevoEmp = {leg,dni,cuil,nom,emp,lugar,cat,tramo,ing,fecha_nac:nac,bruto,neto,lim:neto*0.5,mail,cod_sindicato};
@@ -1576,7 +1595,7 @@ function abmAltaEmpleado(){
   };
   if(nac&&/^\d{2}\/\d{2}$/.test(nac)) CUMPLE_DATA.push({leg,fecha:nac});
   const msgVal = validador ? ` · reporta a ${validador.split(',')[0]}` : '';
-  toast(`✓ ${nom.split(',')[0]} dado de alta (legajo ${leg})${msgVal}`,'var(--green)',4000);
+  toast(`✓ ${nom.split(',')[0]} dado de alta — legajo asignado: ${leg}${msgVal}`,'var(--green)',4000);
   ['abm-n-leg','abm-n-dni','abm-n-cuil','abm-n-nom','abm-n-lugar','abm-n-cat','abm-n-tramo',
    'abm-n-sindicato',
    'abm-n-ing','abm-n-nac','abm-n-bruto','abm-n-neto','abm-n-mail','abm-n-validador','abm-n-area',
