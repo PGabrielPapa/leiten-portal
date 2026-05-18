@@ -1967,6 +1967,21 @@
               <button class="btn btn-primary" onclick="guardarLiqParams()">✓ Guardar parámetros</button>
             </div>
           </div>
+
+          <!-- ── TOPE REMUNERATORIO MENSUAL ANSES ── -->
+          <div class="card" style="max-width:860px;margin-top:20px;padding:0;overflow:hidden">
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--t1)">📋 Topes remuneratorios mensuales — ANSES / ARCA</div>
+                <div style="font-size:11px;color:var(--t3);margin-top:2px;font-family:var(--font-mono)">
+                  Base imponible máxima para aportes y contribuciones (Art. 9 Ley 24.241).
+                  Se aplica automáticamente en cada liquidación según la fecha de pago.
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="abrirModalNuevoTope()" style="font-size:12px;padding:6px 14px">+ Agregar período</button>
+            </div>
+            <div id="liq-topes-tabla" style="overflow-x:auto"></div>
+          </div>
         </div>
 
       </div>

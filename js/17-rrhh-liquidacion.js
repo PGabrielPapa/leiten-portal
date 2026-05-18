@@ -452,7 +452,7 @@ async function saveAportesTopesPorMes(obj){
 
 // Resuelve tope aplicable según fecha de pago (YYYY-MM-DD → YYYY-MM)
 async function resolveTopesAportesParaFecha(fechaISO){
-  const todos = getAportesTopesPorMes();
+  const todos = await getAportesTopesPorMes();
   const d = fechaISO
     ? new Date(fechaISO + (fechaISO.length===10?'T12:00:00':''))
     : new Date();
@@ -832,7 +832,7 @@ function calcSancionArt132bis(mejorRem, mesesRetenidos){
 }
 
 // ── Motor de cálculo ─────────────────────────────────────────────
-function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPagoLiq, tipoLiq){
+async function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPagoLiq, tipoLiq){
   const {diasMes, habiles}=diasHabilesDelMes(anio,mes);
 
   // ─── Acotar período cuando es quincenal ────────────────────────────────
@@ -1281,7 +1281,7 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
   //   El SAC tiene su propia base imponible con los mismos topes.
   // ═══════════════════════════════════════════════════════════════
   const fechaPagoAportes = fechaPagoLiq || `${anio}-${String(mes).padStart(2,'0')}-01`;
-  const topes = resolveTopesAportesParaFecha(fechaPagoAportes);
+  const topes = await resolveTopesAportesParaFecha(fechaPagoAportes);
   const topeMin = topes.topeMin || 0;
   const topeMax = topes.topeMax || Infinity;
 
@@ -1562,7 +1562,7 @@ function liqTab(tab){
     if(p) p.style.display=t===tab?'block':'none';
     if(b){ b.style.borderBottomColor=t===tab?'var(--accent)':'transparent'; b.style.color=t===tab?'var(--accent2)':'var(--t3)'; b.style.fontWeight=t===tab?'600':'400'; }
   });
-  if(tab==='params') cargarParamsForm();
+  if(tab==='params') cargarParamsForm(); renderLiqTopesTabla();
 }
 
 // ── Períodos ─────────────────────────────────────────────────────
@@ -3872,7 +3872,7 @@ async function calcularYRenderPreview(){
   for(const emp of nomina){
     const nov=_novedadesActuales[emp.leg]||{};
     const anticipo=$m(nov.anticipos);
-    const item=calcularItemLiquidacion(emp,params,nov,liq.anio,liq.mes,anticipo,liq.fechaPago,liq.tipo);
+    const item=await calcularItemLiquidacion(emp,params,nov,liq.anio,liq.mes,anticipo,liq.fechaPago,liq.tipo);
     items.push(item);
   }
 
@@ -5249,3 +5249,167 @@ async function exportarAcumulado(){
   toast('✓ Acumulado anual exportado','var(--green)');
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TABLA DE TOPES REMUNERATORIOS MENSUALES — ANSES/ARCA
+// Gestión desde el panel de Parámetros (tab ⚙ Parámetros > Topes)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Renderiza la tabla de topes en el panel de parámetros
+async function renderLiqTopesTabla(){
+  const div = document.getElementById('liq-topes-tabla');
+  if(!div) return;
+
+  const todos  = await getAportesTopesPorMes();
+  const claves = Object.keys(todos).sort().reverse(); // más reciente primero
+
+  if(!claves.length){
+    div.innerHTML = '<div style="padding:20px;text-align:center;color:var(--t3);font-size:12px">Sin topes cargados. Los topes predeterminados se usan como fallback.</div>';
+    return;
+  }
+
+  const fmtP = p => { const [y,m] = p.split('-'); const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return `${meses[+m-1]} ${y}`; };
+  const fmtN = n => n > 0 ? '$ '+Number(n).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—';
+  const hoy  = new Date().toISOString().slice(0,7);
+
+  div.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:var(--bg2);border-bottom:1px solid var(--border)">
+          <th style="padding:10px 16px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Período</th>
+          <th style="padding:10px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Tope máximo (base imponible)</th>
+          <th style="padding:10px 12px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Tope mínimo</th>
+          <th style="padding:10px 12px;text-align:left;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">RG / Fuente</th>
+          <th style="padding:10px 12px;text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase">Estado</th>
+          <th style="padding:10px 12px;text-align:center;width:80px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${claves.map(k => {
+          const v = todos[k];
+          const esPasado  = k < hoy;
+          const esFuturo  = k > hoy;
+          const esActual  = k === hoy;
+          const estadoColor = esActual ? 'var(--green)' : esFuturo ? 'var(--accent2)' : 'var(--t3)';
+          const estadoLabel = esActual ? '● Vigente' : esFuturo ? '◌ Futuro' : '· Pasado';
+          return `
+          <tr style="border-bottom:1px solid var(--border);${esActual?'background:rgba(34,197,94,.03)':''}">
+            <td style="padding:10px 16px;font-family:var(--font-mono);font-weight:600;color:var(--t1)">${fmtP(k)}<div style="font-size:10px;color:var(--t3);font-weight:400">${k}</div></td>
+            <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:var(--t1);font-weight:600">${fmtN(v.topeMax)}</td>
+            <td style="padding:10px 12px;text-align:right;font-family:var(--font-mono);color:var(--t3)">${fmtN(v.topeMin)}</td>
+            <td style="padding:10px 12px;font-size:11px;color:var(--t3);font-family:var(--font-mono)">${v._rg||'—'}</td>
+            <td style="padding:10px 12px;text-align:center;font-size:10px;color:${estadoColor};font-family:var(--font-mono)">${estadoLabel}</td>
+            <td style="padding:8px 12px;text-align:center">
+              <button class="btn btn-ghost" style="font-size:10px;padding:2px 8px" onclick="abrirModalNuevoTope('${k}')">✎</button>
+              <button class="btn btn-ghost" style="font-size:10px;padding:2px 8px;color:var(--red);border-color:rgba(239,68,68,.3)" onclick="eliminarTope('${k}')">✕</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// Modal para agregar o editar un período de tope
+async function abrirModalNuevoTope(periodoEditar){
+  const todos = await getAportesTopesPorMes();
+  const editar = periodoEditar ? todos[periodoEditar] : null;
+
+  const hoy = new Date();
+  const periodoDefault = periodoEditar || `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+
+  const prev = document.getElementById('modal-tope-rem');
+  if(prev) prev.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-tope-rem';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+
+  const iS = 'width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)';
+
+  modal.innerHTML = `
+    <div class="card" style="padding:0;max-width:480px;width:100%;border:1px solid var(--border)">
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--t1)">${editar?'✎ Editar':'+ Nuevo'} tope remuneratorio</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">Tope mensual ANSES para aportes y contribuciones (Art. 9 Ley 24.241)</div>
+        </div>
+        <button onclick="document.getElementById('modal-tope-rem').remove()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="grid-column:span 2">
+            <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">Período *</label>
+            <input type="month" id="tope-periodo" value="${periodoDefault}" ${editar?'readonly style="'+iS+';color:var(--t3);cursor:default"':('style="'+iS+'"')}>
+            <div style="font-size:10px;color:var(--t3);margin-top:3px">Mes y año de vigencia del tope</div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">Tope máximo ($) *</label>
+            <input type="number" id="tope-max" step="0.01" min="0" value="${editar?.topeMax||''}" placeholder="Ej: 2621756.00" style="${iS}">
+            <div style="font-size:10px;color:var(--t3);margin-top:3px">Base imponible máxima para aportes</div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">Tope mínimo ($)</label>
+            <input type="number" id="tope-min" step="0.01" min="0" value="${editar?.topeMin||''}" placeholder="Ej: 104870.00" style="${iS}">
+            <div style="font-size:10px;color:var(--t3);margin-top:3px">Mínimo imponible (opcional)</div>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">Resolución General (RG / Fuente)</label>
+          <input type="text" id="tope-rg" value="${editar?._rg||''}" placeholder="Ej: RG ARCA 5800/2026"
+            style="${iS};font-family:inherit">
+          <div style="font-size:10px;color:var(--t3);margin-top:3px">Número de resolución o fuente de referencia para auditoría</div>
+        </div>
+
+        <div style="padding:10px 12px;background:rgba(61,127,255,.06);border:1px solid rgba(61,127,255,.2);border-radius:var(--r);font-size:11px;color:var(--accent2);line-height:1.6">
+          💡 El tope máximo limita la base imponible para jubilación, obra social, ANSSAL y PAMI de los empleados.
+          Las contribuciones patronales de jubilación se calculan <strong>sin tope máximo</strong> (Art. 9 Ley 26.417).
+        </div>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-tope-rem').remove()" style="font-size:13px">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarTopeRem(${editar?`'${periodoEditar}'`:'null'})" style="font-size:13px;padding:8px 20px">✓ Guardar</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  setTimeout(()=> document.getElementById('tope-max')?.focus(), 80);
+}
+
+async function guardarTopeRem(periodoEditar){
+  const periodo = document.getElementById('tope-periodo')?.value;
+  const topeMax = parseFloat(document.getElementById('tope-max')?.value || '0');
+  const topeMin = parseFloat(document.getElementById('tope-min')?.value || '0') || 0;
+  const rg      = (document.getElementById('tope-rg')?.value || '').trim();
+
+  if(!periodo || !/^\d{4}-\d{2}$/.test(periodo)){
+    toast('⚠ Seleccioná un período válido', 'var(--yellow)'); return;
+  }
+  if(!topeMax || topeMax <= 0){
+    toast('⚠ El tope máximo es obligatorio y debe ser mayor a cero', 'var(--yellow)');
+    document.getElementById('tope-max')?.focus(); return;
+  }
+
+  const todos = await getAportesTopesPorMes();
+  todos[periodo] = { topeMax, topeMin, _rg: rg };
+  await saveAportesTopesPorMes(todos);
+
+  document.getElementById('modal-tope-rem')?.remove();
+  renderLiqTopesTabla();
+  toast(`✓ Tope ${periodo} guardado — máximo: $ ${topeMax.toLocaleString('es-AR',{minimumFractionDigits:2})}`, 'var(--green)', 4000);
+}
+
+async function eliminarTope(periodo){
+  const ok = await showConfirm({
+    titulo: 'Eliminar tope',
+    mensaje: `¿Eliminar el tope remuneratorio de <strong>${periodo}</strong>?<br><br>Las liquidaciones de ese período usarán el tope predeterminado como fallback.`,
+    labelOk: 'Eliminar', peligroso: true
+  });
+  if(!ok) return;
+  const todos = await getAportesTopesPorMes();
+  delete todos[periodo];
+  await saveAportesTopesPorMes(todos);
+  renderLiqTopesTabla();
+  toast('✓ Tope eliminado', 'var(--green)');
+}
