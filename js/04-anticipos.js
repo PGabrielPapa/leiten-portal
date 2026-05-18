@@ -397,7 +397,15 @@ function enviarSolicitud(){
   const monto=parseFloat(document.getElementById('f-monto')?.value || '0');
   const motivo=document.getElementById('f-motivo').value.trim();
   if(!monto||monto<=0){ toast('⚠ Ingresá un monto válido','var(--yellow)'); return; }
-  if(!motivo){ toast('⚠ Ingresá el motivo','var(--yellow)'); return; }
+  if(!motivo){
+    toast('⚠ El motivo es obligatorio para solicitar un adelanto', 'var(--yellow)');
+    const el = document.getElementById('f-motivo');
+    if(el){ el.style.borderColor='rgba(239,68,68,.7)'; el.focus(); }
+    return;
+  }
+  // Limpiar el borde rojo si el motivo fue completado
+  const mEl = document.getElementById('f-motivo');
+  if(mEl) mEl.style.borderColor = 'var(--border)';
 
   const vInfo = getValidador(empActual);
 

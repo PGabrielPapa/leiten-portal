@@ -323,8 +323,10 @@
               <input type="date" id="f-fecha" readonly>
             </div>
             <div class="form-group">
-              <label>Fundamento / Motivo</label>
-              <input type="text" id="f-motivo" placeholder="Ej: Gastos médicos, alquiler...">
+              <label>Fundamento / Motivo <span style="color:var(--red);font-size:12px">*</span></label>
+              <input type="text" id="f-motivo" placeholder="Ej: Gastos médicos, alquiler..." required
+                style="border-color:var(--border)"
+                oninput="this.style.borderColor=this.value.trim()?'var(--border)':'rgba(239,68,68,.5)'">
             </div>
             <div class="form-group">
               <label>Monto solicitado ($)</label>
