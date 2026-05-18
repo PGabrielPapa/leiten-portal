@@ -99,7 +99,7 @@ function renderSancionesPanelGerente(){
           <div style="font-size:13px;font-weight:600;color:var(--t1)">Sanciones disciplinarias de tu equipo</div>
           <div style="font-size:11px;color:var(--t3);margin-top:2px">Visualizá el histórico, solicitá nuevas sanciones y consultá el resultado de RR.HH.</div>
         </div>
-        <button class="btn btn-primary" onclick="abrirFormSolicitudSancion()" style="font-size:12px;padding:7px 14px;background:rgb(239,68,68);border-color:rgb(239,68,68)">+ Enviar solicitud</button>
+        <button class="btn btn-primary" onclick="abrirFormSolicitudSancion({modo:'gerente'})" style="font-size:12px;padding:7px 14px;background:rgb(239,68,68);border-color:rgb(239,68,68)">+ Enviar solicitud</button>
       </div>
     </div>
 
@@ -280,6 +280,10 @@ function _sancRenderFila(s, contexto){
 function abrirFormSolicitudSancion(opts){
   // opts = { modo: 'gerente' | 'rrhh', leg?: 'XXXXXX' }
   opts = opts || {};
+  // modo: siempre debe venir explícito desde el contexto de llamada.
+  // 'gerente' → solicitud al equipo, SIN fechas de notificación/cumplimiento.
+  // 'rrhh'    → aplicación directa desde panel RR.HH., CON fechas.
+  // Fallback por compatibilidad: si no se pasa modo, se infiere por rol.
   const modo = opts.modo || (currentUser?.role === 'rrhh' ? 'rrhh' : 'gerente');
   const legPreSel = opts.leg || '';
 
