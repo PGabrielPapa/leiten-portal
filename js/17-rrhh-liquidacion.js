@@ -428,12 +428,11 @@ function getDefaultAportesTopesPorMes(){
     '2025-11': { topeMin:  91477.00, topeMax: 2286943.00, _rg:'RG 5770/2025',  _requiereVerificacion:true },
     '2025-12': { topeMin:  93617.00, topeMax: 2340427.00, _rg:'RG 5784/2025',  _requiereVerificacion:true },
     // ─── 2026 ─── (proyección — ajustar con RG publicada mensualmente)
-    '2026-01': { topeMin:  95793.00, topeMax: 2394832.00, _rg:'RG 5798/2026 (proy.)', _requiereVerificacion:true },
-    '2026-02': { topeMin:  98003.00, topeMax: 2450077.00, _rg:'RG ARCA (feb 2026)',   _requiereVerificacion:true },
-    '2026-03': { topeMin: 100219.00, topeMax: 2505473.00, _rg:'RG ARCA (mar 2026)',   _requiereVerificacion:true },
-    '2026-04': { topeMin: 102524.00, topeMax: 2563100.00, _rg:'RG ARCA (abr 2026)',   _requiereVerificacion:true },
-    '2026-05': { topeMin: 104870.00, topeMax: 2621756.00, _rg:'RG ARCA (may 2026)',   _requiereVerificacion:true },
-    '2026-06': { topeMin: 107261.00, topeMax: 2681534.00, _rg:'RG ARCA (jun 2026)',   _requiereVerificacion:true }
+    '2026-01': { topeMin: 117643.93,   topeMax: 3823372.95,   _rg:'Res ANSES 381/2025 (+2,47% IPC nov-2025)' },
+    '2026-02': { topeMin: 120996.78,   topeMax: 3932339.08,   _rg:'Res ANSES 21/2026 (+2,85% IPC dic-2025)' },
+    '2026-03': { topeMin: 124481.49,   topeMax: 4045590.45,   _rg:'Res ANSES 38/2026 (+2,88% IPC ene-2026)' },
+    '2026-04': { topeMin: 128091.45,   topeMax: 4162912.57,   _rg:'Res ANSES 74/2026 (+2,90% IPC feb-2026)' },
+    '2026-05': { topeMin: 132420.94,   topeMax: 4303619.01,   _rg:'Res ANSES 110/2026 (+3,38% IPC mar-2026)' }
   };
 }
 
@@ -5345,7 +5344,7 @@ async function abrirModalNuevoTope(periodoEditar){
           </div>
           <div>
             <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px;text-transform:uppercase">Tope máximo ($) *</label>
-            <input type="number" id="tope-max" step="0.01" min="0" value="${editar?.topeMax||''}" placeholder="Ej: 2621756.00" style="${iS}">
+            <input type="number" id="tope-max" step="0.01" min="0" value="${editar?.topeMax||''}" placeholder="Ej: 4303619.01" style="${iS}">
             <div style="font-size:10px;color:var(--t3);margin-top:3px">Base imponible máxima para aportes</div>
           </div>
           <div>

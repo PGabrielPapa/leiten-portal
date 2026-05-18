@@ -112,7 +112,7 @@ function renderSimMensual(){
   `;
 }
 
-function ejecutarSimMensual(){
+async function ejecutarSimMensual(){
   const mes = parseInt(document.getElementById('sim-mes')?.value || '1');
   const anio = parseInt(document.getElementById('sim-anio')?.value || new Date().getFullYear());
   const empFiltro = document.getElementById('sim-emp').value;
@@ -164,7 +164,7 @@ function ejecutarSimMensual(){
 
     let item;
     try {
-      item = calcularItemLiquidacion(empSim, params, novNeutra, anio, mes, 0, fechaPagoLiq);
+      item = await calcularItemLiquidacion(empSim, params, novNeutra, anio, mes, 0, fechaPagoLiq);
     } catch(err){
       console.warn('Error calculando', e.leg, err);
       skipped.push({ leg: e.leg, nom: e.nom, motivo: 'error en motor de cálculo: ' + (err.message||err) });
@@ -482,7 +482,7 @@ function renderSimGratificaciones(){
   `;
 }
 
-function ejecutarSimGrat(){
+async function ejecutarSimGrat(){
   const concepto = document.getElementById('grat-concepto').value.trim() || 'Gratificación';
   const tipo = document.getElementById('grat-tipo').value;
   const modo = document.getElementById('grat-modo').value;
@@ -508,6 +508,12 @@ function ejecutarSimGrat(){
                      (params.pctDesempleo||0.89) + (params.pctArt||1.5);
   // Para no rem., asumimos solo OS patronal mínima si la política la incluye (default: 0)
   const pctContribNorem = 0;
+  // Tope remuneratorio del período (Art. 9 Ley 24.241)
+  const hoyGrat = new Date();
+  const _topesGrat = (typeof resolveTopesAportesParaFecha === 'function')
+    ? (await resolveTopesAportesParaFecha(`${hoyGrat.getFullYear()}-${String(hoyGrat.getMonth()+1).padStart(2,'0')}-01`))
+    : { topeMax: Infinity, topeMin: 0 };
+  const _topeMaxGrat = _topesGrat.topeMax || Infinity;
 
   const items = [];
   let totalImporte=0, totalAportes=0, totalNeto=0, totalContrib=0, totalIncidSac=0, totalCosto=0;
@@ -845,7 +851,7 @@ function actualizarHelperBaja(){
   helper.innerHTML = `📌 <b>${t.lbl}:</b> ${t.desc}`;
 }
 
-function ejecutarSimFinal(){
+async function ejecutarSimFinal(){
   const leg = document.getElementById('fin-emp').value;
   const tipo = document.getElementById('fin-tipo').value;
   const fechaCeseStr = document.getElementById('fin-fecha').value;
@@ -963,12 +969,16 @@ function ejecutarSimFinal(){
   const totalRemunerativo = sacProporcional + sacSobreVac + sacPreaviso + sacIntegracion + integracionMes;
   const totalNoRemunerativo = indem245 + preaviso + importeVac;
 
-  // Aportes (sólo sobre remunerativo)
+  // Aportes (sólo sobre remunerativo) — con tope remuneratorio ANSES/ARCA
   const pctAportes = (params.pctJubilacion||11) + (params.pctObraSocial||3) + (params.pctAnssal||0.5) + (params.pctPamiEmp||3);
-  const aportes = totalRemunerativo * pctAportes/100;
+  const _topesFinal = (typeof resolveTopesAportesParaFecha === 'function')
+    ? (await resolveTopesAportesParaFecha(fechaCeseStr || new Date().toISOString().slice(0,10)))
+    : { topeMax: Infinity, topeMin: 0 };
+  const baseRemAportes = Math.min(totalRemunerativo, _topesFinal.topeMax || Infinity);
+  const aportes = baseRemAportes * pctAportes/100;
   const totalNeto = (totalRemunerativo + totalNoRemunerativo) - aportes;
 
-  // Contribuciones (sólo sobre remunerativo)
+  // Contribuciones (sólo sobre remunerativo — patronal jubilación SIN tope Art. 9 Ley 26.417)
   const pctContrib = (params.pctJubPatronal||10.17) + (params.pctOsPatronal||6) + (params.pctPamiPatronal||1.5) +
                      (params.pctDesempleo||0.89) + (params.pctArt||1.5);
   const contrib = totalRemunerativo * pctContrib/100;
