@@ -349,14 +349,34 @@ function _nrParaCodSindicato(codSind, params){
 // Disponible globalmente; usada por calcLiquidacion y el módulo ABM.
 // ─────────────────────────────────────────────────────────────
 function calcCFMensual(emp, params){
+  // ─── Fórmula complemento función ────────────────────────────────────────
+  // CF = escala − básico − a_cuenta − título − (básico + a_cuenta + título) × %pres
+  //    = escala − (básico + a_cuenta + título) × (1 + %pres/100)
+  //
+  // "escala" = monto de la escala unificada para la cat/tramo del empleado.
+  // "título" = monto fijo paritario del adicional por título (de la escala salarial),
+  //            solo si el CCT del empleado lo dispone.
+  // El resultado nunca puede ser menor a cero.
   const basico = $m(emp.basico);
   if(basico <= 0) return 0;
   const aCuenta = $m(emp.a_cuenta) || 0;
+
+  // Monto de adicional por título (0 si el CCT no lo dispone o el empleado no tiene título)
+  const _tieneAdicTit = (typeof getSindicatoByCodigo === 'function')
+    ? (() => { const s = getSindicatoByCodigo(emp.cod_sindicato); return s?.tiene_adicional_titulo || false; })()
+    : false;
+  const mTitulo = (_tieneAdicTit && emp.titulo && typeof getMontoAdicionalTitulo === 'function')
+    ? ($m(getMontoAdicionalTitulo(emp.titulo)) || 0)
+    : 0;
+
   if(emp.cat && emp.tramo && typeof getMontoEscala === 'function'){
     const escala = getMontoEscala(emp.cat, emp.tramo);
     if(escala && escala > 0){
       const pctPres = params?.pctPresentismo ?? 5;
-      return Math.max(0, Math.round((escala - (basico + aCuenta)*(1 + pctPres/100))*100)/100);
+      // CF = escala − (básico + a_cuenta + título) × (1 + %pres/100)
+      const base = basico + aCuenta + mTitulo;
+      const cf = Math.round((escala - base * (1 + pctPres / 100)) * 100) / 100;
+      return Math.max(0, cf);
     }
   }
   return Math.max(0, $m(emp.complemento) || 0); // fallback: sin escala → valor guardado (nunca negativo)
@@ -919,12 +939,24 @@ function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, fechaPa
                  && ausentismo===0
                  && !$m(nov.ausenciasInjustificadas)
                  && !tieneSuspension;
+  // ─ Base de presentismo ───────────────────────────────────────────────────
+  // Base completa (cuando el CCT lo dispone):
+  //   básico + a_cuenta + título + antigüedad
+  // El campo pres_base del sindicato controla qué componentes se incluyen.
+  // Nota: a_cuenta (NR paritaria) siempre suma cuando está incluida en la base.
   const _presBaseCCT = (typeof getPresBase === 'function') ? getPresBase(emp) : 'basico';
-  const _basePresCalc = _presBaseCCT === 'basico+antig+titulo'
-    ? sueldoBasico + mAntig + mAdicionalTitulo
-    : _presBaseCCT === 'basico+antig'
-      ? sueldoBasico + mAntig
-      : sueldoBasico;
+  const _basePresCalc = (() => {
+    // Básico siempre incluido
+    let base = sueldoBasico;
+    if(_presBaseCCT === 'basico+antig' || _presBaseCCT === 'basico+antig+titulo'){
+      base += mAntig;
+      base += _aCuentaEmp * proporcion * _factorPeriodo;  // a cuenta proporcional
+    }
+    if(_presBaseCCT === 'basico+antig+titulo'){
+      base += mAdicionalTitulo;
+    }
+    return base;
+  })();
   const mPres = tienePres ? $m(_basePresCalc * params.pctPresentismo / 100) : 0;
 
   // ─ SAC proporcional (si corresponde) ─

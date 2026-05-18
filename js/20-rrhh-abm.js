@@ -1479,13 +1479,16 @@ function gV(id){ const el=document.getElementById(id); return el?el.value.trim()
 function _abmComplementoCalculado(){
   const basico  = parseFloat(document.getElementById('abm-e-basico')?.value)  || 0;
   if(!basico) return null;
-  const aCuenta = parseFloat(document.getElementById('abm-e-acuenta')?.value) || 0;
-  const cat     = (document.getElementById('abm-e-cat')?.value   || '').trim().toUpperCase();
-  const tramo   = (document.getElementById('abm-e-tramo')?.value || '').trim().toUpperCase();
+  const aCuenta    = parseFloat(document.getElementById('abm-e-acuenta')?.value) || 0;
+  const cat        = (document.getElementById('abm-e-cat')?.value   || '').trim().toUpperCase();
+  const tramo      = (document.getElementById('abm-e-tramo')?.value || '').trim().toUpperCase();
+  const titulo     = document.getElementById('abm-e-titulo')?.value || '';
+  const codSindicato = document.getElementById('abm-e-sindicato')?.value || '';
   if(!cat && !tramo) return null;
   if(typeof calcCFMensual !== 'function') return null;
   const params = (typeof getLiqParams === 'function') ? getLiqParams() : null;
-  const cf = calcCFMensual({ basico, a_cuenta: aCuenta, cat, tramo, complemento: 0 }, params);
+  const cf = calcCFMensual({ basico, a_cuenta: aCuenta, cat, tramo, complemento: 0,
+                              titulo, cod_sindicato: codSindicato }, params);
   return cf > 0 ? cf : null;
 }
 
@@ -1512,12 +1515,32 @@ function abmRecalcComplemento(){
   const params  = (typeof getLiqParams === 'function') ? getLiqParams() : null;
   const pctPres = params?.pctPresentismo ?? 5;
 
-  if(!comp || comp <= 0){
-    el.innerHTML   = `<span style="color:var(--yellow)">⚠ Básico + A Cuenta supera la escala (${fmt(escala)}). Verificar.</span>`;
+  // Monto de título para mostrar en el desglose
+  const titulo   = document.getElementById('abm-e-titulo')?.value || '';
+  const codSind  = document.getElementById('abm-e-sindicato')?.value || '';
+  const tieneAdTit = (typeof getSindicatoByCodigo === 'function')
+    ? !!(getSindicatoByCodigo(codSind)?.tiene_adicional_titulo)
+    : false;
+  const mTit = (tieneAdTit && titulo && typeof getMontoAdicionalTitulo === 'function')
+    ? (getMontoAdicionalTitulo(titulo) || 0) : 0;
+
+  const base = basico + aCuenta + mTit;
+
+  if(comp === null || comp === 0){
+    if(escala > 0 && base * (1 + pctPres/100) >= escala){
+      el.innerHTML   = `<span style="color:var(--yellow)">⚠ Básico + A Cuenta + Título supera la escala — CF = $ 0</span>`;
+    } else {
+      el.innerHTML   = `<span style="color:var(--t3)">— (sin datos suficientes)</span>`;
+    }
     el.style.color = 'var(--yellow)';
   } else {
-    el.innerHTML   = `${fmt(comp)}<span style="font-size:10px;color:var(--t3);margin-left:10px">` +
-      `Escala: ${fmt(escala)} · Bruto: ${fmt(basico + aCuenta + comp)} · %Pres: ${pctPres}%</span>`;
+    const brutoTotal = basico + aCuenta + mTit + comp;
+    el.innerHTML = `${fmt(comp)}<span style="font-size:10px;color:var(--t3);margin-left:10px">` +
+      `Escala: ${fmt(escala)}` +
+      (mTit>0 ? ` · Título: ${fmt(mTit)}` : '') +
+      ` · Base: ${fmt(base)}` +
+      ` · Bruto: ${fmt(brutoTotal)}` +
+      ` · Pres: ${pctPres}%</span>`;
     el.style.color = 'var(--accent2)';
   }
 }
