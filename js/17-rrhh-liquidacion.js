@@ -253,7 +253,7 @@ function getGanParamsPorSemestre(){
 }
 
 function saveGanParamsPorSemestre(obj){
-  localStorage.setItem(GAN_PARAMS_PERIODOS_KEY, JSON.stringify(obj));
+  try{localStorage.setItem(GAN_PARAMS_PERIODOS_KEY, JSON.stringify(obj));}catch(e){}
 }
 
 // Dado una fecha (YYYY-MM-DD o Date), devuelve la clave del semestre "YYYY-S1" o "YYYY-S2"
@@ -436,7 +436,7 @@ function getDefaultAportesTopesPorMes(){
   };
 }
 
-async function getAportesTopesPorMes(){
+function getAportesTopesPorMes(){
   try {
     const stored = JSON.parse(localStorage.getItem(APORTES_TOPES_KEY)||'{}');
     return { ...getDefaultAportesTopesPorMes(), ...stored };
@@ -445,13 +445,13 @@ async function getAportesTopesPorMes(){
   }
 }
 
-async function saveAportesTopesPorMes(obj){
-  localStorage.setItem(APORTES_TOPES_KEY, JSON.stringify(obj));
+function saveAportesTopesPorMes(obj){
+  try { localStorage.setItem(APORTES_TOPES_KEY, JSON.stringify(obj)); } catch(e) { console.warn('saveAportesTopesPorMes:', e); }
 }
 
 // Resuelve tope aplicable según fecha de pago (YYYY-MM-DD → YYYY-MM)
 async function resolveTopesAportesParaFecha(fechaISO){
-  const todos = await getAportesTopesPorMes();
+  const todos = getAportesTopesPorMes();
   const d = fechaISO
     ? new Date(fechaISO + (fechaISO.length===10?'T12:00:00':''))
     : new Date();
@@ -4271,7 +4271,7 @@ async function reabrirLiquidacion(){
       reabiertoPorNom: currentUser?.emp?.nom || null,
       reabiertoEl: new Date().toISOString()
     });
-    localStorage.setItem('lsg_liq_reaperturas', JSON.stringify(logs));
+    try{localStorage.setItem('lsg_liq_reaperturas', JSON.stringify(logs));}catch(e){}
   } catch(e){ console.error(e); }
   _liqActiva.estado = 'borrador';
   // Limpiar campos de aprobación/pago para que vuelva a pasar por el flujo
@@ -4387,7 +4387,7 @@ async function rechazarLiquidacionActiva(){
       rechazadoPorNom: currentUser?.emp?.nom || null,
       rechazadoEl: new Date().toISOString()
     });
-    localStorage.setItem('lsg_liq_rechazos', JSON.stringify(logs));
+    try{localStorage.setItem('lsg_liq_rechazos', JSON.stringify(logs));}catch(e){}
   } catch(e){ console.error('No se pudo persistir el log de rechazo:', e); }
 
   _liqActiva = null;
@@ -5259,7 +5259,7 @@ async function renderLiqTopesTabla(){
   const div = document.getElementById('liq-topes-tabla');
   if(!div) return;
 
-  const todos  = await getAportesTopesPorMes();
+  const todos  = getAportesTopesPorMes();
   const claves = Object.keys(todos).sort().reverse(); // más reciente primero
 
   if(!claves.length){
@@ -5310,7 +5310,7 @@ async function renderLiqTopesTabla(){
 
 // Modal para agregar o editar un período de tope
 async function abrirModalNuevoTope(periodoEditar){
-  const todos = await getAportesTopesPorMes();
+  const todos = getAportesTopesPorMes();
   const editar = periodoEditar ? todos[periodoEditar] : null;
 
   const hoy = new Date();
@@ -5390,7 +5390,7 @@ async function guardarTopeRem(periodoEditar){
     document.getElementById('tope-max')?.focus(); return;
   }
 
-  const todos = await getAportesTopesPorMes();
+  const todos = getAportesTopesPorMes();
   todos[periodo] = { topeMax, topeMin, _rg: rg };
   await saveAportesTopesPorMes(todos);
 
@@ -5406,9 +5406,9 @@ async function eliminarTope(periodo){
     labelOk: 'Eliminar', peligroso: true
   });
   if(!ok) return;
-  const todos = await getAportesTopesPorMes();
+  const todos = getAportesTopesPorMes();
   delete todos[periodo];
-  await saveAportesTopesPorMes(todos);
+  saveAportesTopesPorMes(todos);
   renderLiqTopesTabla();
   toast('✓ Tope eliminado', 'var(--green)');
 }

@@ -295,7 +295,7 @@ function getCBUNovedades(opts){
 function _saveCBUNovedades(arr){
   // Tope: 500 novedades (las más viejas se truncan).
   if(arr.length > 500) arr = arr.slice(-500);
-  localStorage.setItem(_LS_CBU_NOVEDADES, JSON.stringify(arr));
+  try{localStorage.setItem(_LS_CBU_NOVEDADES, JSON.stringify(arr));}catch(e){}
 }
 
 function addCBUNovedad({ leg, nom, accion, detalle, actor }){

@@ -134,7 +134,7 @@ async function blanquearDesdeSolicitud(dni, nom){
   // Blanquear contraseña
   const pwds = getPasswords();
   delete pwds[dni];
-  localStorage.setItem('lsg_passwords', JSON.stringify(pwds));
+  try{localStorage.setItem('lsg_passwords', JSON.stringify(pwds));}catch(e){}
   // Marcar solicitud como resuelta
   const lista = getSolicitudesBlanqueo();
   const idx = lista.findIndex(s=>s.dni===dni && s.estado==='pendiente');
@@ -253,7 +253,7 @@ async function blanquearPasswordPorDni(dni, nom){
     if(!_cfm) return;
   const pwds = getPasswords();
   delete pwds[dni];
-  localStorage.setItem('lsg_passwords', JSON.stringify(pwds));
+  try{localStorage.setItem('lsg_passwords', JSON.stringify(pwds));}catch(e){}
   toast(`✓ Contraseña de ${nom.split(',')[0].trim()} blanqueada`, 'var(--green)');
   renderPwdTable();
 }

@@ -11,7 +11,7 @@ let solicitudes = [];
 let excessEnabled = false;
 let empFiltrados = [];
 
-function saveSolicitudes(){ localStorage.setItem('lsg_solicitudes', JSON.stringify(solicitudes)); }
+function saveSolicitudes(){ try{localStorage.setItem('lsg_solicitudes', JSON.stringify(solicitudes));}catch(e){} }
 function loadSolicitudes(){ try{ solicitudes = JSON.parse(localStorage.getItem('lsg_solicitudes')||'[]'); }catch(e){ solicitudes=[]; } }
 
 // Init

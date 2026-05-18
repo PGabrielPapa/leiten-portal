@@ -754,9 +754,9 @@ function _migrarDelegacionLegacy(){
         deleganteDni: delegantedni,
         deleganteNom: legacy.deleganteNom || (papa && papa.nom) || 'PAPA, PABLO GABRIEL'
       };
-      localStorage.setItem(_LS_DELEG_MAP, JSON.stringify(nuevoMapa));
+      try{localStorage.setItem(_LS_DELEG_MAP, JSON.stringify(nuevoMapa));}catch(e){}
     } else {
-      localStorage.setItem(_LS_DELEG_MAP, JSON.stringify({}));
+      try{localStorage.setItem(_LS_DELEG_MAP, JSON.stringify({}));}catch(e){}
     }
   } catch(_){}
 }
