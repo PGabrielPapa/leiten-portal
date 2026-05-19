@@ -2416,7 +2416,7 @@ async function _empleadoTieneBaja(emp, liq){
 //   • FCL: aporte mensual del empleador (12% el 1er año, 8% desde el 2do)
 //     depositado en libreta bancaria. No se calcula al cese — se acumuló
 //     durante toda la relación. Solo se entrega la libreta y certificación.
-async function esRegimenLey22250(emp){
+function esRegimenLey22250(emp){
   if(!emp || !emp.cod_sindicato) return false;
   const c = String(emp.cod_sindicato).trim().toUpperCase();
   return c === 'UOCRA' || c === 'UOCRA-IERIC' || c === 'CONSTRUCCION' || c === 'IERIC';
