@@ -465,6 +465,12 @@ function _abmEmpresaMostrarForm(rec){
   if(alEmp)  alEmp.value  = rec?.aliasOrigen || '';
 
   if(typeof _cbuInputLiveEmpresa === 'function') _cbuInputLiveEmpresa();
+  // ART (Aseguradora de Riesgos del Trabajo)
+  const _artEl = document.getElementById('abm-emp-art-data');
+  if(_artEl){
+    _artEl.value = JSON.stringify(rec?.art || []);
+    if(typeof renderArtEmpresaEnForm === 'function') renderArtEmpresaEnForm(rec?.art || []);
+  }
   // Centros de operaciones
   document.getElementById('abm-emp-centros-data').value = JSON.stringify(rec?.centros || []);
   _renderCentrosOpLista();
@@ -1062,6 +1068,7 @@ async function abmEmpresaGuardar(){
     tipoCuentaOrigen: gv('abm-emp-tipo-cuenta') || 'CC',
     aliasOrigen:      gv('abm-emp-alias').trim(),
 
+    art:     JSON.parse(document.getElementById('abm-emp-art-data')?.value || '[]'),
     centros: _getCentrosFromHidden(),
     actualizadaEl: new Date().toISOString(),
     actualizadaPor: currentUser?.emp?.nom || null

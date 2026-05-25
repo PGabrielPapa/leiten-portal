@@ -1403,7 +1403,24 @@ async function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, f
   let osPatronal=totalHaberesRem*params.pctOsPatronal/100;
   const pamiPatronal=totalHaberesRem*params.pctPamiPatronal/100;
   const desempleo=totalHaberesRem*params.pctDesempleo/100;
-  const art=totalHaberesRem*params.pctArt/100;
+  // Alícuota ART: si la empresa tiene ART con alícuota vigente, usarla
+  // Si no, fallback a params.pctArt (parámetros generales de liquidación)
+  let _pctArtVigente = params.pctArt || 1.5;
+  if(typeof getEmpresasABM === 'function' && liq?.empresa){
+    // Buscar la empresa y su art
+    const _empNombre = liq.empresa;
+    // Intentar desde la cache (sync) para no bloquear el cálculo
+    if(typeof _empresasABMCache !== 'undefined' && _empresasABMCache?.length){
+      const _empObj = _empresasABMCache.find(e =>
+        (e.nombre||'').trim().toUpperCase() === _empNombre.trim().toUpperCase()
+      );
+      if(_empObj?.art?.length && typeof resolveAlicuotaArtParaEmpresa === 'function'){
+        const _aliArt = resolveAlicuotaArtParaEmpresa(_empObj.art, fechaPagoAportes);
+        if(_aliArt != null) _pctArtVigente = _aliArt;
+      }
+    }
+  }
+  const art=totalHaberesRem*_pctArtVigente/100;
   const pctSindPatronal = getPctSindicatoPatronal(emp);
   const sindPatronal=totalHaberesRem*pctSindPatronal/100;
 

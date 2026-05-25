@@ -1658,6 +1658,22 @@
               </div>
             </div>
 
+            <!-- ASEGURADORA DE RIESGOS DEL TRABAJO (ART) -->
+            <div style="border-top:1px solid var(--border);padding-top:18px;margin-top:6px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+                <div>
+                  <div style="font-size:12px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.08em">🛡 Aseguradora de Riesgos del Trabajo</div>
+                  <div style="font-size:11px;color:var(--t3);margin-top:3px">Contrato de ART vigente y alícuota para contribución patronal</div>
+                </div>
+                <button type="button" class="btn btn-ghost" onclick="abrirModalArtEmpresa()" style="font-size:12px;padding:6px 14px">+ Registrar ART / Alícuota</button>
+              </div>
+              <!-- Contrato ART vigente -->
+              <div id="abm-emp-art-vigente" style="margin-bottom:12px"></div>
+              <!-- Histórico de alícuotas -->
+              <div id="abm-emp-art-historico"></div>
+              <input type="hidden" id="abm-emp-art-data" value="[]">
+            </div>
+
             <!-- CENTROS DE OPERACIONES -->
             <div style="border-top:1px solid var(--border);padding-top:18px;margin-top:6px">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
@@ -2835,6 +2851,7 @@
 <script src="js/53-cert-trabajo.js"></script>
 <script src="js/54-elementos-trabajo.js"></script>
 <script src="js/55-beneficios.js"></script>
+<script src="js/56-art-empresas.js"></script>
 
 <!-- Modal: Cierre de período contable (js/33) -->
 <div id="liq-cierre-periodos-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:flex-start;justify-content:center;overflow-y:auto;padding:30px 16px">
