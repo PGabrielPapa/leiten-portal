@@ -877,20 +877,20 @@ async function _repFiltrarCampos(q){
   }
 }
 
-async function _repToggleCampo(key){
+function _repToggleCampo(key){
   const i = _repEstado.campos.indexOf(key);
   if(i >= 0) _repEstado.campos.splice(i, 1);
   else _repEstado.campos.push(key);
   _repRender();
 }
 
-async function _repSeleccionarTodos(){
+function _repSeleccionarTodos(){
   const ds = REPORTES_DATASETS[_repEstado.datasetKey];
   _repEstado.campos = Object.keys(ds.campos);
   _repRender();
 }
 
-async function _repDeseleccionarTodos(){
+function _repDeseleccionarTodos(){
   _repEstado.campos = [];
   _repRender();
 }
@@ -1131,12 +1131,12 @@ function _repAplicarFiltros(){
 // ═══════════════════════════════════════════════════════════════════════════
 const _REP_LS = LS.REP_TEMPLATES; // centralizado en js/00-constants.js
 
-async function _repGetGuardados(){
+function _repGetGuardados(){
   try { return JSON.parse(localStorage.getItem(_REP_LS) || '[]'); }
   catch(_){ return []; }
 }
 
-async function _repSaveGuardados(arr){
+function _repSaveGuardados(arr){
   localStorage.setItem(_REP_LS, JSON.stringify(arr));
 }
 
@@ -1158,7 +1158,7 @@ async function _repGuardarReporte(){
   toast(`✓ Reporte "${nombre}" guardado`, 'var(--green)');
 }
 
-async function _repCargarGuardado(idx){
+function _repCargarGuardado(idx){
   const guardados = _repGetGuardados();
   const r = guardados[idx];
   if(!r) return;

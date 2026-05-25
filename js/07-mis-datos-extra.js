@@ -486,7 +486,7 @@ function abrirCerrarVinculo(id, legParam){
   document.body.appendChild(div.firstElementChild);
 }
 
-async function cerrarModalCerrarVinculo(){
+function cerrarModalCerrarVinculo(){
   const m = document.getElementById('modal-cerrar-vinculo');
   if(m) m.remove();
 }
@@ -687,7 +687,7 @@ async function _famActualizarFechaVinculo(){
   }
 }
 
-async function cerrarFormFamiliar(){
+function cerrarFormFamiliar(){
   const m = document.getElementById('modal-familiar');
   if(m) m.remove();
 }

@@ -471,7 +471,7 @@ async function rrhhLicPoblarEmpleados(){
   if(cont) cont.innerHTML = '<div style="padding:40px;color:var(--t3);font-size:12px;text-align:center;font-style:italic">Seleccioná un empleado para ver su historial de licencias</div>';
 }
 
-async function rrhhLicFiltrarEmpleados(){
+function rrhhLicFiltrarEmpleados(){
   rrhhLicPoblarEmpleados();
 }
 

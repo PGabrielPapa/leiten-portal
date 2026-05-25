@@ -122,7 +122,7 @@ function aplicarTopesArt85(deducciones, ganNeta, params){
 }
 
 // Datos empresa
-async function _edEmp(empresa){
+function _edEmp(empresa){
   return EMPRESA_DATOS_LIQ[empresa] || {cuit:'',dir:'',nro:'',piso:'',depto:'',cp:'',loc:''};
 }
 
@@ -400,14 +400,14 @@ async function exportarGanancias(){
   const paramsData=${JSON.stringify(params)};
   const novsData=${JSON.stringify(novsMap)};
   function $m(n){return isNaN(n)||n===null?0:parseFloat(n)||0;}
-  async function filterEmps(q){
+  function filterEmps(q){
     const ql = (q||'').toLowerCase();
     document.querySelectorAll('#list .btn').forEach(b=>{
       const match = !ql || (b.dataset.leg+' '+b.dataset.nom).toLowerCase().includes(ql);
       b.style.display = match ? 'block' : 'none';
     });
   }
-  async function abrirPlanilla(leg){
+  function abrirPlanilla(leg){
     window.opener.abrirPlanillaGanancias(leg);
   }
   <\\/script></body></html>`;

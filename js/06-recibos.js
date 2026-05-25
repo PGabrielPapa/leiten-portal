@@ -181,7 +181,7 @@ async function setCumpleanos(leg, fecha){ // fecha = 'DD/MM'
     req.onerror   = e=>rej(e.target.error);
   });
 }
-async function periodoLabel(ym){ // "2025-04" → "Abril 2025"
+function periodoLabel(ym){ // "2025-04" → "Abril 2025"
   if(!ym) return '';
   const [y,m] = ym.split('-');
   const meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -312,7 +312,7 @@ async function downloadReciboActual(){
   toast('✓ Recibo descargado', 'var(--green)');
 }
 
-async function b64toBlob(b64, mime){
+function b64toBlob(b64, mime){
   const bytes = atob(b64);
   const ab = new Uint8Array(bytes.length);
   for(let i=0;i<bytes.length;i++) ab[i]=bytes.charCodeAt(i);
@@ -572,7 +572,7 @@ async function renderBulkSearch(){
     </div>`).join('');
 }
 
-async function asignarTodas(leg){
+function asignarTodas(leg){
   const emp=empByLeg(leg); if(!emp)return;
   _asignaciones.forEach(a=>{if(!a.emp) a.emp=emp;});
   document.getElementById('bulk-emp-search').value='';
@@ -653,7 +653,7 @@ async function confirmarAsignacion(){
   btn.disabled=false; btn.textContent='✓ Guardar recibos asignados';
 }
 
-async function cerrarModalProceso(){
+function cerrarModalProceso(){
   document.getElementById('modal-proceso').style.display='none';
 }
 
@@ -676,7 +676,7 @@ async function renderDelEmpSearch(tipo){
     </div>`).join('');
 }
 
-async function selDelEmp(tipo, leg){
+function selDelEmp(tipo, leg){
   const emp = empByLeg(leg); if(!emp) return;
   _delEmpSel[tipo] = emp;
   document.getElementById(`del-emp-search-${tipo}`).value = emp.nom;
@@ -703,7 +703,7 @@ async function eliminarReciboEmpPeriodo(){
 }
 
 // No se muestra lista — función vacía para compatibilidad
-async function renderRecibosAdmin(){ actualizarCntRecibos(); }
+function renderRecibosAdmin(){ actualizarCntRecibos(); }
 
 // (eliminada) eliminarRecibo(key): función huérfana sin callers, además
 // escribía a localStorage('lsg_recibos') mientras getRecibos() lee desde
@@ -731,7 +731,7 @@ async function eliminarPeriodo(periodo){
   actualizarCntRecibos();
 }
 
-async function eliminarPeriodoCompleto(){
+function eliminarPeriodoCompleto(){
   const periodo = document.getElementById('del-periodo-input').value;
   if(!periodo){ toast('⚠ Seleccioná un período primero','var(--yellow)'); return; }
   eliminarPeriodo(periodo);
@@ -803,7 +803,7 @@ async function renderCumpleTable(){
     }).join('');
 }
 
-async function formatCumpleInput(input){
+function formatCumpleInput(input){
   let v = input.value.replace(/\D/g,'');
   if(v.length>2) v = v.substring(0,2)+'/'+v.substring(2,4);
   input.value = v;
@@ -1035,9 +1035,9 @@ async function downloadGanancia(key){
 
 // ── RR.HH.: buscar empleado para ganancias ──
 let _ganEmpSeleccionado = null;
-async function renderGanEmpSearch(){}   // no longer used
-async function seleccionarGanEmp(leg){} // no longer used
-async function subirGanancias(){}  // no longer used
+function renderGanEmpSearch(){}   // no longer used
+function seleccionarGanEmp(leg){} // no longer used
+function subirGanancias(){}  // no longer used
 
 // ── Bulk PDF processing for ganancias ──
 let _ganSrcDoc = null;
@@ -1045,7 +1045,7 @@ let _ganPeriodo = '';
 let _ganNumPages = 0;
 let _ganAsignaciones = [];
 
-async function setGanProgress(txt, pct){
+function setGanProgress(txt, pct){
   document.getElementById('gan-progress').style.display='block';
   document.getElementById('gan-progress-txt').textContent=txt;
   document.getElementById('gan-progress-bar').style.width=pct+'%';
@@ -1179,11 +1179,11 @@ function asignarGanPagina(pageIdx,leg){
   renderGanLista();
 }
 
-async function limpiarGanPagina(i){
+function limpiarGanPagina(i){
   _ganAsignaciones[i].emp=null; renderGanLista();
 }
 
-async function actualizarCntGan(){
+function actualizarCntGan(){
   const n=_ganAsignaciones.filter(a=>a.emp).length;
   document.getElementById('gan-assigned-count').textContent=`${n} de ${_ganNumPages} páginas asignadas`;
 }
@@ -1202,7 +1202,7 @@ async function renderGanBulkSearch(){
     </div>`).join('');
 }
 
-async function asignarGanTodas(leg){
+function asignarGanTodas(leg){
   const emp=empByLeg(leg); if(!emp)return;
   _ganAsignaciones.forEach(a=>{if(!a.emp) a.emp=emp;});
   document.getElementById('gan-bulk-search').value='';
@@ -1248,7 +1248,7 @@ async function confirmarAsignacionGan(){
   btn.disabled=false; btn.textContent='✓ Guardar asignados';
 }
 
-async function cerrarModalGan(){
+function cerrarModalGan(){
   document.getElementById('modal-proceso-gan').style.display='none';
 }
 
@@ -1285,5 +1285,5 @@ async function eliminarGananciaEmpPeriodo(){
 }
 
 // No se muestra lista — función vacía para compatibilidad
-async function renderGananciasAdmin(){}
+function renderGananciasAdmin(){}
 

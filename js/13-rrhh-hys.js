@@ -1067,7 +1067,7 @@ function hysActualizarManualesVinculados(){
 }
 
 // Cierra el form de capacitación y abre la biblioteca de manuales
-async function hysAbrirManualesYCerrarFormCap(){
+function hysAbrirManualesYCerrarFormCap(){
   const m = document.getElementById('modal-hys-cap-form');
   if(m) m.remove();
   if(typeof hysAbrirManuales==='function') hysAbrirManuales();
@@ -2427,7 +2427,7 @@ function hysFiltrarManuales(cat){
 // ═══════════════════════════════════════════════════════════════
 // SUBIR ARCHIVO
 // ═══════════════════════════════════════════════════════════════
-async function hysSubirManualArchivo(ev){
+function hysSubirManualArchivo(ev){
   const file = ev.target.files[0];
   ev.target.value = '';
   if(!file) return;
@@ -2564,7 +2564,7 @@ async function hysDescargarManual(id){
   }
 }
 
-async function hysEditarManualMeta(id){
+function hysEditarManualMeta(id){
   const meta = getHysManualesMeta().find(m => m.id === id);
   if(!meta){ toast('⚠ Manual no encontrado','var(--red)'); return; }
   _hysAbrirFormMetaManual({ meta, isNew: false });

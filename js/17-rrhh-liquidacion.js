@@ -2311,7 +2311,7 @@ function obtenerSuspensionesDelPeriodo(anio, mes){
   return mapa;
 }
 
-async function filtrarNov(){ renderNovedades(); }
+function filtrarNov(){ renderNovedades(); }
 
 // Debounce para autosave de novedades — evita perder datos si el usuario cierra la pestaña
 let _novAutosaveTimer = null;
@@ -2412,7 +2412,7 @@ const MOTIVOS_BAJA = [
   { v:'fallecimiento',       label:'Fallecimiento del trabajador (Art. 248)', indem:true, grupo:'especial', desc:'Indemnización = 50% del Art. 245. Cobran causahabientes (cónyuge/conviviente/hijos). Sin preaviso. Exento de Ganancias.' },
 ];
 
-async function _empleadoTieneBaja(emp, liq){
+function _empleadoTieneBaja(emp, liq){
   if(!emp.egreso) return false;
   const fEg = _parseFechaLib(emp.egreso);
   if(!fEg) return false;
@@ -4206,7 +4206,7 @@ function mostrarValidacionesPreAprobar(v){
 }
 
 // Formatea un ISO datetime a "DD/MM/YYYY" (fecha corta).
-async function _fmtFechaCorta(iso){
+function _fmtFechaCorta(iso){
   if(!iso) return '';
   try {
     const d = new Date(iso);
@@ -5194,14 +5194,14 @@ async function exportarExcelLiquidacion(){
 function liqReporteContext(){ const liq=_liqActiva; if(!liq?.items?.length){ toast('⚠ Aprobá primero la liquidación','var(--yellow)'); return null; } return liq; }
 
 // La función exportarLibroLey vive en js/38-libro-sueldos.js (Excel + LSD).
-async function exportarLibroLeyStub(){
+function exportarLibroLeyStub(){
   if(typeof exportarLibroArt52Excel === 'function') return exportarLibroArt52Excel();
   toast('⚠ Módulo Libro de Sueldos no disponible','var(--red)');
 }
 
 // La función exportarF931 vive en js/34-f931.js (modal completo + Excel + TXT SICOSS).
 // Si por alguna razón ese módulo no se cargó, mostramos un toast en lugar de fallar.
-async function exportarF931Stub(){
+function exportarF931Stub(){
   if(typeof abrirModalF931 === 'function'){
     abrirModalF931();
   } else {
@@ -5211,7 +5211,7 @@ async function exportarF931Stub(){
 
 // La función real vive en js/29-export-bancos.js (planilla Galicia con modal de opciones).
 // Si por alguna razón ese módulo no se cargó, mostramos un toast en lugar de fallar.
-async function exportarArchivoBanco(){
+function exportarArchivoBanco(){
   if(typeof abrirModalPlanillaGalicia === 'function'){
     return abrirModalPlanillaGalicia();
   }
@@ -5219,7 +5219,7 @@ async function exportarArchivoBanco(){
 }
 
 // La función real vive en js/37-ddjj-sindical.js (Excel multi-hoja por sindicato).
-async function exportarSindicatosStub(){
+function exportarSindicatosStub(){
   if(typeof exportarDDJJSindicalExcel === 'function') return exportarDDJJSindicalExcel();
   toast('⚠ Módulo DDJJ Sindical no disponible','var(--red)');
 }
@@ -5246,7 +5246,7 @@ async function exportarResumenEmpresa(){
 
 // La función exportarAsientoContable vive en js/39-asiento-contable.js
 // (modal con vista previa + Excel multi-hoja + CSV importable a sistemas contables).
-async function exportarAsientoContableStub(){
+function exportarAsientoContableStub(){
   if(typeof abrirModalAsientoContable === 'function') return abrirModalAsientoContable();
   toast('⚠ Módulo Asiento Contable no disponible','var(--red)');
 }

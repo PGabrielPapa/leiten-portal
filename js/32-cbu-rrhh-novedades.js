@@ -115,7 +115,7 @@ function _renderPanelCBUNovedades(){
   cont.innerHTML = headerActions + filas;
 }
 
-async function _cbuNovMarcarLeida(id){
+function _cbuNovMarcarLeida(id){
   marcarCBUNovedadLeida(id);
   _renderPanelCBUNovedades();
   _refrescarBadgeCBUNovedades();

@@ -240,7 +240,7 @@ async function publicarRecibosPDF(){
   window._pubRecErrores = errores;
 }
 
-async function _pubRecMostrarErrores(){
+function _pubRecMostrarErrores(){
   const err = window._pubRecErrores || [];
   if(!err.length) return;
   showAlert('Errores al generar recibos:\n\n' + err.join('\n'), 'error');

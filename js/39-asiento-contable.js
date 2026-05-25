@@ -586,6 +586,6 @@ function _asientoContinuarApertura(liq){
 }
 
 // Reemplazo de la función vieja
-async function exportarAsientoContable(){
+function exportarAsientoContable(){
   abrirModalAsientoContable();
 }

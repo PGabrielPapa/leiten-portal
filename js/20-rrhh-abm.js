@@ -216,7 +216,7 @@ async function _refreshEmpresasABMCache(){
   return _empresasABMCache;
 }
 // Busca por nombre (coincidencia exacta normalizada) — SEGURO si el cache no existe
-async function _findEmpresaABMByNombre(nombre){
+function _findEmpresaABMByNombre(nombre){
   try {
     if(!nombre || typeof _empresasABMCache === 'undefined' || !_empresasABMCache || !_empresasABMCache.length) return null;
     const k = nombre.trim().toUpperCase();
@@ -228,7 +228,7 @@ async function _findEmpresaABMByNombre(nombre){
 
 // Alias público para módulos externos (F.931, Libro Sueldo Digital, etc.)
 // que necesitan resolver el CUIT a partir del nombre de empresa de un item.
-async function getEmpresaByNom(nombre){
+function getEmpresaByNom(nombre){
   return _findEmpresaABMByNombre(nombre);
 }
 
@@ -375,7 +375,7 @@ async function renderAbmEmpresasLista(){
     }).join('') + '</div>';
 }
 
-async function abmEmpresaNueva(){
+function abmEmpresaNueva(){
   _abmEmpresaMostrarForm(null);
 }
 
@@ -405,7 +405,7 @@ async function abmEmpresaEditarBuiltIn(nombre){
 }
 
 // Alias retrocompatible (por si queda algún onclick viejo)
-async function abmEmpresaPersonalizar(nombre){
+function abmEmpresaPersonalizar(nombre){
   abmEmpresaEditarBuiltIn(nombre);
 }
 
@@ -1294,7 +1294,7 @@ async function abmEditarEmpleado(leg){
 }
 
 // Muestra licencias del empleado actualmente editado en ABM
-async function renderAbmLicenciasEmpleado(){
+function renderAbmLicenciasEmpleado(){
   const leg = document.getElementById('abm-e-leg-orig')?.value;
   if(!leg) return;
   renderHistorialLicenciasUI('abm-lic-content', leg, { anio: new Date().getFullYear() });
@@ -1352,7 +1352,7 @@ async function renderHistorialEmpleadoABM(leg){
 // ═══════════════════════════════════════════════════════════════
 
 // Parsea la fecha de ingreso en cualquier formato y devuelve YYYY-MM-DD
-async function _parseIngresoISO(ing){
+function _parseIngresoISO(ing){
   if(!ing) return null;
   if(/^\d{4}-\d{2}-\d{2}/.test(ing)) return ing.slice(0,10);
   if(ing.includes('/')){

@@ -321,7 +321,7 @@ async function reabrirPeriodoAdmin(empresa, periodo) {
 }
 
 /** Alias para el botón del selector */
-async function toggleCierrePeriodo() {
+function toggleCierrePeriodo() {
   _actualizarEstadoCierre();
 }
 

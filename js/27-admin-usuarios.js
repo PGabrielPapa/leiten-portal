@@ -323,7 +323,7 @@ function _admAbrirModal(dni){
   document.body.appendChild(container);
 }
 
-async function _admCerrarModal(){
+function _admCerrarModal(){
   const c = document.getElementById('adm-modal-container');
   if(c) c.remove();
 }

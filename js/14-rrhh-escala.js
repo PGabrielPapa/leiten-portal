@@ -618,7 +618,7 @@ function _renderEscalaPaneHistorico(versiones){
   pane.innerHTML = html;
 }
 
-async function toggleVersionDetalle(id){
+function toggleVersionDetalle(id){
   const det = document.getElementById('det-'+id);
   const btn = document.getElementById('btn-det-'+id);
   if(!det) return;
@@ -1453,7 +1453,7 @@ async function renderEvaluacionesRRHH(){
   await actualizarBadgesEvalRRHH();
 }
 
-async function _tipoLabel(tipo, anio){
+function _tipoLabel(tipo, anio){
   if(tipo === 'anual') return `📅 Anual ${anio||''}`.trim();
   if(tipo.startsWith('prueba_')) return `🔔 Prueba ${tipo.split('_')[1]} días`;
   return tipo;

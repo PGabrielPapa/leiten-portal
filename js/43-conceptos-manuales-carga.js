@@ -15,7 +15,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Helpers ───────────────────────────────────────────────────────────
-async function _ccGetManuales(nov){
+function _ccGetManuales(nov){
   if(!nov) return [];
   if(!Array.isArray(nov.conceptosCustomManuales)) nov.conceptosCustomManuales = [];
   return nov.conceptosCustomManuales;
@@ -332,7 +332,7 @@ async function _ccProcesarImport(){
   }
 }
 
-async function _ccParsearCSV(txt){
+function _ccParsearCSV(txt){
   const lineas = txt.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   const sep = (lineas[0] && (lineas[0].split(';').length > lineas[0].split(',').length)) ? ';' : ',';
   return lineas.map(l => {

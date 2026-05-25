@@ -95,7 +95,7 @@ async function actualizarCntBlanqueo(){
   actualizarDotRRHH();
 }
 
-async function actualizarDotRRHH(){
+function actualizarDotRRHH(){
   const lista = getSolicitudesBlanqueo();
   const dot = document.getElementById('dot-rrhh');
   if(dot && lista.some(s=>s.estado==='pendiente')){

@@ -345,7 +345,7 @@ function abrirFormSindicato(codigoEdit){
   setTimeout(()=>{ const el=document.getElementById(esEdicion?'sind-nombre':'sind-codigo'); if(el) el.focus(); }, 50);
 }
 
-async function cerrarFormSindicato(){
+function cerrarFormSindicato(){
   const m = document.getElementById('modal-sindicato');
   if(m) m.remove();
 }

@@ -75,7 +75,7 @@ function getUocraParams(){
 }
 
 function saveUocraParams(p){
-  localStorage.setItem(UOCRA_STORAGE_KEY, JSON.stringify(p));
+  try{ localStorage.setItem(UOCRA_STORAGE_KEY, JSON.stringify(p)); }catch(e){}
 }
 
 // ─── Cálculo de meses de antigüedad ────────────────────────────────────

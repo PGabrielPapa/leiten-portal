@@ -588,6 +588,6 @@ function _f931ContinuarApertura(liq, params){
 }
 
 // Reemplazo del exportarF931 viejo
-async function exportarF931(){
+function exportarF931(){
   abrirModalF931();
 }
