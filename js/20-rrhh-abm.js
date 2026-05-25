@@ -237,6 +237,8 @@ async function renderAbmEmpresasLista(){
   if(!div) return;
   document.getElementById('abm-emp-form').style.display = 'none';
   div.style.display = 'block';
+  // Aplicar seed de ART si las empresas no la tienen aún
+  if(typeof aplicarArtSeedSiNecesario === 'function') await aplicarArtSeedSiNecesario();
   await _refreshEmpresasABMCache();
   const custom = _empresasABMCache.slice();
 

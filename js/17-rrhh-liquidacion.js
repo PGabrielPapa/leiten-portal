@@ -1403,21 +1403,29 @@ async function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, f
   let osPatronal=totalHaberesRem*params.pctOsPatronal/100;
   const pamiPatronal=totalHaberesRem*params.pctPamiPatronal/100;
   const desempleo=totalHaberesRem*params.pctDesempleo/100;
-  // Alícuota ART: siempre debe venir de la empresa (campo obligatorio en ABM).
-  // Fallback a params.pctArt solo como resguardo técnico (no debería usarse).
+  // Alícuota ART: desde la empresa en IDB/cache o desde ART_SEED.
+  // Fallback a params.pctArt solo si no hay ART configurada en ningún lado.
   let _pctArtVigente = params.pctArt || 1.5;
-  if(typeof getEmpresasABM === 'function' && liq?.empresa){
-    // Buscar la empresa y su art
+  if(liq?.empresa && typeof resolveAlicuotaArtParaEmpresa === 'function'){
     const _empNombre = liq.empresa;
-    // Intentar desde la cache (sync) para no bloquear el cálculo
+    let _artList = null;
+    // 1) Intentar desde la cache de ABM Empresas
     if(typeof _empresasABMCache !== 'undefined' && _empresasABMCache?.length){
       const _empObj = _empresasABMCache.find(e =>
         (e.nombre||'').trim().toUpperCase() === _empNombre.trim().toUpperCase()
       );
-      if(_empObj?.art?.length && typeof resolveAlicuotaArtParaEmpresa === 'function'){
-        const _aliArt = resolveAlicuotaArtParaEmpresa(_empObj.art, fechaPagoAportes);
-        if(_aliArt != null) _pctArtVigente = _aliArt;
-      }
+      if(_empObj?.art?.length) _artList = _empObj.art;
+    }
+    // 2) Fallback: ART_SEED (datos cargados en el módulo 56-art-empresas.js)
+    if(!_artList && typeof ART_SEED !== 'undefined'){
+      const _seedKey = Object.keys(ART_SEED).find(k =>
+        k.trim().toUpperCase() === _empNombre.trim().toUpperCase()
+      );
+      if(_seedKey) _artList = ART_SEED[_seedKey];
+    }
+    if(_artList){
+      const _aliArt = resolveAlicuotaArtParaEmpresa(_artList, fechaPagoAportes);
+      if(_aliArt != null) _pctArtVigente = _aliArt;
     }
   }
   const art=totalHaberesRem*_pctArtVigente/100;

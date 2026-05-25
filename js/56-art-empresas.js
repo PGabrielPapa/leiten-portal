@@ -44,6 +44,73 @@ function getArtsActivas(){
   return ARTS_CATALOGO.filter(a => !a.inactiva);
 }
 
+
+// ─── ART preconfigurada por empresa ─────────────────────────────────────────
+// Datos cargados por RR.HH. para el grupo LEITEN.
+// Se aplican automáticamente cuando la empresa no tiene ART en la IDB todavía.
+const ART_SEED = {
+  'LEITEN S.A.': [{
+    id: 'art_leiten_prev_2024',
+    artCodigo: 'PREVENCIÓN',
+    artNombre: 'Prevención ART S.A.',
+    nroContrato: '',
+    fechaInicio: '2024-01-01',
+    fechaFin: null,
+    activo: true,
+    alicuotas: [{ desde: '2024-01-01', pct: 4.07, nota: 'Alícuota vigente' }]
+  }],
+  'SINIS S.A.': [{
+    id: 'art_sinis_prev_2024',
+    artCodigo: 'PREVENCIÓN',
+    artNombre: 'Prevención ART S.A.',
+    nroContrato: '',
+    fechaInicio: '2024-01-01',
+    fechaFin: null,
+    activo: true,
+    alicuotas: [{ desde: '2024-01-01', pct: 4.07, nota: 'Alícuota vigente' }]
+  }],
+  'LEITEN SALTA S. A.': [{
+    id: 'art_leiten_salta_prev_2024',
+    artCodigo: 'PREVENCIÓN',
+    artNombre: 'Prevención ART S.A.',
+    nroContrato: '',
+    fechaInicio: '2024-01-01',
+    fechaFin: null,
+    activo: true,
+    alicuotas: [{ desde: '2024-01-01', pct: 4.07, nota: 'Alícuota vigente' }]
+  }],
+  'BARTON REBAR SA': [{
+    id: 'art_barton_prov_2024',
+    artCodigo: 'PROVINCIA',
+    artNombre: 'Provincia ART S.A.',
+    nroContrato: '',
+    fechaInicio: '2024-01-01',
+    fechaFin: null,
+    activo: true,
+    alicuotas: [{ desde: '2024-01-01', pct: 4.27, nota: 'Alícuota vigente' }]
+  }],
+};
+
+// Aplica la seed de ART a las empresas que todavía no la tienen en la IDB.
+// Idempotente: si la empresa ya tiene ART, no sobreescribe.
+async function aplicarArtSeedSiNecesario(){
+  if(typeof getEmpresasABM !== 'function') return;
+  try {
+    const empresas = await getEmpresasABM();
+    for(const [nombreEmp, artData] of Object.entries(ART_SEED)){
+      // Buscar la empresa en IDB (coincidencia exacta o normalizada)
+      const emp = empresas.find(e =>
+        (e.nombre||'').trim().toUpperCase() === nombreEmp.trim().toUpperCase()
+      );
+      if(emp && (!emp.art || emp.art.length === 0)){
+        emp.art = artData;
+        if(typeof saveEmpresaABM === 'function') await saveEmpresaABM(emp);
+      }
+    }
+    if(typeof _refreshEmpresasABMCache === 'function') await _refreshEmpresasABMCache();
+  } catch(e){ /* fallo silencioso si IDB no está disponible */ }
+}
+
 // ─── Helpers para leer/escribir ART dentro del objeto empresa ───────────────
 
 // Lee el array de ARTs de una empresa (desde el ABM de empresas)
