@@ -169,7 +169,18 @@ function doLogin(emp){
   document.getElementById('login-screen').style.display = 'none';
   // Update nav chip
   const initials = emp.nom.split(',')[0].trim().substring(0,2);
-  document.getElementById('nav-avatar').textContent = initials;
+  const navAv = document.getElementById('nav-avatar');
+  if(navAv){
+    // Si el empleado tiene foto de perfil, mostrarla; si no, iniciales
+    const foto = emp.foto || '';
+    if(foto){
+      navAv.innerHTML = `<img src="${foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">`;
+      navAv.textContent = '';
+    } else {
+      navAv.innerHTML = '';
+      navAv.textContent = initials;
+    }
+  }
   document.getElementById('nav-username').textContent = emp.nom.split(',')[0].trim();
   document.getElementById('nav-user-chip').style.display = 'flex';
   const badge = document.getElementById('nav-role-badge');

@@ -1140,9 +1140,17 @@ function renderAbmLista(){
     }
     return`<div style="display:grid;grid-template-columns:80px 1fr 120px 120px 70px 100px 80px;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);gap:6px;${baja?'opacity:.55':''}">
       <div style="font-size:11px;font-family:var(--font-mono);color:var(--t3)">${e.leg}</div>
-      <div>
-        <div style="font-size:13px;font-weight:500;color:var(--t1)">${e.nom}</div>
-        <div style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">${e.emp||''} · ${e.lugar||''}</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center">
+          ${e.foto
+            ? `<img src="${e.foto}" style="width:100%;height:100%;object-fit:cover" loading="lazy">`
+            : `<span style="font-size:11px;font-weight:700;color:var(--t3);font-family:var(--font-mono)">${e.nom.split(',')[0].trim().substring(0,2).toUpperCase()}</span>`
+          }
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:var(--t1)">${e.nom}</div>
+          <div style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">${e.emp||''} · ${e.lugar||''}</div>
+        </div>
       </div>
       <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">${ingStr}</div>
       <div style="font-size:11px;color:${baja?'var(--red)':'var(--t3)'};font-family:var(--font-mono)">${baja?egrStr:'—'}</div>
@@ -1169,6 +1177,8 @@ async function abmEditarEmpleado(leg){
   setVal('abm-e-cat', e.cat); setVal('abm-e-tramo', e.tramo);
   setVal('abm-e-titulo', e.titulo || '');
   setVal('abm-e-titulo-desc', e.titulo_desc || '');
+  // Cargar foto de perfil
+  setTimeout(() => abmCargarFotoEnForm(leg), 50);
   // Poblar select de sindicato y preseleccionar el valor actual (maneja aliases)
   poblarSelectoresSindicato(e.cod_sindicato || '');
   // Poblar y seleccionar categoría de convenio (depende del sindicato)
@@ -1629,6 +1639,7 @@ async function abmGuardarEdicion(){
     cat_convenio:  gV('abm-e-cat-convenio') || '',
     titulo:        gV('abm-e-titulo') || '',
     titulo_desc:   gV('abm-e-titulo-desc').trim() || '',
+    foto:          abmGetFotoParaGuardar(leg),
     validador: gV('abm-e-validador') || null, areaOrg: gV('abm-e-area') || null};
   saveAbmOverrides(ov);
   // Altas: actualizar también
@@ -2103,4 +2114,120 @@ function _abmBrutoEscalaPreview(pref, monto, cat, tramo){
   } else {
     el.textContent = '';
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FOTO DE PERFIL DEL EMPLEADO — ABM Empleados
+// La foto se guarda como base64 en el override del empleado (campo `foto`).
+// Se comprime a máx. 480×480px antes de guardar para limitar el tamaño.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Carga y previsualiza la foto seleccionada
+function abmCargandoFoto(input){
+  const file = input?.files?.[0];
+  if(!file) return;
+
+  const status = document.getElementById('abm-e-foto-status');
+
+  // Validar tamaño (2 MB máx)
+  if(file.size > 2 * 1024 * 1024){
+    if(status) status.textContent = '⚠ El archivo supera 2 MB. Usá una imagen más pequeña.';
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const dataUrl = e.target.result;
+    // Comprimir con canvas a 480×480 máx
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+      const MAX = 480;
+      let w = img.width, h = img.height;
+      if(w > MAX || h > MAX){
+        if(w > h){ h = Math.round(h * MAX / w); w = MAX; }
+        else      { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.85);
+      _abmSetFotoPreview(compressed);
+      if(status) status.textContent = `✓ ${Math.round(compressed.length*0.75/1024)} KB`;
+    };
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Actualiza el preview de foto en el formulario
+function _abmSetFotoPreview(base64){
+  const imgEl      = document.getElementById('abm-e-foto-img');
+  const initialsEl = document.getElementById('abm-e-foto-initials');
+  const btnQuitar  = document.getElementById('abm-e-foto-btn-quitar');
+
+  if(base64){
+    if(imgEl){
+      imgEl.src = base64;
+      imgEl.style.display = 'block';
+    }
+    if(initialsEl) initialsEl.style.display = 'none';
+    if(btnQuitar)  btnQuitar.style.display  = 'inline-flex';
+  } else {
+    if(imgEl)      imgEl.style.display      = 'none';
+    if(initialsEl) initialsEl.style.display = '';
+    if(btnQuitar)  btnQuitar.style.display  = 'none';
+  }
+}
+
+// Quita la foto del formulario (marca para borrar al guardar)
+function abmQuitarFoto(){
+  _abmSetFotoPreview(null);
+  const status = document.getElementById('abm-e-foto-status');
+  if(status) status.textContent = 'Foto eliminada. Guardá para confirmar.';
+  // Marcar para borrar
+  const inp = document.getElementById('abm-e-foto-input');
+  if(inp) inp.value = '';
+  // Señal: foto = '' (vacío = quitar)
+  _abmFotoActual = '';
+}
+
+// Variable en memoria para la foto del empleado que se está editando
+let _abmFotoActual = null; // null = sin cambios, '' = borrar, base64 = nueva foto
+
+// Cargar la foto al abrir la ficha de edición
+function abmCargarFotoEnForm(leg){
+  _abmFotoActual = null; // resetear
+  const ov   = getAbmOverrides();
+  const foto = ov?.[leg]?.foto || getNomina().find(e=>e.leg===leg)?.foto || '';
+
+  // Actualizar las iniciales desde el nombre del empleado
+  const nom = document.getElementById('abm-e-nom')?.value || '';
+  const partes = nom.split(',')[0].trim().split(' ');
+  const initials = partes.length >= 2
+    ? partes[0].charAt(0) + partes[partes.length-1].charAt(0)
+    : partes[0].substring(0,2);
+  const initialsEl = document.getElementById('abm-e-foto-initials');
+  if(initialsEl) initialsEl.textContent = initials.toUpperCase() || '?';
+
+  _abmSetFotoPreview(foto || null);
+  const status = document.getElementById('abm-e-foto-status');
+  if(status) status.textContent = foto ? '✓ Foto cargada' : 'Sin foto';
+}
+
+// Obtiene la foto final a guardar (base64 desde canvas o la que ya había)
+function abmGetFotoParaGuardar(legActual){
+  // Si se subió una nueva foto (está en el img element con src nuevo)
+  const imgEl = document.getElementById('abm-e-foto-img');
+  if(imgEl && imgEl.style.display !== 'none' && imgEl.src && imgEl.src.startsWith('data:')){
+    return imgEl.src;
+  }
+  // Si se marcó para borrar
+  if(_abmFotoActual === ''){
+    return '';
+  }
+  // Sin cambios: devolver la foto actual del override o DB
+  const ov   = getAbmOverrides();
+  return ov?.[legActual]?.foto || getNomina().find(e=>e.leg===legActual)?.foto || '';
 }
