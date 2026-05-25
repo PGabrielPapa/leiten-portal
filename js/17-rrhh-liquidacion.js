@@ -1403,8 +1403,8 @@ async function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, f
   let osPatronal=totalHaberesRem*params.pctOsPatronal/100;
   const pamiPatronal=totalHaberesRem*params.pctPamiPatronal/100;
   const desempleo=totalHaberesRem*params.pctDesempleo/100;
-  // Alícuota ART: si la empresa tiene ART con alícuota vigente, usarla
-  // Si no, fallback a params.pctArt (parámetros generales de liquidación)
+  // Alícuota ART: siempre debe venir de la empresa (campo obligatorio en ABM).
+  // Fallback a params.pctArt solo como resguardo técnico (no debería usarse).
   let _pctArtVigente = params.pctArt || 1.5;
   if(typeof getEmpresasABM === 'function' && liq?.empresa){
     // Buscar la empresa y su art

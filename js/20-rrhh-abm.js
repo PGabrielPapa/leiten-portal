@@ -1041,6 +1041,34 @@ async function abmEmpresaGuardar(){
   );
   if(dup){ toast(`⚠ Ya existe una empresa con nombre "${nombre}"`,'var(--red)'); return; }
 
+  // Validar que haya al menos un contrato ART con alícuota registrada
+  const _artDataRaw = JSON.parse(document.getElementById('abm-emp-art-data')?.value || '[]');
+  if(!_artDataRaw.length){
+    toast('⚠ Registrá al menos un contrato ART para esta empresa', 'var(--yellow)');
+    document.getElementById('abm-emp-art-vigente')?.scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+  // Verificar que al menos un contrato tenga alícuota cargada
+  const _tieneAlicuota = _artDataRaw.some(c => c.alicuotas?.length > 0);
+  if(!_tieneAlicuota){
+    toast('⚠ El contrato ART debe tener al menos una alícuota registrada', 'var(--yellow)');
+    document.getElementById('abm-emp-art-historico')?.scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+  // Verificar que haya un contrato activo con alícuota vigente HOY
+  const _hoyIso = new Date().toISOString().slice(0,10);
+  const _contratoActivo = (typeof resolveContratoArtActivo === 'function')
+    ? resolveContratoArtActivo(_artDataRaw, _hoyIso)
+    : null;
+  if(!_contratoActivo){
+    const _cfmArt = await showConfirm({
+      titulo: 'Sin ART vigente',
+      mensaje: `No hay un contrato ART activo a la fecha de hoy.<br><br>Verificá las fechas de inicio/fin del contrato.<br><br>¿Guardás igual?`,
+      labelOk: 'Guardar igual', peligroso: false
+    });
+    if(!_cfmArt) return;
+  }
+
   // Validar CBU origen si fue cargado (puede quedar vacío sin problemas)
   const cbuOrigenRaw = gv('abm-emp-cbu').replace(/\D/g, '');
 
