@@ -199,80 +199,66 @@
               <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Adelanto de Haberes</div>
               <div style="font-size:11px;color:var(--t3);line-height:1.5">Solicitá un adelanto de tu sueldo</div>
             </div>
-          </div>
-          <div class="card home-card" onclick="nav('recibos')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
-            <div style="width:60px;height:60px;border-radius:50%;background:rgba(61,200,160,.08);border:1px solid rgba(61,200,160,.2);display:flex;align-items:center;justify-content:center;font-size:26px">📄</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Mis Recibos</div>
-              <div style="font-size:11px;color:var(--t3);line-height:1.5">Consultá y descargá tus recibos de haberes</div>
-            </div>
-            <span id="home-recibos-badge" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--accent2);border:1px solid rgba(61,127,255,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
-          <div class="card home-card" onclick="nav('licencias'); setTimeout(()=>licTab('comprobante'),50)" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
-            <div style="width:60px;height:60px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:26px">📎</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Presentar comprobante</div>
-              <div style="font-size:11px;color:var(--t3);line-height:1.5">Cargá el justificativo de tu licencia</div>
-            </div>
-          </div>
-          <div class="card home-card" onclick="nav('licencias'); setTimeout(()=>licTab('informar'),50)" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
-            <div style="width:60px;height:60px;border-radius:50%;background:rgba(61,200,160,.08);border:1px solid rgba(61,200,160,.2);display:flex;align-items:center;justify-content:center;font-size:26px">📝</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Informar licencia</div>
-              <div style="font-size:11px;color:var(--t3);line-height:1.5">Informá licencias sin comprobante</div>
-            </div>
-          </div>
-          <div class="card home-card" onclick="nav('ganancias')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
-            <div style="width:60px;height:60px;border-radius:50%;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);display:flex;align-items:center;justify-content:center;font-size:26px">🧾</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Impuesto a las Ganancias</div>
-              <div style="font-size:11px;color:var(--t3);line-height:1.5">Consultá tu cálculo del impuesto</div>
-            </div>
-          </div>
-          <div class="card home-card" onclick="nav('misdatos')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
-            <div style="width:60px;height:60px;border-radius:50%;background:rgba(92,104,128,.1);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px">👤</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Mis Datos</div>
-              <div style="font-size:11px;color:var(--t3);line-height:1.5">Tu información personal y laboral</div>
-            </div>
-          </div>
-          <div class="card home-card" onclick="nav('familiares')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
-            <div style="width:60px;height:60px;border-radius:50%;background:rgba(94,194,255,.08);border:1px solid rgba(94,194,255,.25);display:flex;align-items:center;justify-content:center;font-size:26px">👨‍👩‍👧</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Mis Familiares</div>
-              <div style="font-size:11px;color:var(--t3);line-height:1.5">Cargá y gestioná tu grupo familiar</div>
-            </div>
-            <span id="home-fam-count" style="display:none;font-size:10px;font-family:var(--font-mono);color:rgb(94,194,255);border:1px solid rgba(94,194,255,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
-          <div class="card home-card" onclick="nav('mensajes')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
-            <div style="width:60px;height:60px;border-radius:50%;background:rgba(61,127,255,.08);border:1px solid rgba(61,127,255,.2);display:flex;align-items:center;justify-content:center;font-size:26px">💬</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Mensajes a RR.HH.</div>
-              <div style="font-size:11px;color:var(--t3);line-height:1.5">Enviá una consulta o mensaje a Recursos Humanos</div>
-            </div>
-          </div>
-          <div class="card home-card" onclick="nav('lic-anual')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
-            <div style="width:60px;height:60px;border-radius:50%;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;font-size:26px">🏖</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Licencia Anual</div>
-              <div style="font-size:11px;color:var(--t3);line-height:1.5">Solicitá tu licencia anual ordinaria</div>
-            </div>
-          </div>
           <div class="card home-card" onclick="nav('cert-trabajo-emp')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
             <div style="width:60px;height:60px;border-radius:50%;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;font-size:26px">📋</div>
             <div>
               <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Certificado de trabajo</div>
               <div style="font-size:11px;color:var(--t3);line-height:1.5">Solicitá tu certificado laboral firmado</div>
             </div>
-          </div>
-
+          <div class="card home-card" onclick="nav('ganancias')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
+            <div style="width:60px;height:60px;border-radius:50%;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);display:flex;align-items:center;justify-content:center;font-size:26px">🧾</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Impuesto a las Ganancias</div>
+              <div style="font-size:11px;color:var(--t3);line-height:1.5">Consultá tu cálculo del impuesto</div>
+            </div>
+          <div class="card home-card" onclick="nav('licencias'); setTimeout(()=>licTab('informar'),50)" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
+            <div style="width:60px;height:60px;border-radius:50%;background:rgba(61,200,160,.08);border:1px solid rgba(61,200,160,.2);display:flex;align-items:center;justify-content:center;font-size:26px">📝</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Informar licencia</div>
+              <div style="font-size:11px;color:var(--t3);line-height:1.5">Informá licencias sin comprobante</div>
+            </div>
+          <div class="card home-card" onclick="nav('lic-anual')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
+            <div style="width:60px;height:60px;border-radius:50%;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;font-size:26px">🏖</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Licencia Anual</div>
+              <div style="font-size:11px;color:var(--t3);line-height:1.5">Solicitá tu licencia anual ordinaria</div>
+            </div>
           <div class="card home-card" onclick="nav('lic-especial')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
             <div style="width:60px;height:60px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:26px">📋</div>
             <div>
               <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Licencia Especial</div>
               <div style="font-size:11px;color:var(--t3);line-height:1.5">Sin goce · Maternidad · Excedencia</div>
             </div>
-          </div>
+          <div class="card home-card" onclick="nav('mensajes')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
+            <div style="width:60px;height:60px;border-radius:50%;background:rgba(61,127,255,.08);border:1px solid rgba(61,127,255,.2);display:flex;align-items:center;justify-content:center;font-size:26px">💬</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Mensajes a RR.HH.</div>
+              <div style="font-size:11px;color:var(--t3);line-height:1.5">Enviá una consulta o mensaje a Recursos Humanos</div>
+            </div>
+          <div class="card home-card" onclick="nav('misdatos')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
+            <div style="width:60px;height:60px;border-radius:50%;background:rgba(92,104,128,.1);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px">👤</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Mis Datos</div>
+              <div style="font-size:11px;color:var(--t3);line-height:1.5">Tu información personal y laboral</div>
+            </div>
+          <div class="card home-card" onclick="nav('familiares')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
+            <div style="width:60px;height:60px;border-radius:50%;background:rgba(94,194,255,.08);border:1px solid rgba(94,194,255,.25);display:flex;align-items:center;justify-content:center;font-size:26px">👨‍👩‍👧</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Mis Familiares</div>
+              <div style="font-size:11px;color:var(--t3);line-height:1.5">Cargá y gestioná tu grupo familiar</div>
+            </div>
+          <div class="card home-card" onclick="nav('recibos')" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
+            <div style="width:60px;height:60px;border-radius:50%;background:rgba(61,200,160,.08);border:1px solid rgba(61,200,160,.2);display:flex;align-items:center;justify-content:center;font-size:26px">📄</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Mis Recibos</div>
+              <div style="font-size:11px;color:var(--t3);line-height:1.5">Consultá y descargá tus recibos de haberes</div>
+            </div>
+          <div class="card home-card" onclick="nav('licencias'); setTimeout(()=>licTab('comprobante'),50)" style="cursor:pointer;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:all .18s">
+            <div style="width:60px;height:60px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:26px">📎</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Presentar comprobante</div>
+              <div style="font-size:11px;color:var(--t3);line-height:1.5">Cargá el justificativo de tu licencia</div>
+            </div>
         </div>
       </div>
     </div>
@@ -714,72 +700,12 @@
       <div id="rrhh-home">
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px">
 
-          <div class="card home-card" onclick="navRRHH('solicitudes')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:var(--accent-glow);border:1px solid rgba(61,127,255,.25);display:flex;align-items:center;justify-content:center;font-size:24px">✅</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Gestión de Anticipos de Haberes</div>
-              <div style="font-size:11px;color:var(--t3)">Solicitudes pendientes de aprobación</div>
-            </div>
-            <span id="rrhh-badge-sol" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--accent2);border:1px solid rgba(61,127,255,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('recibos')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(61,200,160,.08);border:1px solid rgba(61,200,160,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📄</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Recibos de Haberes</div>
-              <div style="font-size:11px;color:var(--t3)">Cargar y gestionar recibos de sueldo</div>
-            </div>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('ganancias')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🧾</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Ganancias</div>
-              <div style="font-size:11px;color:var(--t3)">Cargar cálculo del impuesto a las ganancias</div>
-            </div>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('contraseñas')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🔑</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Contraseñas</div>
-              <div style="font-size:11px;color:var(--t3)">Blanqueo y gestión de contraseñas</div>
-            </div>
-            <span id="rrhh-badge-pwd" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--red);border:1px solid rgba(239,68,68,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('delegacion')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Delegación</div>
-              <div style="font-size:11px;color:var(--t3)">Gestionar delegación de autorización</div>
-            </div>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('licencias')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Licencias</div>
-              <div style="font-size:11px;color:var(--t3)">Gestión de licencias y ausencias</div>
-            </div>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('domicilios')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(61,200,160,.08);border:1px solid rgba(61,200,160,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🏠</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Cambios de Domicilio</div>
-              <div style="font-size:11px;color:var(--t3)">Novedades de domicilio informadas por empleados</div>
-            </div>
-            <span id="rrhh-badge-dom" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--red);border:1px solid rgba(239,68,68,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
-
           <div class="card home-card" onclick="navRRHH('abm')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;font-size:24px">👥</div>
             <div>
               <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">ABM Empleados</div>
               <div style="font-size:11px;color:var(--t3)">Alta, modificación y baja de empleados</div>
             </div>
-          </div>
 
           <div class="card home-card" onclick="navRRHH('empresas')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🏢</div>
@@ -787,91 +713,6 @@
               <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">ABM Empresas</div>
               <div style="font-size:11px;color:var(--t3)">Logo, CUIT, domicilio y firma del empleador</div>
             </div>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('repositorio')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🗄</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Repositorio</div>
-              <div style="font-size:11px;color:var(--t3)">Backup y restauración de recibos y ganancias</div>
-            </div>
-          </div>
-
-          <div class="card home-card" onclick="abrirPanelCBUNovedades()" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🏦</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Novedades de Cuentas Bancarias</div>
-              <div style="font-size:11px;color:var(--t3)">Cambios de CBU informados por empleados</div>
-            </div>
-            <span id="rrhh-badge-cbu" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--green);border:1px solid rgba(34,197,94,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('mensajes')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(61,127,255,.08);border:1px solid rgba(61,127,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">💬</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Mensajes a RR.HH.</div>
-              <div style="font-size:11px;color:var(--t3)">Consultas y mensajes enviados por empleados</div>
-            </div>
-            <span id="rrhh-badge-msg" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--accent2);border:1px solid rgba(61,127,255,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('liquidacion')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(61,127,255,.08);border:1px solid rgba(61,127,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">💼</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Liquidación de Haberes</div>
-              <div style="font-size:11px;color:var(--t3)">Sistema completo de liquidación mensual</div>
-            </div>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('conceptos-custom')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">⚙</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Conceptos Custom</div>
-              <div style="font-size:11px;color:var(--t3)">Definición de conceptos de nómina con fórmulas editables</div>
-            </div>
-            <span id="rrhh-badge-cc-pendientes" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--yellow);border:1px solid rgba(234,179,8,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('reportes')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(94,194,255,.08);border:1px solid rgba(94,194,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📈</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Generador de Reportes</div>
-              <div style="font-size:11px;color:var(--t3)">Reportes a medida de empleados, nómina, liquidaciones, licencias…</div>
-            </div>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('reporte-conceptos')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📒</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Catálogo de Conceptos</div>
-              <div style="font-size:11px;color:var(--t3)">Reporte completo de conceptos de nómina (sistema + custom)</div>
-            </div>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('importar-conceptos')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📥</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Importador de Conceptos</div>
-              <div style="font-size:11px;color:var(--t3)">Importar conceptos masivos desde Excel/CSV (3 modos)</div>
-            </div>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('cert-trabajo')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Certificados de Trabajo</div>
-              <div style="font-size:11px;color:var(--t3)">Pedidos de empleados · Generación con firma oficial</div>
-            </div>
-            <span id="rrhh-badge-cert" style="display:none;font-size:10px;font-family:var(--font-mono);color:rgb(99,102,241);border:1px solid rgba(99,102,241,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
-
-          <div class="card home-card" onclick="nav('elementos-trabajo')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🔧</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Elementos de trabajo</div>
-              <div style="font-size:11px;color:var(--t3)">Inventario de activos por empleado</div>
-            </div>
-          </div>
 
           <div class="card home-card" onclick="nav('beneficios')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🎁</div>
@@ -879,43 +720,55 @@
               <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Beneficios gerenciales</div>
               <div style="font-size:11px;color:var(--t3)">Paquetes por empleado · Prepaga · Reportes</div>
             </div>
-          </div>
 
-          <div class="card home-card" onclick="navRRHH('simulacion')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(251,168,52,.08);border:1px solid rgba(251,168,52,.25);display:flex;align-items:center;justify-content:center;font-size:24px">🧮</div>
+          <div class="card home-card" onclick="navRRHH('domicilios')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(61,200,160,.08);border:1px solid rgba(61,200,160,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🏠</div>
             <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Simulación de Liquidación</div>
-              <div style="font-size:11px;color:var(--t3)">Incrementos, gratificaciones y bajas</div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Cambios de Domicilio</div>
+              <div style="font-size:11px;color:var(--t3)">Novedades de domicilio informadas por empleados</div>
             </div>
-            <span id="rrhh-badge-sim" style="display:none;font-size:10px;font-family:var(--font-mono);color:rgb(251,168,52);border:1px solid rgba(251,168,52,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
 
-          <div class="card home-card" onclick="navRRHH('lic-anuales')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🏖</div>
+          <div class="card home-card" onclick="navRRHH('reporte-conceptos')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📒</div>
             <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Licencias Anuales</div>
-              <div style="font-size:11px;color:var(--t3)">Solicitudes de licencia anual ordinaria</div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Catálogo de Conceptos</div>
+              <div style="font-size:11px;color:var(--t3)">Reporte completo de conceptos de nómina (sistema + custom)</div>
             </div>
-            <span id="rrhh-badge-lic-anual" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--green);border:1px solid rgba(34,197,94,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
 
-          <div class="card home-card" onclick="navRRHH('lic-especiales')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>
+          <div class="card home-card" onclick="navRRHH('cert-trabajo')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>
             <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Licencias Especiales</div>
-              <div style="font-size:11px;color:var(--t3)">Sin goce · Maternidad · Excedencia</div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Certificados de Trabajo</div>
+              <div style="font-size:11px;color:var(--t3)">Pedidos de empleados · Generación con firma oficial</div>
             </div>
-            <span id="rrhh-badge-lic-esp" style="display:none;font-size:10px;font-family:var(--font-mono);color:rgb(168,85,247);border:1px solid rgba(168,85,247,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
 
-          <div class="card home-card" onclick="navRRHH('evaluaciones')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📝</div>
+          <div class="card home-card" onclick="navRRHH('conceptos-custom')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">⚙</div>
             <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Evaluaciones de Desempeño</div>
-              <div style="font-size:11px;color:var(--t3)">Registrar · histórico · legajo digital</div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Conceptos Custom</div>
+              <div style="font-size:11px;color:var(--t3)">Definición de conceptos de nómina con fórmulas editables</div>
             </div>
-            <span id="rrhh-badge-eval" style="display:none;font-size:10px;font-family:var(--font-mono);color:rgb(168,85,247);border:1px solid rgba(168,85,247,.3);padding:2px 8px;border-radius:10px"></span>
-          </div>
+
+          <div class="card home-card" onclick="navRRHH('contraseñas')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🔑</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Contraseñas</div>
+              <div style="font-size:11px;color:var(--t3)">Blanqueo y gestión de contraseñas</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('delegacion')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Delegación</div>
+              <div style="font-size:11px;color:var(--t3)">Gestionar delegación de autorización</div>
+            </div>
+
+          <div class="card home-card" onclick="nav('elementos-trabajo')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🔧</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Elementos de trabajo</div>
+              <div style="font-size:11px;color:var(--t3)">Inventario de activos por empleado</div>
+            </div>
 
           <div class="card home-card" onclick="navRRHH('escala')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);display:flex;align-items:center;justify-content:center;font-size:24px">💰</div>
@@ -923,23 +776,13 @@
               <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Escala Salarial</div>
               <div style="font-size:11px;color:var(--t3)">Escala unificada · categoría × tramo</div>
             </div>
-          </div>
 
-          <div class="card home-card" onclick="navRRHH('sindicatos')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(236,72,153,.08);border:1px solid rgba(236,72,153,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🤝</div>
+          <div class="card home-card" onclick="navRRHH('evaluaciones')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📝</div>
             <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Sindicatos</div>
-              <div style="font-size:11px;color:var(--t3)">Aportes y adicional antigüedad</div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Evaluaciones de Desempeño</div>
+              <div style="font-size:11px;color:var(--t3)">Registrar · histórico · legajo digital</div>
             </div>
-          </div>
-
-          <div class="card home-card" onclick="navRRHH('hys')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🦺</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Higiene y Seguridad</div>
-              <div style="font-size:11px;color:var(--t3)">Capacitaciones · EPP · talles</div>
-            </div>
-          </div>
 
           <div class="card home-card" onclick="navRRHH('familiares')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(94,194,255,.08);border:1px solid rgba(94,194,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">👨‍👩‍👧</div>
@@ -947,16 +790,83 @@
               <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Familiares</div>
               <div style="font-size:11px;color:var(--t3)">Grupo familiar de cada empleado</div>
             </div>
-          </div>
 
-          <div class="card home-card" onclick="navRRHH('sanciones')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s;position:relative">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);display:flex;align-items:center;justify-content:center;font-size:24px">⚖️</div>
+          <div class="card home-card" onclick="navRRHH('ganancias')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🧾</div>
             <div>
-              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Sanciones disciplinarias</div>
-              <div style="font-size:11px;color:var(--t3)">Solicitudes de gerentes · histórico</div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Ganancias</div>
+              <div style="font-size:11px;color:var(--t3)">Cargar cálculo del impuesto a las ganancias</div>
             </div>
-            <span id="rrhh-card-sanciones-badge" style="display:none;position:absolute;top:10px;right:10px;background:var(--red);color:#fff;font-size:10px;font-family:var(--font-mono);padding:2px 8px;border-radius:99px;font-weight:600"></span>
-          </div>
+
+          <div class="card home-card" onclick="navRRHH('reportes')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(94,194,255,.08);border:1px solid rgba(94,194,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📈</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Generador de Reportes</div>
+              <div style="font-size:11px;color:var(--t3)">Reportes a medida de empleados, nómina, liquidaciones, licencias…</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('solicitudes')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:var(--accent-glow);border:1px solid rgba(61,127,255,.25);display:flex;align-items:center;justify-content:center;font-size:24px">✅</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Gestión de Anticipos de Haberes</div>
+              <div style="font-size:11px;color:var(--t3)">Solicitudes pendientes de aprobación</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('hys')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🦺</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Higiene y Seguridad</div>
+              <div style="font-size:11px;color:var(--t3)">Capacitaciones · EPP · talles</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('importar-conceptos')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📥</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Importador de Conceptos</div>
+              <div style="font-size:11px;color:var(--t3)">Importar conceptos masivos desde Excel/CSV (3 modos)</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('licencias')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Licencias</div>
+              <div style="font-size:11px;color:var(--t3)">Gestión de licencias y ausencias</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('lic-anuales')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🏖</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Licencias Anuales</div>
+              <div style="font-size:11px;color:var(--t3)">Solicitudes de licencia anual ordinaria</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('lic-especiales')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Licencias Especiales</div>
+              <div style="font-size:11px;color:var(--t3)">Sin goce · Maternidad · Excedencia</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('liquidacion')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(61,127,255,.08);border:1px solid rgba(61,127,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">💼</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Liquidación de Haberes</div>
+              <div style="font-size:11px;color:var(--t3)">Sistema completo de liquidación mensual</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('mensajes')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(61,127,255,.08);border:1px solid rgba(61,127,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">💬</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Mensajes a RR.HH.</div>
+              <div style="font-size:11px;color:var(--t3)">Consultas y mensajes enviados por empleados</div>
+            </div>
+
+          <div class="card home-card" onclick="abrirPanelCBUNovedades()" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🏦</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Novedades de Cuentas Bancarias</div>
+              <div style="font-size:11px;color:var(--t3)">Cambios de CBU informados por empleados</div>
+            </div>
 
           <div class="card home-card" onclick="nav('organigrama')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
             <div style="width:56px;height:56px;border-radius:50%;background:rgba(61,127,255,.08);border:1px solid rgba(61,127,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🏢</div>
@@ -964,7 +874,43 @@
               <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Organigrama</div>
               <div style="font-size:11px;color:var(--t3)">Estructura general · todas las empresas</div>
             </div>
-          </div>
+
+          <div class="card home-card" onclick="navRRHH('recibos')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(61,200,160,.08);border:1px solid rgba(61,200,160,.2);display:flex;align-items:center;justify-content:center;font-size:24px">📄</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Recibos de Haberes</div>
+              <div style="font-size:11px;color:var(--t3)">Cargar y gestionar recibos de sueldo</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('repositorio')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🗄</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Repositorio</div>
+              <div style="font-size:11px;color:var(--t3)">Backup y restauración de recibos y ganancias</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('sanciones')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s;position:relative">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);display:flex;align-items:center;justify-content:center;font-size:24px">⚖️</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Sanciones disciplinarias</div>
+              <div style="font-size:11px;color:var(--t3)">Solicitudes de gerentes · histórico</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('simulacion')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(251,168,52,.08);border:1px solid rgba(251,168,52,.25);display:flex;align-items:center;justify-content:center;font-size:24px">🧮</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Simulación de Liquidación</div>
+              <div style="font-size:11px;color:var(--t3)">Incrementos, gratificaciones y bajas</div>
+            </div>
+
+          <div class="card home-card" onclick="navRRHH('sindicatos')" style="cursor:pointer;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;transition:all .18s">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(236,72,153,.08);border:1px solid rgba(236,72,153,.2);display:flex;align-items:center;justify-content:center;font-size:24px">🤝</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px">Sindicatos</div>
+              <div style="font-size:11px;color:var(--t3)">Aportes y adicional antigüedad</div>
+            </div>
+
+        
 
         </div>
       </div>
