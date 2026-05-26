@@ -1251,6 +1251,31 @@
               <div style="grid-column:span 2;padding:8px 12px;background:rgba(61,127,255,.06);border:1px solid rgba(61,127,255,.2);border-radius:4px;font-size:10px;color:var(--t3);line-height:1.5">
                 💡 Si dejás "Auto", el sistema detectará el validador usando las reglas del organigrama. Cargá manualmente para sobreescribir, incluir jefes no reconocidos o forzar un área específica.
               </div>
+
+              <!-- ── Clasificación laboral ── -->
+              <div style="grid-column:span 2;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;font-size:12px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.08em">
+                Clasificación laboral <span style="color:var(--red)">*</span>
+              </div>
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CENTRO DE OPERACIONES <span style="color:var(--red)">*</span></label>
+                <input id="abm-n-centro-operaciones" placeholder="Ej: Buenos Aires · 3 de Febrero" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+              </div>
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">SECTOR <span style="color:var(--red)">*</span></label>
+                <input id="abm-n-sector" placeholder="Ej: Producción, Administración" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+              </div>
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">TAREA / FUNCIÓN <span style="color:var(--red)">*</span></label>
+                <input id="abm-n-tarea" placeholder="Ej: Operario calificado" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+              </div>
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CENTRO DE COSTOS <span style="color:var(--red)">*</span></label>
+                <input id="abm-n-centro-costos" placeholder="Ej: CC-001" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+              </div>
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CENTRO DE COSTOS NUEVO <span style="color:var(--red)">*</span></label>
+                <input id="abm-n-centro-costos-nuevo" placeholder="Ej: CCN-2025-001" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+              </div>
               <!-- ── Domicilio ── -->
               <div style="grid-column:span 2;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;font-size:12px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.08em">Domicilio</div>
               <div style="grid-column:span 2"><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CALLE</label><input id="abm-n-calle" placeholder="Ej: Av. Corrientes" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"></div>
@@ -1358,7 +1383,29 @@
               <div style="grid-column:span 2"><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">E-MAIL</label><input type="email" id="abm-e-mail" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">TELÉFONO</label><input id="abm-e-telefono" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">ESTADO CIVIL</label><select id="abm-e-estado-civil" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"><option value="">—</option><option>Soltero/a</option><option>Casado/a</option><option>Divorciado/a</option><option>Viudo/a</option><option>Unión Convivencial</option></select></div>
-              <div style="grid-column:span 2"><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">FUNCIÓN / TAREA</label><input id="abm-e-tarea" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"></div>
+              <div style="grid-column:span 2;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;font-size:12px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.08em">
+                Clasificación laboral <span style="color:var(--red)">*</span>
+              </div>
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CENTRO DE OPERACIONES <span style="color:var(--red)">*</span></label>
+                <input id="abm-e-centro-operaciones" placeholder="Ej: Buenos Aires · 3 de Febrero" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+              </div>
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">SECTOR <span style="color:var(--red)">*</span></label>
+                <input id="abm-e-sector" placeholder="Ej: Producción, Administración" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+              </div>
+              <div style="grid-column:span 2">
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">TAREA / FUNCIÓN <span style="color:var(--red)">*</span></label>
+                <input id="abm-e-tarea" placeholder="Ej: Operario calificado" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none">
+              </div>
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CENTRO DE COSTOS <span style="color:var(--red)">*</span></label>
+                <input id="abm-e-centro-costos" placeholder="Ej: CC-001" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+              </div>
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CENTRO DE COSTOS NUEVO <span style="color:var(--red)">*</span></label>
+                <input id="abm-e-centro-costos-nuevo" placeholder="Ej: CCN-2025-001" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+              </div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">SUELDO BÁSICO ($)</label><input type="number" id="abm-e-basico" step="0.01" oninput="abmRecalcComplemento()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">A CUENTA FUTUROS AUMENTOS ($)</label><input type="number" id="abm-e-acuenta" step="0.01" oninput="abmRecalcComplemento()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div style="grid-column:span 2"><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">COMPLEMENTO FUNCIÓN (calculado)</label><div id="abm-e-comp-calc" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--accent2);font-size:13px;font-family:var(--font-mono);min-height:37px">— (completá básico y tramo)</div></div>

@@ -1228,7 +1228,11 @@ async function abmEditarEmpleado(leg){
   setVal('abm-e-bruto', e.bruto||''); setVal('abm-e-neto', e.neto||'');
   setVal('abm-e-mail', e.mail||'');
   setVal('abm-e-telefono', e.telefono||'');
-  setVal('abm-e-tarea', e.tarea||'');
+  setVal('abm-e-tarea',               e.tarea||'');
+  setVal('abm-e-centro-operaciones',  e.centro_operaciones||'');
+  setVal('abm-e-sector',              e.sector||'');
+  setVal('abm-e-centro-costos',       e.centro_costos||'');
+  setVal('abm-e-centro-costos-nuevo', e.centro_costos_nuevo||'');
   setVal('abm-e-basico', e.basico||'');
   setVal('abm-e-acuenta', e.a_cuenta||'');
   setTimeout(abmRecalcComplemento, 50);
@@ -1624,12 +1628,45 @@ function abmAltaEmpleado(){
   const bruto=parseFloat(gV('abm-n-bruto'))||0, neto=parseFloat(gV('abm-n-neto'))||0;
   const mail=gV('abm-n-mail');
   const validador = gV('abm-n-validador'), areaOrg = gV('abm-n-area');
+  const centroOp      = gV('abm-n-centro-operaciones');
+  const sector        = gV('abm-n-sector');
+  const tarea         = gV('abm-n-tarea');
+  const centroCostos  = gV('abm-n-centro-costos');
+  const centroCostosN = gV('abm-n-centro-costos-nuevo');
   const calle=gV('abm-n-calle'), nro=gV('abm-n-nro'), piso=gV('abm-n-piso');
   const depto=gV('abm-n-depto'), loc=gV('abm-n-loc'), prov=gV('abm-n-prov'), cp=gV('abm-n-cp');
   if(!dni||!cuil||!nom||!emp||!ing){toast('⚠ Completá los campos obligatorios (*)','var(--yellow)');return;}
+  if(!centroOp){
+    toast('⚠ Centro de Operaciones es obligatorio','var(--yellow)');
+    document.getElementById('abm-n-centro-operaciones')?.focus(); return;
+  }
+  if(!sector){
+    toast('⚠ Sector es obligatorio','var(--yellow)');
+    document.getElementById('abm-n-sector')?.focus(); return;
+  }
+  if(!tarea){
+    toast('⚠ Tarea / Función es obligatoria','var(--yellow)');
+    document.getElementById('abm-n-tarea')?.focus(); return;
+  }
+  if(!centroCostos){
+    toast('⚠ Centro de Costos es obligatorio','var(--yellow)');
+    document.getElementById('abm-n-centro-costos')?.focus(); return;
+  }
+  if(!centroCostosN){
+    toast('⚠ Centro de Costos Nuevo es obligatorio','var(--yellow)');
+    document.getElementById('abm-n-centro-costos-nuevo')?.focus(); return;
+  }
   if(getNomina().find(e=>e.dni===dni)){toast(`⚠ DNI ${dni} ya existe`,'var(--yellow)');return;}
   const al=getAbmAltas();
-  const nuevoEmp = {leg,dni,cuil,nom,emp,lugar,cat,tramo,ing,fecha_nac:nac,bruto,neto,lim:neto*0.5,mail,cod_sindicato};
+  const nuevoEmp = {
+    leg, dni, cuil, nom, emp, lugar, cat, tramo, ing, fecha_nac: nac,
+    bruto, neto, lim: neto*0.5, mail, cod_sindicato,
+    centro_operaciones:    centroOp,
+    sector:                sector,
+    tarea:                 tarea,
+    centro_costos:         centroCostos,
+    centro_costos_nuevo:   centroCostosN,
+  };
   if(validador){ nuevoEmp.validador = validador; nuevoEmp.areaOrg = areaOrg || ''; }
   al.push(nuevoEmp);
   saveAbmAltas(al);
@@ -1646,6 +1683,7 @@ function abmAltaEmpleado(){
   ['abm-n-leg','abm-n-dni','abm-n-cuil','abm-n-nom','abm-n-lugar','abm-n-cat','abm-n-tramo',
    'abm-n-sindicato',
    'abm-n-ing','abm-n-nac','abm-n-bruto','abm-n-neto','abm-n-mail','abm-n-validador','abm-n-area',
+   'abm-n-centro-operaciones','abm-n-sector','abm-n-tarea','abm-n-centro-costos','abm-n-centro-costos-nuevo',
    'abm-n-calle','abm-n-nro','abm-n-piso','abm-n-depto','abm-n-loc','abm-n-prov','abm-n-cp']
     .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('abm-n-emp').value='';
@@ -1668,6 +1706,10 @@ async function abmGuardarEdicion(){
     lim:(parseFloat(gV('abm-e-neto'))||0)*0.5, mail:gV('abm-e-mail'),
     dni:gV('abm-e-dni'), cuil:gV('abm-e-cuil'),
     telefono: gV('abm-e-telefono'), tarea: gV('abm-e-tarea'), estado_civil: gV('abm-e-estado-civil'),
+    centro_operaciones:    gV('abm-e-centro-operaciones'),
+    sector:                gV('abm-e-sector'),
+    centro_costos:         gV('abm-e-centro-costos'),
+    centro_costos_nuevo:   gV('abm-e-centro-costos-nuevo'),
     basico: parseFloat(gV('abm-e-basico'))||0,
     a_cuenta: parseFloat(gV('abm-e-acuenta'))||0,
     complemento: _abmComplementoCalculado()||0,
@@ -1677,6 +1719,10 @@ async function abmGuardarEdicion(){
     titulo:        gV('abm-e-titulo') || '',
     titulo_desc:   gV('abm-e-titulo-desc').trim() || '',
     foto:          abmGetFotoParaGuardar(leg),
+    centro_operaciones:    gV('abm-e-centro-operaciones'),
+    sector:                gV('abm-e-sector'),
+    centro_costos:         gV('abm-e-centro-costos'),
+    centro_costos_nuevo:   gV('abm-e-centro-costos-nuevo'),
     validador: gV('abm-e-validador') || null, areaOrg: gV('abm-e-area') || null};
   saveAbmOverrides(ov);
   // Altas: actualizar también
@@ -1716,6 +1762,10 @@ async function abmGuardarEdicion(){
     titulo: gV('abm-e-titulo') || '',
     titulo_desc: gV('abm-e-titulo-desc').trim() || '',
     tarea: gV('abm-e-tarea'),
+    centro_operaciones:  gV('abm-e-centro-operaciones'),
+    sector:              gV('abm-e-sector'),
+    centro_costos:       gV('abm-e-centro-costos'),
+    centro_costos_nuevo: gV('abm-e-centro-costos-nuevo'),
     estado_civil: gV('abm-e-estado-civil'),
     mail: gV('abm-e-mail'),
     telefono: gV('abm-e-telefono'),
@@ -1813,7 +1863,8 @@ function exportarNominaExcel(){
     'Total Asig. c/Antigüedad','Límite Adelanto',
     'E-mail',
     'Cód. Convenio','Desc. Categoría','Cód. Obra Social','Desc. Obra Social','Cód. Sindicato',
-    'Calle','Número','Piso','Departamento','Torre','Bloque','Localidad','Provincia','Código Postal'
+    'Calle','Número','Piso','Departamento','Torre','Bloque','Localidad','Provincia','Código Postal',
+    'Centro de Operaciones','Sector','Tarea','Centro de Costos','Centro de Costos Nuevo'
   ];
 
   const fmtFecha = iso => {
