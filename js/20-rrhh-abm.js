@@ -1714,7 +1714,6 @@ async function abmGuardarEdicion(){
     centro_costos_nuevo:   gV('abm-e-centro-costos-nuevo'),
     ant_anos:   parseInt(document.getElementById('abm-e-ant-anos')?.value || '0', 10) || 0,
     ant_meses:  parseInt(document.getElementById('abm-e-ant-meses')?.value || '0', 10) || 0,
-    _ant_manual: true,
     basico: parseFloat(gV('abm-e-basico'))||0,
     a_cuenta: parseFloat(gV('abm-e-acuenta'))||0,
     complemento: _abmComplementoCalculado()||0,
