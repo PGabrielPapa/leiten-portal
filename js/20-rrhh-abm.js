@@ -1216,6 +1216,8 @@ async function abmEditarEmpleado(leg){
   setVal('abm-e-titulo-desc', e.titulo_desc || '');
   // Cargar foto de perfil
   setTimeout(() => abmCargarFotoEnForm(leg), 50);
+  // Cargar antigüedad (calculada o override)
+  setTimeout(() => abmCargarAntiguedad(leg, e.ing || ''), 80);
   // Poblar select de sindicato y preseleccionar el valor actual (maneja aliases)
   poblarSelectoresSindicato(e.cod_sindicato || '');
   // Poblar y seleccionar categoría de convenio (depende del sindicato)
@@ -1710,6 +1712,9 @@ async function abmGuardarEdicion(){
     sector:                gV('abm-e-sector'),
     centro_costos:         gV('abm-e-centro-costos'),
     centro_costos_nuevo:   gV('abm-e-centro-costos-nuevo'),
+    ant_anos:   parseInt(document.getElementById('abm-e-ant-anos')?.value || '0', 10) || 0,
+    ant_meses:  parseInt(document.getElementById('abm-e-ant-meses')?.value || '0', 10) || 0,
+    _ant_manual: true,
     basico: parseFloat(gV('abm-e-basico'))||0,
     a_cuenta: parseFloat(gV('abm-e-acuenta'))||0,
     complemento: _abmComplementoCalculado()||0,
@@ -2318,4 +2323,129 @@ function abmGetFotoParaGuardar(legActual){
   // Sin cambios: devolver la foto actual del override o DB
   const ov   = getAbmOverrides();
   return ov?.[legActual]?.foto || getNomina().find(e=>e.leg===legActual)?.foto || '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ANTIGÜEDAD DEL EMPLEADO
+// ───────────────────────────────────────────────────────────────────────────
+// Calcula la antigüedad descontando licencias que no computan:
+//   - Sin goce de sueldo  (tipoLicencia = 'sin_goce')
+//   - Excedencia          (tipoLicencia = 'excedencia')
+//   - Reserva de puesto Art. 211 LCT  (tipoLicencia = 'reserva_puesto' / 'art_211')
+//
+// Resultado expresado en { anos, meses } (la diferencia cubre días completos).
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Tipos de licencia que NO computan para antigüedad (Ley de Contrato de Trabajo)
+const TIPOS_NO_COMPUTAN_ANTIGUEDAD = new Set([
+  'sin_goce',
+  'excedencia',
+  'reserva_puesto',
+  'art_211',
+]);
+
+// Calcula días no computables para antigüedad a partir de las licencias del empleado
+async function getDiasNoComputables(leg) {
+  try {
+    if (typeof getLicenciasEspeciales !== 'function') return 0;
+    const todas = await getLicenciasEspeciales();
+    const lics  = todas.filter(l => {
+      if (l.leg !== leg || !l.desde) return false;
+      if (l.estado !== 'aprobada' && l.estado !== 'registrada' && l.estado !== 'aprobado') return false;
+      // Verificar por catálogo (flag noComputaAntiguedad) o por el Set hardcodeado
+      const meta = (typeof TIPOS_LIC_ESPECIAL !== 'undefined') ? TIPOS_LIC_ESPECIAL[l.tipoLicencia] : null;
+      return meta ? !!meta.noComputaAntiguedad : TIPOS_NO_COMPUTAN_ANTIGUEDAD.has(l.tipoLicencia);
+    });
+
+    let totalDias = 0;
+    const hoy = new Date();
+    for (const l of lics) {
+      const desde = new Date(l.desde + 'T12:00:00');
+      const hastaRaw = l.hasta ? new Date(l.hasta + 'T12:00:00') : hoy;
+      const hasta = hastaRaw > hoy ? hoy : hastaRaw;
+      if (hasta > desde) {
+        totalDias += Math.floor((hasta - desde) / 86400000);
+      }
+    }
+    return totalDias;
+  } catch (e) {
+    return 0;
+  }
+}
+
+// Calcula la antigüedad real descontando períodos no computables
+async function calcularAntiguedad(leg, fechaIngreso) {
+  if (!fechaIngreso) return { anos: 0, meses: 0, diasNoComp: 0 };
+
+  // Parsear fecha de ingreso (DD/MM/YYYY o YYYY-MM-DD)
+  let fIng;
+  if (fechaIngreso.includes('/')) {
+    const p = fechaIngreso.split('/');
+    fIng = new Date(+p[2], +p[1]-1, +p[0]);
+  } else {
+    fIng = new Date(fechaIngreso + 'T12:00:00');
+  }
+  if (isNaN(fIng)) return { anos: 0, meses: 0, diasNoComp: 0 };
+
+  const hoy = new Date();
+  const diasTotales   = Math.floor((hoy - fIng) / 86400000);
+  const diasNoComp    = await getDiasNoComputables(leg);
+  const diasComputan  = Math.max(0, diasTotales - diasNoComp);
+
+  const anos  = Math.floor(diasComputan / 365);
+  const meses = Math.floor((diasComputan % 365) / 30);
+
+  return { anos, meses, diasNoComp, diasTotales };
+}
+
+// Carga la antigüedad en el formulario de edición
+async function abmCargarAntiguedad(leg, fechaIngreso) {
+  const anosEl   = document.getElementById('abm-e-ant-anos');
+  const mesesEl  = document.getElementById('abm-e-ant-meses');
+  const infoEl   = document.getElementById('abm-e-ant-info');
+  if (!anosEl || !mesesEl) return;
+
+  // ¿Hay override guardado para este legajo?
+  const ov = getAbmOverrides();
+  if (ov[leg]?.ant_anos != null && ov[leg]?.ant_meses != null) {
+    // Usar el override manual
+    anosEl.value  = ov[leg].ant_anos;
+    mesesEl.value = ov[leg].ant_meses;
+    if (infoEl) infoEl.innerHTML =
+      `<span style="color:var(--yellow)">✎ Valor editado manualmente</span>` +
+      `<button type="button" onclick="abmRecalcAntiguedad()" style="background:none;border:none;color:var(--accent2);font-size:10px;cursor:pointer;margin-left:8px">Recalcular desde ingreso</button>`;
+    return;
+  }
+
+  // Calcular automáticamente
+  const { anos, meses, diasNoComp, diasTotales } = await calcularAntiguedad(leg, fechaIngreso);
+  anosEl.value  = anos;
+  mesesEl.value = meses;
+
+  if (infoEl) {
+    let msg = `<span style="color:var(--t3)">Ingreso: ${fechaIngreso || '—'} · ${diasTotales} días totales`;
+    if (diasNoComp > 0) {
+      msg += ` − ${diasNoComp} días no computables (art. 19 LCT)`;
+    }
+    msg += `</span>`;
+    infoEl.innerHTML = msg;
+  }
+}
+
+// Recalcula la antigüedad desde la fecha de ingreso (borra el override)
+async function abmRecalcAntiguedad() {
+  const leg  = document.getElementById('abm-e-leg-orig')?.value;
+  const ing  = document.getElementById('abm-e-ing')?.value;
+  if (!leg || !ing) return;
+
+  // Limpiar override de antigüedad
+  const ov = getAbmOverrides();
+  if (ov[leg]) {
+    delete ov[leg].ant_anos;
+    delete ov[leg].ant_meses;
+    saveAbmOverrides(ov);
+  }
+
+  await abmCargarAntiguedad(leg, ing);
+  toast('✓ Antigüedad recalculada desde fecha de ingreso', 'var(--green)', 2500);
 }

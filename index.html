@@ -1399,6 +1399,25 @@
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">UBICACIÓN</label><input id="abm-e-lugar" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CATEGORÍA</label><input id="abm-e-cat" oninput="abmAutocompletarBruto('e');abmRecalcComplemento()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">TRAMO</label><input id="abm-e-tramo" oninput="abmAutocompletarBruto('e');abmRecalcComplemento()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
+              <div>
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">ANTIGÜEDAD
+                  <span style="font-size:9px;color:var(--accent2);font-weight:400;margin-left:4px">calculada automáticamente · editable</span>
+                </label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <div style="flex:1">
+                    <label style="font-size:9px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:3px">AÑOS</label>
+                    <input type="number" id="abm-e-ant-anos" min="0" max="60" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+                  </div>
+                  <div style="flex:1">
+                    <label style="font-size:9px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:3px">MESES (0-11)</label>
+                    <input type="number" id="abm-e-ant-meses" min="0" max="11" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)">
+                  </div>
+                  <div style="padding-top:20px">
+                    <button type="button" class="btn btn-ghost" onclick="abmRecalcAntiguedad()" style="font-size:11px;padding:5px 10px" title="Recalcular desde fecha de ingreso">↺ Recalc.</button>
+                  </div>
+                </div>
+                <div id="abm-e-ant-info" style="font-size:10px;font-family:var(--font-mono);color:var(--t3);margin-top:4px;min-height:14px"></div>
+              </div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CÓDIGO DE SINDICATO</label><select id="abm-e-sindicato" onchange="abmActualizarCatConvenioPicker()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"><option value="">— Sin sindicato —</option></select></div>
 
               <!-- ── Categoría de convenio (código según escala del CCT) ── -->

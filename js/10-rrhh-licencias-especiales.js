@@ -61,9 +61,10 @@ async function updateLicenciaEspecial(rec){
 
 // Metadatos por tipo
 const TIPOS_LIC_ESPECIAL = {
-  sin_goce:   { label:'Sin goce de haberes', minDias:1,   maxDias:365, flujo:'autorizacion', requiereMotivo:true },
-  maternidad: { label:'Maternidad',          minDias:90,  maxDias:90,  flujo:'conocimiento', requiereMotivo:false },
-  excedencia: { label:'Excedencia',          minDias:90,  maxDias:180, flujo:'conocimiento', requiereMotivo:false }
+  sin_goce:       { label:'Sin goce de haberes',              minDias:1,   maxDias:365, flujo:'autorizacion', requiereMotivo:true,  noComputaAntiguedad:true },
+  maternidad:     { label:'Maternidad',                       minDias:90,  maxDias:90,  flujo:'conocimiento', requiereMotivo:false, noComputaAntiguedad:false },
+  excedencia:     { label:'Excedencia',                       minDias:90,  maxDias:180, flujo:'conocimiento', requiereMotivo:false, noComputaAntiguedad:true },
+  reserva_puesto: { label:'Reserva de puesto Art. 211 LCT',  minDias:1,   maxDias:365, flujo:'autorizacion', requiereMotivo:true,  noComputaAntiguedad:true },
 };
 
 // ═══════════════════════════════════════════════════════════════
