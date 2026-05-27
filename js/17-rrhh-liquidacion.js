@@ -905,7 +905,14 @@ async function calcularItemLiquidacion(emp, params, nov, anio, mes, anticipos, f
 
   // ─ Antigüedad ─
   // Según código de sindicato del empleado. Si no tiene sindicato → 0%.
-  const anios=calcularAniosAntiguedad(emp.ing, anio, mes);
+  // Prioridad de años:
+  //   1. emp.ant_anos (override manual cargado en ABM — ya descuenta lic. no computables)
+  //   2. calcularAniosAntiguedad(emp.ing, ...) — cálculo automático desde fecha de ingreso
+  // Esto garantiza que licencias sin goce, excedencia y reserva de puesto (Art. 19 LCT)
+  // no computen en la base del adicional por antigüedad del CCT.
+  const anios = (emp.ant_anos != null && !isNaN(emp.ant_anos) && emp.ant_anos >= 0)
+    ? Math.floor(emp.ant_anos)
+    : calcularAniosAntiguedad(emp.ing, anio, mes);
   const pctAntigPorAnio = getPctAntiguedadPorAnio(emp, params);
   const pctAntig=pctAntigPorAnio*anios;
   const mAntig=sueldoBasico*pctAntig/100;
