@@ -2411,37 +2411,38 @@ async function calcularAntiguedad(leg, fechaIngreso) {
   return { anos, meses, diasNoComp, diasTotales };
 }
 
-// Carga la antigüedad en el formulario de edición
+// Carga la antigüedad en el formulario de edición.
+// Si hay un valor guardado manualmente (override) → lo muestra.
+// Si no → calcula desde la fecha de ingreso y lo muestra como sugerencia.
+// En ambos casos el campo es EDITABLE libremente. Al guardar la ficha,
+// lo que esté en los campos queda almacenado como override.
 async function abmCargarAntiguedad(leg, fechaIngreso) {
-  const anosEl   = document.getElementById('abm-e-ant-anos');
-  const mesesEl  = document.getElementById('abm-e-ant-meses');
-  const infoEl   = document.getElementById('abm-e-ant-info');
+  const anosEl  = document.getElementById('abm-e-ant-anos');
+  const mesesEl = document.getElementById('abm-e-ant-meses');
+  const infoEl  = document.getElementById('abm-e-ant-info');
   if (!anosEl || !mesesEl) return;
 
-  // ¿Hay override guardado para este legajo?
   const ov = getAbmOverrides();
-  if (ov[leg]?.ant_anos != null && ov[leg]?.ant_meses != null) {
-    // Usar el override manual
+  const tieneOverride = ov[leg]?.ant_anos != null && ov[leg]?.ant_meses != null;
+
+  if (tieneOverride) {
+    // Mostrar valor guardado manualmente
     anosEl.value  = ov[leg].ant_anos;
     mesesEl.value = ov[leg].ant_meses;
     if (infoEl) infoEl.innerHTML =
-      `<span style="color:var(--yellow)">✎ Valor editado manualmente</span>` +
-      `<button type="button" onclick="abmRecalcAntiguedad()" style="background:none;border:none;color:var(--accent2);font-size:10px;cursor:pointer;margin-left:8px">Recalcular desde ingreso</button>`;
-    return;
-  }
-
-  // Calcular automáticamente
-  const { anos, meses, diasNoComp, diasTotales } = await calcularAntiguedad(leg, fechaIngreso);
-  anosEl.value  = anos;
-  mesesEl.value = meses;
-
-  if (infoEl) {
-    let msg = `<span style="color:var(--t3)">Ingreso: ${fechaIngreso || '—'} · ${diasTotales} días totales`;
-    if (diasNoComp > 0) {
-      msg += ` − ${diasNoComp} días no computables (art. 19 LCT)`;
+      `<span style="color:var(--t3)">Ingreso: ${fechaIngreso||'—'}</span>` +
+      `<span style="color:var(--yellow);margin-left:10px">✎ valor manual</span>`;
+  } else {
+    // Calcular desde fecha de ingreso
+    const { anos, meses, diasNoComp, diasTotales } = await calcularAntiguedad(leg, fechaIngreso);
+    anosEl.value  = anos;
+    mesesEl.value = meses;
+    if (infoEl) {
+      let msg = `<span style="color:var(--t3)">Ingreso: ${fechaIngreso||'—'} · ${diasTotales} días`;
+      if (diasNoComp > 0) msg += ` (−${diasNoComp} no comp. Art. 19 LCT)`;
+      msg += `</span>`;
+      infoEl.innerHTML = msg;
     }
-    msg += `</span>`;
-    infoEl.innerHTML = msg;
   }
 }
 
