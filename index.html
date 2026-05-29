@@ -1286,7 +1286,25 @@
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CATEGORÍA</label><input id="abm-n-cat" placeholder="OP / TEC / GER" oninput="abmAutocompletarBruto('n')" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">TRAMO</label><input id="abm-n-tramo" placeholder="SEN / JR" oninput="abmAutocompletarBruto('n')" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CÓDIGO DE SINDICATO</label><select id="abm-n-sindicato" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"><option value="">— Sin sindicato —</option></select></div>
-              <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">FECHA INGRESO *</label><input type="date" id="abm-n-ing" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
+              <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">FECHA INGRESO *</label><input type="date" id="abm-n-ing" oninput="abmActualizarAntiguedadAlta(this.value)" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
+              <div style="grid-column:span 1">
+                <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">ANTIGÜEDAD
+                  <span style="font-size:9px;color:var(--accent2);font-weight:400;margin-left:4px">calculada al ingresar fecha</span>
+                </label>
+                <div style="display:flex;gap:8px">
+                  <div style="flex:1">
+                    <label style="font-size:9px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:3px">AÑOS</label>
+                    <input type="number" id="abm-n-ant-anos" min="0" max="60" readonly
+                      style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--accent2);font-size:13px;outline:none;font-family:var(--font-mono);cursor:default" placeholder="0">
+                  </div>
+                  <div style="flex:1">
+                    <label style="font-size:9px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:3px">MESES</label>
+                    <input type="number" id="abm-n-ant-meses" min="0" max="11" readonly
+                      style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--accent2);font-size:13px;outline:none;font-family:var(--font-mono);cursor:default" placeholder="0">
+                  </div>
+                </div>
+                <div style="font-size:10px;color:var(--t3);margin-top:3px">Calculada desde la fecha de ingreso</div>
+              </div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">NACIMIENTO (DD/MM)</label><input id="abm-n-nac" placeholder="Ej: 15/03" maxlength="5" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">SUELDO BRUTO ($)</label><input type="number" id="abm-n-bruto" placeholder="0.00" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">SUELDO NETO ($)</label><input type="number" id="abm-n-neto" placeholder="0.00" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"></div>
@@ -1399,7 +1417,7 @@
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">UBICACIÓN</label><input id="abm-e-lugar" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">CATEGORÍA</label><input id="abm-e-cat" oninput="abmAutocompletarBruto('e');abmRecalcComplemento()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
               <div><label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">TRAMO</label><input id="abm-e-tramo" oninput="abmAutocompletarBruto('e');abmRecalcComplemento()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--t1);font-size:13px;outline:none;font-family:var(--font-mono)"></div>
-              <div>
+              <div style="grid-column:span 2">
                 <label style="font-size:11px;font-family:var(--font-mono);color:var(--t3);display:block;margin-bottom:4px">ANTIGÜEDAD
                   <span style="font-size:9px;color:var(--accent2);font-weight:400;margin-left:4px">calculada automáticamente · editable</span>
                 </label>

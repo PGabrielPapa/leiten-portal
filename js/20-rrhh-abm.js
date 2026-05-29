@@ -1152,8 +1152,8 @@ function renderAbmLista(){
   const fD=iso=>{ if(!iso)return'—'; const p=iso.split('-'); return`${p[2]}/${p[1]}/${p[0]}`; };
   // Stats CBU para mostrar en el contador
   const stats = (typeof getCBUStats === 'function') ? getCBUStats() : null;
-  wrap.innerHTML = `<div style="display:grid;grid-template-columns:80px 1fr 120px 120px 70px 100px 80px;padding:6px 18px;background:var(--bg2);font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)">
-    <span>Legajo</span><span>Empleado</span><span>Ingreso</span><span>Egreso</span><span>Estado</span><span>CBU</span><span></span>
+  wrap.innerHTML = `<div style="display:grid;grid-template-columns:80px 1fr 120px 120px 70px 70px 100px 80px;padding:6px 18px;background:var(--bg2);font-size:10px;font-family:var(--font-mono);color:var(--t3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)">
+    <span>Legajo</span><span>Empleado</span><span>Ingreso</span><span>Egreso</span><span>Estado</span><span>Antigüedad</span><span>CBU</span><span></span>
   </div>`+lista.map(e=>{
     const baja=e._deBaja||e.egreso;
     const ingStr=e.ing?(e.ing.includes('-')?fD(e.ing):e.ing):'—';
@@ -1175,7 +1175,7 @@ function renderAbmLista(){
         cbuChip = `<span title="${activos.length} cuentas activas — ${suma.toFixed(2)}%" style="font-size:10px;padding:2px 7px;border-radius:8px;border:1px solid ${sumaOk?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)'};color:${sumaOk?'var(--green)':'var(--red)'};font-family:var(--font-mono)">⚌ ${activos.length} cuentas</span>`;
       }
     }
-    return`<div style="display:grid;grid-template-columns:80px 1fr 120px 120px 70px 100px 80px;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);gap:6px;${baja?'opacity:.55':''}">
+    return`<div style="display:grid;grid-template-columns:80px 1fr 120px 120px 70px 70px 100px 80px;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);gap:6px;${baja?'opacity:.55':''}">
       <div style="font-size:11px;font-family:var(--font-mono);color:var(--t3)">${e.leg}</div>
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center">
@@ -1192,6 +1192,20 @@ function renderAbmLista(){
       <div style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">${ingStr}</div>
       <div style="font-size:11px;color:${baja?'var(--red)':'var(--t3)'};font-family:var(--font-mono)">${baja?egrStr:'—'}</div>
       <div><span style="font-size:10px;padding:2px 7px;border-radius:8px;border:1px solid ${baja?'rgba(239,68,68,.3)':'rgba(34,197,94,.3)'};color:${baja?'var(--red)':'var(--green)'}">${baja?'Baja':'Activo'}</span></div>
+      <div style="font-size:11px;font-family:var(--font-mono);color:var(--accent2)">${
+        (() => {
+          const ov = getAbmOverrides();
+          const anosOv = ov[e.leg]?.ant_anos ?? null;
+          if (anosOv != null) return anosOv + 'a ' + (ov[e.leg]?.ant_meses||0) + 'm';
+          if (!e.ing) return '—';
+          try {
+            const p = e.ing.includes('/') ? e.ing.split('/') : null;
+            const fi = p ? new Date(+p[2],+p[1]-1,+p[0]) : new Date(e.ing+'T12:00:00');
+            const d = Math.max(0, Math.floor((new Date()-fi)/86400000));
+            return Math.floor(d/365)+'a '+Math.floor((d%365)/30)+'m';
+          } catch(_){ return '—'; }
+        })()
+      }</div>
       <div>${cbuChip}</div>
       <div style="text-align:right"><button class="btn btn-ghost" style="font-size:11px;padding:3px 10px" onclick="abmEditarEmpleado('${e.leg}')">✎ Editar</button></div>
     </div>`;
@@ -2447,4 +2461,27 @@ async function abmRecalcAntiguedad() {
 
   await abmCargarAntiguedad(leg, ing);
   toast('✓ Antigüedad recalculada desde fecha de ingreso', 'var(--green)', 2500);
+}
+
+// Actualiza los campos de antigüedad en el formulario de ALTA al cambiar la fecha de ingreso
+function abmActualizarAntiguedadAlta(fechaISO) {
+  const anosEl  = document.getElementById('abm-n-ant-anos');
+  const mesesEl = document.getElementById('abm-n-ant-meses');
+  if (!anosEl || !mesesEl || !fechaISO) return;
+
+  let fIng;
+  if (fechaISO.includes('-')) {
+    fIng = new Date(fechaISO + 'T12:00:00');
+  } else if (fechaISO.includes('/')) {
+    const p = fechaISO.split('/');
+    fIng = new Date(+p[2], +p[1]-1, +p[0]);
+  }
+  if (!fIng || isNaN(fIng)) { anosEl.value = ''; mesesEl.value = ''; return; }
+
+  const hoy = new Date();
+  const diasTotales  = Math.floor((hoy - fIng) / 86400000);
+  if (diasTotales < 0) { anosEl.value = ''; mesesEl.value = ''; return; }
+
+  anosEl.value  = Math.floor(diasTotales / 365);
+  mesesEl.value = Math.floor((diasTotales % 365) / 30);
 }
